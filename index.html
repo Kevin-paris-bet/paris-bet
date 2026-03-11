@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paris-Bet — La plateforme des tipsters sérieux</title>
+  <meta name="description" content="Vendez vos pronostics sportifs en Pay-Per-Win. Vos clients ne paient que si votre pari est gagnant." />
+
+  <!-- Styles globaux -->
+  <link rel="stylesheet" href="css/variables.css" />
+  <link rel="stylesheet" href="css/components.css" />
+  <link rel="stylesheet" href="css/index.css" />
+</head>
+<body>
+
+  <!-- NAVBAR (injectée par components.js) -->
+  <div id="navbar"></div>
+
+  <!-- ══════════════════════════════════════
+       SECTION 1 — HERO
+  ══════════════════════════════════════ -->
+  <section class="hero" id="home">
+    <div class="hero__bg">
+      <div class="hero__blob hero__blob--1"></div>
+      <div class="hero__blob hero__blob--2"></div>
+      <div class="hero__grid"></div>
+    </div>
+
+    <div class="container hero__inner">
+      <div class="hero__content animate-fade-up">
+        <div class="hero__badge">
+          <span class="hero__badge-dot"></span>
+          Plateforme de pronostics #1
+        </div>
+
+        <h1 class="hero__title">
+          Vendez vos pronos.<br>
+          <span>Payé seulement</span><br>
+          si vous gagnez.
+        </h1>
+
+        <p class="hero__desc">
+          Paris-Bet est la plateforme qui connecte tipsters et parieurs.
+          Créez votre page, publiez vos pronostics et encaissez — vos clients
+          ne paient que si votre pari est gagnant.
+        </p>
+
+        <div class="hero__actions">
+          <a href="pages/auth.html#register" class="btn btn-primary btn-lg">
+            Créer ma page gratuitement →
+          </a>
+          <a href="#how" class="btn btn-outline btn-lg">
+            Voir comment ça marche
+          </a>
+        </div>
+
+        <div class="hero__trust">
+          <div class="hero__trust-item">
+            <strong id="stat-tipsters">—</strong>
+            <span>Tipsters actifs</span>
+          </div>
+          <div class="hero__trust-sep"></div>
+          <div class="hero__trust-item">
+            <strong id="stat-users">—</strong>
+            <span>Utilisateurs</span>
+          </div>
+          <div class="hero__trust-sep"></div>
+          <div class="hero__trust-item">
+            <strong id="stat-paid">—</strong>
+            <span>Versés aux tipsters</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mockup -->
+      <div class="hero__mockup animate-fade-up" style="animation-delay:0.2s">
+        <div class="mockup">
+          <div class="mockup__bar">
+            <div class="mockup__dots">
+              <span class="dot dot--r"></span>
+              <span class="dot dot--y"></span>
+              <span class="dot dot--g"></span>
+            </div>
+            <div class="mockup__url">paris-bet.fr/alexis</div>
+          </div>
+          <div class="mockup__body">
+
+            <!-- Profil tipster -->
+            <div class="mockup__profile">
+              <div class="mockup__avatar">A</div>
+              <div class="mockup__profile-info">
+                <strong>Alexis Tipster</strong>
+                <span>⚽ Ligue 1 • 🎾 Tennis</span>
+              </div>
+              <div class="badge badge-won">76% Win Rate</div>
+            </div>
+
+            <!-- Pronos -->
+            <div class="mockup__pronos">
+              <div class="mockup__prono">
+                <div class="mockup__prono-left">
+                  <span class="mockup__prono-match">PSG vs Marseille</span>
+                  <span class="mockup__prono-meta">⚽ Ligue 1 · Sam. 20h45 · <strong>47 acheteurs</strong></span>
+                </div>
+                <div class="mockup__prono-right">
+                  <span class="mockup__prono-price">5,00€</span>
+                  <span class="badge badge-pending">En attente</span>
+                </div>
+              </div>
+              <div class="mockup__prono">
+                <div class="mockup__prono-left">
+                  <span class="mockup__prono-match">Real Madrid vs Barça</span>
+                  <span class="mockup__prono-meta">⚽ Liga · Dim. 21h00 · <strong>83 acheteurs</strong></span>
+                </div>
+                <div class="mockup__prono-right">
+                  <span class="mockup__prono-price">8,00€</span>
+                  <span class="badge badge-won">Gagné ✓</span>
+                </div>
+              </div>
+              <div class="mockup__prono">
+                <div class="mockup__prono-left">
+                  <span class="mockup__prono-match">Djokovic vs Alcaraz</span>
+                  <span class="mockup__prono-meta">🎾 Roland Garros · Dim. 14h · <strong>31 acheteurs</strong></span>
+                </div>
+                <div class="mockup__prono-right">
+                  <span class="mockup__prono-price">6,00€</span>
+                  <span class="badge badge-pending">En attente</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Solde utilisateur -->
+            <div class="mockup__balance">
+              <span>💳 Mon solde</span>
+              <strong>42,50 €</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 2 — COMMENT ÇA MARCHE
+  ══════════════════════════════════════ -->
+  <section class="section how" id="how">
+    <div class="container">
+      <div class="how__header">
+        <div class="section-label">Comment ça marche</div>
+        <h2 class="section-title">Lancez-vous en 4 étapes</h2>
+        <p class="section-desc">De l'inscription à vos premières ventes, tout est conçu pour être simple et rapide.</p>
+      </div>
+
+      <div class="how__steps">
+        <div class="how__step">
+          <div class="how__step-num">01</div>
+          <div class="how__step-icon">✏️</div>
+          <h3>Créez votre page</h3>
+          <p>Inscrivez-vous gratuitement et choisissez votre nom unique. Votre page est accessible à l'adresse paris-bet.fr/votre-nom.</p>
+        </div>
+        <div class="how__connector"></div>
+        <div class="how__step">
+          <div class="how__step-num">02</div>
+          <div class="how__step-icon">🎯</div>
+          <h3>Publiez vos pronos</h3>
+          <p>Ajoutez vos pronostics avec leur prix. Une fois publié, le contenu est figé pour garantir l'honnêteté.</p>
+        </div>
+        <div class="how__connector"></div>
+        <div class="how__step">
+          <div class="how__step-num">03</div>
+          <div class="how__step-icon">💰</div>
+          <h3>Vos clients achètent</h3>
+          <p>Ils paient depuis leur solde et accèdent immédiatement au pronostic. La somme reste "en attente" jusqu'à validation.</p>
+        </div>
+        <div class="how__connector"></div>
+        <div class="how__step">
+          <div class="how__step-num">04</div>
+          <div class="how__step-icon">🏆</div>
+          <h3>Encaissez vos gains</h3>
+          <p>Si gagné : vous recevez 90% de la mise. Si perdu ou annulé : vos clients sont automatiquement remboursés.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 3 — FONCTIONNALITÉS
+  ══════════════════════════════════════ -->
+  <section class="section features" id="features">
+    <div class="container">
+      <div class="features__header">
+        <div class="section-label">Fonctionnalités</div>
+        <h2 class="section-title">Tout ce qu'il vous faut</h2>
+        <p class="section-desc">Des outils pensés pour les tipsters sérieux qui veulent construire une audience fidèle.</p>
+      </div>
+
+      <div class="features__grid">
+
+        <div class="feat feat--large">
+          <div class="feat__tag">⭐ Exclusif</div>
+          <div class="feat__icon">🏆</div>
+          <h3>Pay-Per-Win</h3>
+          <p>La révolution du pronostic payant. Vos clients ne sont débités que si votre pari est validé gagnant par l'admin. Perdu ou annulé = remboursement automatique. La confiance comme moteur de croissance.</p>
+          <div class="feat__highlight">
+            <span>✓ Aucun risque pour l'acheteur</span>
+            <span>✓ Conversion maximale</span>
+          </div>
+        </div>
+
+        <div class="feat">
+          <div class="feat__icon">💳</div>
+          <h3>Solde intégré</h3>
+          <p>Les utilisateurs rechargent leur solde (min. 5€) et achètent en un clic. Fini les formulaires CB répétitifs.</p>
+        </div>
+
+        <div class="feat">
+          <div class="feat__icon">📊</div>
+          <h3>Compteur d'acheteurs</h3>
+          <p>Chaque prono affiche le nombre de personnes qui ont acheté. La preuve sociale qui booste les ventes.</p>
+        </div>
+
+        <div class="feat">
+          <div class="feat__icon">🔒</div>
+          <h3>Pronos inmodifiables</h3>
+          <p>Une fois publié, un pronostic ne peut plus être modifié. Zéro triche possible, confiance garantie.</p>
+        </div>
+
+        <div class="feat">
+          <div class="feat__icon">💸</div>
+          <h3>Virements hebdomadaires</h3>
+          <p>Chaque lundi, vous recevez vos gains sur votre RIB si votre solde dépasse 30€. Simple et fiable.</p>
+        </div>
+
+        <div class="feat">
+          <div class="feat__icon">🛡️</div>
+          <h3>Validation admin</h3>
+          <p>Chaque résultat est validé manuellement par l'équipe Paris-Bet. Un arbitre neutre qui protège tout le monde.</p>
+        </div>
+
+        <div class="feat">
+          <div class="feat__icon">⏳</div>
+          <h3>Solde en attente</h3>
+          <p>Les sommes achetées restent visibles "en attente" jusqu'à la validation du résultat. Transparence totale.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 4 — SIMULATEUR
+  ══════════════════════════════════════ -->
+  <section class="section simulator" id="simulator">
+    <div class="container">
+      <div class="simulator__header">
+        <div class="section-label">Simulateur de revenus</div>
+        <h2 class="section-title">Combien pouvez-vous gagner ?</h2>
+        <p class="section-desc">Ajustez les curseurs pour estimer vos revenus mensuels nets sur Paris-Bet.</p>
+      </div>
+
+      <div class="sim__box">
+        <div class="sim__controls">
+          <div class="sim__field">
+            <div class="sim__label">
+              <span>Pronos publiés / mois</span>
+              <strong id="val-pronos">20</strong>
+            </div>
+            <input type="range" id="sl-pronos" min="4" max="100" value="20" oninput="updateSim()" />
+            <div class="sim__range-labels"><span>4</span><span>100</span></div>
+          </div>
+
+          <div class="sim__field">
+            <div class="sim__label">
+              <span>Prix moyen par prono</span>
+              <strong id="val-price">8 €</strong>
+            </div>
+            <input type="range" id="sl-price" min="2" max="50" value="8" oninput="updateSim()" />
+            <div class="sim__range-labels"><span>2 €</span><span>50 €</span></div>
+          </div>
+
+          <div class="sim__field">
+            <div class="sim__label">
+              <span>Clients actifs</span>
+              <strong id="val-clients">150</strong>
+            </div>
+            <input type="range" id="sl-clients" min="10" max="2000" step="10" value="150" oninput="updateSim()" />
+            <div class="sim__range-labels"><span>10</span><span>2 000</span></div>
+          </div>
+
+          <div class="sim__field">
+            <div class="sim__label">
+              <span>Win rate</span>
+              <strong id="val-wr">60%</strong>
+            </div>
+            <input type="range" id="sl-wr" min="40" max="90" value="60" oninput="updateSim()" />
+            <div class="sim__range-labels"><span>40%</span><span>90%</span></div>
+          </div>
+        </div>
+
+        <div class="sim__results">
+          <div class="sim__result">
+            <span class="sim__result-label">Revenu brut</span>
+            <span class="sim__result-val" id="res-gross">—</span>
+          </div>
+          <div class="sim__result sim__result--accent">
+            <span class="sim__result-label">Commission Paris-Bet (10%)</span>
+            <span class="sim__result-val" id="res-comm">—</span>
+          </div>
+          <div class="sim__result sim__result--main">
+            <span class="sim__result-label">Votre revenu net / mois</span>
+            <span class="sim__result-val" id="res-net">—</span>
+          </div>
+          <p class="sim__note">
+            * Commission de <strong>10%</strong> prélevée uniquement sur les paris validés gagnants.
+            Virements chaque <strong>lundi</strong> si solde ≥ <strong>30€</strong>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 5 — FAQ
+  ══════════════════════════════════════ -->
+  <section class="section faq" id="faq">
+    <div class="container">
+      <div class="faq__header">
+        <div class="section-label">FAQ</div>
+        <h2 class="section-title">Questions fréquentes</h2>
+      </div>
+      <!-- FAQ injectée par JS depuis CONFIG.faq -->
+      <div class="faq__list" id="faqList"></div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════
+       SECTION 6 — CTA FINAL
+  ══════════════════════════════════════ -->
+  <section class="cta-banner">
+    <div class="container cta-banner__inner">
+      <div class="cta-banner__text">
+        <h2>Prêt à monétiser<br><span>votre expertise ?</span></h2>
+        <p>Inscription gratuite · Aucune carte requise · Paiements via Stripe</p>
+      </div>
+      <div class="cta-banner__actions">
+        <a href="pages/auth.html#register" class="btn btn-white btn-lg">
+          Créer ma page gratuitement →
+        </a>
+        <a href="pages/auth.html#register?role=user" class="btn btn-lg" style="color:rgba(255,255,255,0.8); border: 1.5px solid rgba(255,255,255,0.3);">
+          Je veux acheter des pronos
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER (injecté par components.js) -->
+  <div id="footer"></div>
+
+  <!-- Scripts (ordre important) -->
+  <script src="js/config.js"></script>
+  <script src="js/components.js"></script>
+  <script src="js/index.js"></script>
+</body>
+</html>
