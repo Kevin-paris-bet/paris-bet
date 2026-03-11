@@ -1,0 +1,41 @@
+/**
+ * ============================================================
+ *  PARIS-BET — STYLES PANEL ADMIN (dashboard-admin.css)
+ * ============================================================
+ */
+
+/* ── Cartes actions urgentes ── */
+.action-card {
+  display: flex; align-items: center; gap: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  background: var(--white);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.action-card:hover { transform: translateX(4px); box-shadow: var(--shadow-sm); }
+.action-card--urgent { border-left: 4px solid var(--error);   background: var(--error-pale); }
+.action-card--info   { border-left: 4px solid var(--blue);    background: var(--blue-xpale); }
+.action-card--warn   { border-left: 4px solid var(--warning); background: var(--warning-pale); cursor:default; }
+.action-card__icon   { font-size: 1.5rem; flex-shrink: 0; }
+.action-card__body   { flex: 1; }
+.action-card__title  { font-weight: 700; font-size: 0.92rem; color: var(--text-dark); }
+.action-card__sub    { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+.action-card__arrow  { font-size: 1.1rem; color: var(--text-muted); }
+
+/* ── Boutons validation résultats ── */
+.btn-validate {
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem; font-weight: 700;
+  border: none; cursor: pointer;
+  font-family: var(--font-body);
+  transition: all var(--transition);
+}
+.btn-validate--won    { background: var(--success-pale); color: var(--success); border: 1px solid var(--success); }
+.btn-validate--won:hover { background: var(--success); color: var(--white); }
+.btn-validate--lost   { background: var(--error-pale);   color: var(--error);   border: 1px solid var(--error); }
+.btn-validate--lost:hover { background: var(--error); color: var(--white); }
+.btn-validate--cancel { background: var(--warning-pale); color: var(--warning); border: 1px solid var(--warning); }
+.btn-validate--cancel:hover { background: var(--warning); color: var(--white); }

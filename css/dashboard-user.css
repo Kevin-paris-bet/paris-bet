@@ -1,0 +1,102 @@
+/**
+ * ============================================================
+ *  PARIS-BET — STYLES DASHBOARD UTILISATEUR (dashboard-user.css)
+ * ============================================================
+ */
+
+/* ── Filtres achats ── */
+.achats-filters {
+  display: flex; gap: var(--space-sm); flex-wrap: wrap;
+  margin-bottom: var(--space-lg);
+}
+
+/* ── Carte achat ── */
+.achat-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--blue);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  margin-bottom: var(--space-md);
+  transition: box-shadow var(--transition);
+}
+.achat-card:hover { box-shadow: var(--shadow-md); }
+
+.achat-card__header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-lg);
+}
+.achat-card__match {
+  font-family: var(--font-display);
+  font-size: 1rem; font-weight: 800; color: var(--text-dark);
+  margin-bottom: 4px;
+}
+.achat-card__meta {
+  font-size: 0.78rem; color: var(--text-muted);
+}
+.achat-card__right {
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 5px; flex-shrink: 0;
+}
+.achat-card__price {
+  font-family: var(--font-display);
+  font-size: 1.2rem; font-weight: 800; color: var(--blue);
+}
+.achat-card__refund {
+  font-size: 0.74rem; font-weight: 600; color: var(--success);
+}
+
+.achat-card__content {
+  padding: var(--space-md) var(--space-lg);
+  background: var(--bg-soft);
+  border-top: 1px solid var(--border);
+}
+.achat-card__content-label {
+  font-size: 0.7rem; font-weight: 700;
+  letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 5px;
+}
+.achat-card__content-text {
+  font-size: 0.88rem; color: var(--text-dark); line-height: 1.65;
+}
+
+/* ── Layout page solde ── */
+.solde-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-xl);
+  align-items: start;
+}
+
+/* ── Montants rapides ── */
+.quick-amounts {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-sm);
+}
+.quick-amount-btn {
+  padding: 10px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-soft);
+  font-family: var(--font-body);
+  font-size: 0.88rem; font-weight: 700;
+  color: var(--text-dark); cursor: pointer;
+  transition: all var(--transition);
+  text-align: center;
+}
+.quick-amount-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-xpale); }
+.quick-amount-btn.active {
+  border-color: var(--blue); background: var(--blue-pale); color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(26,86,255,0.08);
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .solde-layout { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .achat-card__header { flex-direction: column; }
+  .achat-card__right  { align-items: flex-start; flex-direction: row; flex-wrap: wrap; gap: 8px; }
+  .quick-amounts      { grid-template-columns: repeat(2, 1fr); }
+}

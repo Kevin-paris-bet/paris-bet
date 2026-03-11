@@ -1,0 +1,404 @@
+/**
+ * ============================================================
+ *  PARIS-BET — STYLES PAGE PUBLIQUE TIPSTER (tipster-public.css)
+ * ============================================================
+ */
+
+/* ── Layout ── */
+.tipster-page {
+  min-height: 100vh;
+  background: var(--bg-soft);
+}
+
+/* ── Hero profil ── */
+.tipster-hero {
+  background: linear-gradient(160deg, var(--blue-dark) 0%, var(--blue) 100%);
+  padding: calc(var(--nav-height) + var(--space-2xl)) 0 var(--space-2xl);
+  position: relative;
+  overflow: hidden;
+}
+.tipster-hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Wrapper principal du hero */
+.tipster-hero__inner {
+  position: relative; z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+/* Ligne 1 : avatar + infos texte */
+.tipster-hero__avatar-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-lg);
+}
+.tipster-avatar {
+  width: 90px; height: 90px; border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  border: 3px solid rgba(255,255,255,0.4);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-size: 2.2rem; font-weight: 800; color: var(--white);
+  flex-shrink: 0;
+}
+.tipster-hero__info {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.tipster-hero__name {
+  font-family: var(--font-display);
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 800; color: var(--white);
+  line-height: 1.1;
+}
+.tipster-hero__url {
+  font-size: 0.82rem; color: rgba(255,255,255,0.55);
+  display: flex; align-items: center; gap: 6px;
+}
+.tipster-hero__tags {
+  display: flex; flex-wrap: wrap; gap: var(--space-sm);
+}
+.tipster-tag {
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: var(--radius-full);
+  padding: 4px 12px;
+  font-size: 0.78rem; font-weight: 600; color: var(--white);
+}
+
+/* Ligne 2 : stats en bande */
+.tipster-hero__stats-wrap {
+  display: flex;
+  gap: 0;
+  background: rgba(255,255,255,0.08);
+  border-radius: var(--radius-md);
+  padding: var(--space-md) var(--space-lg);
+}
+.tipster-hero__stat {
+  flex: 1;
+  text-align: center;
+  padding: 0 var(--space-md);
+}
+.tipster-hero__stat + .tipster-hero__stat {
+  border-left: 1px solid rgba(255,255,255,0.15);
+}
+.tipster-hero__stat-num {
+  font-family: var(--font-display);
+  font-size: 1.5rem; font-weight: 800; color: var(--white);
+  line-height: 1;
+}
+.tipster-hero__stat-label {
+  font-size: 0.72rem; color: rgba(255,255,255,0.55);
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-top: 4px;
+}
+.tipster-hero__stat--winrate .tipster-hero__stat-num {
+  color: #7dffb3;
+}
+
+/* ── Responsive mobile ── */
+@media (max-width: 600px) {
+  .tipster-hero {
+    padding: calc(var(--nav-height) + var(--space-lg)) 0 var(--space-lg);
+  }
+  .tipster-avatar {
+    width: 60px; height: 60px;
+    font-size: 1.5rem;
+  }
+  .tipster-hero__name   { font-size: 1.3rem; }
+  .tipster-hero__url    { font-size: 0.74rem; }
+  .tipster-hero__inner  { gap: var(--space-md); }
+  .tipster-hero__stats-wrap { padding: var(--space-md) var(--space-sm); }
+  .tipster-hero__stat   { padding: 0 6px; }
+  .tipster-hero__stat-num   { font-size: 1.1rem; }
+  .tipster-hero__stat-label { font-size: 0.58rem; }
+}
+
+/* ── Contenu principal ── */
+.tipster-body {
+  padding: var(--space-2xl) 0;
+}
+.tipster-body__inner {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-xl);
+  align-items: start;
+}
+
+/* ── Filtres ── */
+.pronos-filters {
+  display: flex; gap: var(--space-sm); flex-wrap: wrap;
+  margin-bottom: var(--space-lg);
+}
+.filter-btn {
+  padding: 7px 16px;
+  border-radius: var(--radius-full);
+  font-size: 0.82rem; font-weight: 600;
+  border: 1.5px solid var(--border);
+  background: var(--white); color: var(--text-muted);
+  cursor: pointer; transition: all var(--transition);
+}
+.filter-btn:hover { border-color: var(--blue); color: var(--blue); }
+.filter-btn.active {
+  background: var(--blue); color: var(--white);
+  border-color: var(--blue);
+}
+
+/* ── Cartes pronostics ── */
+.pronos-list {
+  display: flex; flex-direction: column; gap: var(--space-md);
+}
+
+.prono-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: box-shadow var(--transition), transform var(--transition);
+}
+.prono-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+.prono-card--won    { border-left: 4px solid var(--success); }
+.prono-card--lost   { border-left: 4px solid var(--error); }
+.prono-card--pending{ border-left: 4px solid var(--blue); }
+.prono-card--cancelled { border-left: 4px solid var(--warning); }
+
+.prono-card__header {
+  padding: var(--space-lg) var(--space-lg) var(--space-md);
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: var(--space-md);
+}
+.prono-card__match {
+  font-family: var(--font-display);
+  font-size: 1.05rem; font-weight: 800;
+  color: var(--text-dark); margin-bottom: 4px;
+}
+.prono-card__meta {
+  font-size: 0.78rem; color: var(--text-muted);
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.prono-card__right {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 6px;
+  flex-shrink: 0;
+}
+.prono-card__price {
+  font-family: var(--font-display);
+  font-size: 1.4rem; font-weight: 800; color: var(--blue);
+  line-height: 1;
+}
+.prono-card__price-label {
+  font-size: 0.68rem; color: var(--text-muted);
+  text-align: right;
+}
+
+.prono-card__footer {
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--space-md);
+  background: var(--bg-soft);
+}
+.prono-card__buyers {
+  font-size: 0.8rem; color: var(--text-muted);
+  display: flex; align-items: center; gap: 5px;
+}
+.prono-card__buyers strong { color: var(--text-dark); }
+
+/* Contenu déverrouillé (après achat) */
+.prono-card__content {
+  padding: var(--space-md) var(--space-lg);
+  background: var(--blue-xpale);
+  border-top: 1px solid rgba(26,86,255,0.1);
+}
+.prono-card__content-label {
+  font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--blue); margin-bottom: 6px;
+}
+.prono-card__content-text {
+  font-size: 0.9rem; color: var(--text-dark); line-height: 1.65;
+}
+
+/* Contenu verrouillé */
+.prono-card__locked {
+  padding: var(--space-md) var(--space-lg);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  color: var(--text-muted); font-size: 0.85rem;
+}
+.prono-card__locked-icon {
+  font-size: 1.2rem; flex-shrink: 0;
+}
+
+/* Bouton acheter */
+.btn-buy {
+  background: var(--blue);
+  color: var(--white);
+  border: none; cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 0.88rem; font-weight: 700;
+  padding: 9px 20px;
+  border-radius: var(--radius-md);
+  transition: all var(--transition);
+  box-shadow: var(--shadow-blue);
+  white-space: nowrap;
+}
+.btn-buy:hover {
+  background: var(--blue-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(26,86,255,0.3);
+}
+.btn-buy:disabled {
+  background: var(--text-light);
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ── Sidebar droite ── */
+.tipster-sidebar { display: flex; flex-direction: column; gap: var(--space-md); }
+
+/* Carte solde utilisateur */
+.user-balance-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.user-balance-card__top {
+  background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+  padding: var(--space-lg);
+  color: var(--white);
+}
+.user-balance-card__label {
+  font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  opacity: 0.7; margin-bottom: 6px;
+}
+.user-balance-card__amount {
+  font-family: var(--font-display);
+  font-size: 2rem; font-weight: 800; line-height: 1;
+}
+.user-balance-card__pending {
+  font-size: 0.75rem; opacity: 0.65; margin-top: 4px;
+}
+.user-balance-card__body {
+  padding: var(--space-md) var(--space-lg);
+}
+
+/* Carte infos tipster */
+.tipster-info-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+}
+.tipster-info-card h3 {
+  font-family: var(--font-display);
+  font-size: 0.9rem; font-weight: 800;
+  color: var(--text-dark); margin-bottom: var(--space-md);
+}
+.info-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+  font-size: 0.83rem;
+}
+.info-row:last-child { border-bottom: none; }
+.info-row__label { color: var(--text-muted); }
+.info-row__value { font-weight: 600; color: var(--text-dark); }
+.info-row__value.green { color: var(--success); }
+.info-row__value.blue  { color: var(--blue); }
+
+/* ── Panneau achat inline compact ── */
+.buy-panel {
+  animation: fadeUp 0.25s ease both;
+}
+.buy-panel--mobile {
+  margin-bottom: var(--space-md);
+}
+.buy-panel__inner {
+  background: var(--white);
+  border: 1.5px solid var(--blue);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+  box-shadow: 0 4px 16px rgba(26,86,255,0.1);
+}
+.buy-panel__title {
+  font-family: var(--font-display);
+  font-size: 0.92rem; font-weight: 800;
+  color: var(--text-dark);
+  margin-bottom: var(--space-sm);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.buy-panel__close {
+  background: none; border: none;
+  font-size: 1rem; color: var(--text-light);
+  cursor: pointer; padding: 0;
+  line-height: 1;
+  transition: color var(--transition);
+}
+.buy-panel__close:hover { color: var(--error); }
+.buy-panel__match {
+  font-size: 0.82rem; color: var(--text-muted);
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 1px solid var(--border);
+}
+.buy-panel__rows {
+  display: flex; flex-direction: column; gap: 5px;
+  margin-bottom: var(--space-md);
+}
+.buy-panel__row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.82rem;
+}
+.buy-panel__row-label { color: var(--text-muted); }
+.buy-panel__row-value { font-weight: 600; color: var(--text-dark); }
+.buy-panel__row-value.blue   { color: var(--blue); }
+.buy-panel__row-value.red    { color: var(--error); }
+.buy-panel__row-value.green  { color: var(--success); }
+.buy-panel__row--total {
+  border-top: 1px solid var(--border);
+  padding-top: 8px; margin-top: 3px;
+  font-weight: 700;
+}
+.buy-panel__row--total .buy-panel__row-label { color: var(--text-dark); font-weight: 700; }
+.buy-panel__alert {
+  background: var(--error-pale);
+  border: 1px solid var(--error);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 0.78rem; color: var(--text-dark);
+  margin-bottom: var(--space-sm);
+}
+.buy-panel__alert a { color: var(--blue); font-weight: 600; }
+.buy-panel__actions {
+  display: flex; gap: var(--space-sm);
+}
+.buy-panel__actions .btn { flex: 1; font-size: 0.85rem; padding: 9px; }
+
+/* ── Pay-Per-Win card compacte ── */
+.ppw-card {
+  background: var(--blue-xpale);
+  border: 1px solid rgba(26,86,255,0.15);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md) var(--space-lg);
+}
+.ppw-card__title {
+  font-weight: 700; font-size: 0.82rem;
+  color: var(--blue); margin-bottom: 8px;
+}
+.ppw-card__list {
+  font-size: 0.78rem; color: var(--text-muted);
+  line-height: 1.9; padding-left: var(--space-md);
+  margin: 0;
+}
