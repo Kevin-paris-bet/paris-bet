@@ -1,0 +1,238 @@
+/**
+ * ============================================================
+ *  PARIS-BET — JS PAGE AUTH (auth.js)
+ *  Gestion des formulaires connexion / inscription
+ * ============================================================
+ */
+
+// ── État global du formulaire ─────────────────────────────────
+const authState = {
+  activeTab:    'login',   // 'login' | 'register'
+  selectedRole: 'user',   // 'user'  | 'tipster'
+};
+
+// ── Init ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+
+  // Lire le hash de l'URL pour ouvrir le bon onglet
+  // Ex: auth.html#register ou auth.html#login
+  const hash = window.location.hash.replace('#', '').split('?')[0];
+  if (hash === 'register') switchTab('register');
+  else switchTab('login');
+
+  // Lire le rôle dans l'URL si fourni
+  // Ex: auth.html#register?role=tipster
+  const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
+  if (params.get('role') === 'tipster') selectRole('tipster');
+
+});
+
+// ── Changement d'onglet ───────────────────────────────────────
+function switchTab(tab) {
+  authState.activeTab = tab;
+
+  document.querySelectorAll('.auth-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+  document.querySelectorAll('.auth-form').forEach(form => {
+    form.classList.toggle('active', form.id === `form-${tab}`);
+  });
+
+  // Mettre à jour le hash sans recharger
+  history.replaceState(null, '', `#${tab}`);
+}
+
+// ── Sélection du rôle (inscription) ──────────────────────────
+function selectRole(role) {
+  authState.selectedRole = role;
+  document.querySelectorAll('.role-option').forEach(opt => {
+    opt.classList.toggle('selected', opt.dataset.role === role);
+  });
+}
+
+// ── Toggle affichage mot de passe ─────────────────────────────
+function togglePw(inputId, btn) {
+  const input = document.getElementById(inputId);
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  btn.textContent = isHidden ? '🙈' : '👁';
+}
+
+// ── Validations en temps réel ─────────────────────────────────
+function validateEmail(inputId, errorId) {
+  const input = document.getElementById(inputId);
+  const error = document.getElementById(errorId);
+  const val   = input.value.trim();
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+
+  input.classList.toggle('error', val.length > 2 && !valid);
+  input.classList.toggle('valid', valid);
+  if (error) error.classList.toggle('show', val.length > 2 && !valid);
+  return valid;
+}
+
+function validateNotEmpty(inputId, errorId) {
+  const input = document.getElementById(inputId);
+  const error = document.getElementById(errorId);
+  const valid = input.value.trim().length > 0;
+
+  input.classList.toggle('valid', valid);
+  if (error) error.classList.toggle('show', !valid && input.value.length > 0);
+  return valid;
+}
+
+// ── Force du mot de passe ─────────────────────────────────────
+function checkPasswordStrength(inputId) {
+  const input    = document.getElementById(inputId);
+  const strength = document.getElementById('pw-strength');
+  const label    = document.getElementById('pw-label');
+  const bars     = document.querySelectorAll('.pw-bar');
+  const val      = input.value;
+
+  if (!val) { strength.classList.remove('show'); return false; }
+  strength.classList.add('show');
+
+  let score = 0;
+  if (val.length >= 8)            score++;
+  if (/[A-Z]/.test(val))          score++;
+  if (/[0-9]/.test(val))          score++;
+  if (/[^A-Za-z0-9]/.test(val))   score++;
+
+  const cls    = ['', 'weak', 'weak', 'medium', 'strong'];
+  const labels = ['', 'Trop faible', 'Faible', 'Moyen', 'Fort 💪'];
+  const colors = ['', 'var(--error)', 'var(--error)', 'var(--warning)', 'var(--success)'];
+
+  bars.forEach((bar, i) => {
+    bar.className = 'pw-bar' + (i < score ? ' ' + cls[score] : '');
+  });
+  label.textContent  = labels[score] || 'Trop court';
+  label.style.color  = colors[score] || 'var(--text-muted)';
+
+  return score >= 3; // Valide si "moyen" ou plus
+}
+
+// ── CONNEXION ─────────────────────────────────────────────────
+async function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw    = document.getElementById('login-pw').value;
+  const btn   = document.getElementById('btn-login');
+
+  // Validation basique
+  if (!email || !pw) { showToast('Veuillez remplir tous les champs.', 'error'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Adresse email invalide.', 'error'); return; }
+
+  // État loading
+  setLoading(btn, true);
+
+  try {
+    // ─────────────────────────────────────────────────────────────
+    // TODO (étape Supabase) : remplacer par l'appel réel
+    // const { data, error } = await sb.auth.signInWithPassword({ email, password: pw })
+    // if (error) throw new Error(error.message)
+    // ─────────────────────────────────────────────────────────────
+
+    // Simulation réponse API (2s)
+    await sleep(1800);
+
+    // Succès → afficher l'état de succès
+    document.getElementById('form-login').style.display = 'none';
+    document.getElementById('login-success').classList.add('show');
+
+  } catch (err) {
+    showToast(err.message || 'Email ou mot de passe incorrect.', 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+// ── INSCRIPTION ───────────────────────────────────────────────
+async function handleRegister() {
+  const firstName = document.getElementById('reg-firstname').value.trim();
+  const lastName  = document.getElementById('reg-lastname').value.trim();
+  const email     = document.getElementById('reg-email').value.trim();
+  const pw        = document.getElementById('reg-pw').value;
+  const terms     = document.getElementById('reg-terms').checked;
+  const btn       = document.getElementById('btn-register');
+
+  // Validations
+  if (!firstName || !lastName) { showToast('Veuillez renseigner votre prénom et nom.', 'error'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Adresse email invalide.', 'error'); return; }
+  if (pw.length < 8) { showToast('Le mot de passe doit faire au moins 8 caractères.', 'error'); return; }
+  if (!terms) { showToast('Veuillez accepter les conditions d\'utilisation.', 'error'); return; }
+
+  setLoading(btn, true);
+
+  try {
+    // ─────────────────────────────────────────────────────────────
+    // TODO (étape Supabase) : remplacer par l'appel réel
+    // const { data, error } = await sb.auth.signUp({
+    //   email, password: pw,
+    //   options: { data: { first_name: firstName, last_name: lastName, role: authState.selectedRole } }
+    // })
+    // if (error) throw new Error(error.message)
+    // ─────────────────────────────────────────────────────────────
+
+    await sleep(1800);
+
+    // Succès
+    document.getElementById('form-register').style.display = 'none';
+    document.getElementById('register-success').classList.add('show');
+
+  } catch (err) {
+    showToast(err.message || 'Une erreur est survenue.', 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+// ── Google Auth ───────────────────────────────────────────────
+function handleGoogleAuth() {
+  // TODO (étape Supabase) : sb.auth.signInWithOAuth({ provider: 'google' })
+  showToast('Connexion Google disponible bientôt 🚀', 'info');
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function setLoading(btn, loading) {
+  btn.disabled = loading;
+  btn.classList.toggle('loading', loading);
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// ── Toast de notification ─────────────────────────────────────
+function showToast(message, type = 'info') {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+
+  const colors = {
+    error:   { bg: 'var(--error-pale)',   border: 'var(--error)',   icon: '✕' },
+    success: { bg: 'var(--success-pale)', border: 'var(--success)', icon: '✓' },
+    info:    { bg: 'var(--blue-pale)',    border: 'var(--blue)',     icon: 'ℹ' },
+  };
+  const c = colors[type] || colors.info;
+
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `<span>${c.icon}</span> ${message}`;
+  Object.assign(toast.style, {
+    position:     'fixed',
+    bottom:       '24px',
+    left:         '50%',
+    transform:    'translateX(-50%)',
+    background:   c.bg,
+    border:       `1px solid ${c.border}`,
+    borderRadius: 'var(--radius-md)',
+    padding:      '12px 24px',
+    fontSize:     '0.87rem',
+    fontFamily:   'var(--font-body)',
+    color:        'var(--text-dark)',
+    zIndex:       '9999',
+    animation:    'fadeUp 0.3s ease both',
+    boxShadow:    'var(--shadow-md)',
+    whiteSpace:   'nowrap',
+  });
+  document.body.appendChild(toast);
+  setTimeout(() => toast?.remove(), 3500);
+}
