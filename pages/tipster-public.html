@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Alexis Martin — Paris-Bet</title>
+
+  <link rel="stylesheet" href="../css/variables.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/tipster-public.css" />
+</head>
+<body>
+
+  <div id="navbar"></div>
+
+  <div class="tipster-page">
+
+    <!-- HERO -->
+    <div class="tipster-hero">
+      <div class="container">
+        <div id="tipster-hero-inner" class="tipster-hero__inner"></div>
+      </div>
+    </div>
+
+    <!-- CORPS -->
+    <div class="tipster-body">
+      <div class="container tipster-body__inner">
+
+        <!-- Colonne principale -->
+        <div class="pronos-col">
+
+          <!-- Panneau achat compact — visible uniquement sur mobile, au-dessus des filtres -->
+          <div class="buy-panel buy-panel--mobile" id="buy-panel-mobile" style="display:none">
+            <div class="buy-panel__inner" id="buy-panel-mobile-inner"></div>
+          </div>
+
+          <!-- Filtres -->
+          <div class="pronos-filters">
+            <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">Tous</button>
+            <button class="filter-btn" data-filter="pending" onclick="setFilter('pending')">⏳ En attente</button>
+            <button class="filter-btn" data-filter="won" onclick="setFilter('won')">✓ Gagnés</button>
+            <button class="filter-btn" data-filter="lost" onclick="setFilter('lost')">✕ Perdus</button>
+          </div>
+
+          <!-- Liste des pronos -->
+          <div class="pronos-list" id="pronos-list"></div>
+        </div>
+
+        <!-- Sidebar droite -->
+        <div class="tipster-sidebar">
+
+          <!-- Solde utilisateur (compact) -->
+          <div class="user-balance-card">
+            <div class="user-balance-card__top">
+              <div class="user-balance-card__label">Mon solde</div>
+              <div class="user-balance-card__amount" id="user-balance">—</div>
+              <div class="user-balance-card__pending">
+                ⏳ <span id="user-pending">—</span> en attente
+              </div>
+            </div>
+            <div class="user-balance-card__body">
+              <a href="dashboard-user.html" class="btn btn-primary btn--sm" style="width:100%;display:flex;justify-content:center">
+                + Recharger mon solde
+              </a>
+            </div>
+          </div>
+
+          <!-- Panneau achat compact — desktop, sous "à propos" -->
+          <div class="buy-panel buy-panel--desktop" id="buy-panel-desktop" style="display:none">
+            <div class="buy-panel__inner" id="buy-panel-desktop-inner"></div>
+          </div>
+
+          <!-- Infos tipster -->
+          <div class="tipster-info-card">
+            <h3>À propos du tipster</h3>
+            <div class="info-row">
+              <span class="info-row__label">Win Rate</span>
+              <span class="info-row__value green" id="info-winrate">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-row__label">Pronos publiés</span>
+              <span class="info-row__value" id="info-pronos">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-row__label">Acheteurs</span>
+              <span class="info-row__value blue" id="info-buyers">—</span>
+            </div>
+            <div class="info-row">
+              <span class="info-row__label">Bilan</span>
+              <span class="info-row__value" id="info-record">—</span>
+            </div>
+          </div>
+
+          <!-- Pay-Per-Win explication -->
+          <div class="ppw-card">
+            <div class="ppw-card__title">🏆 Pay-Per-Win</div>
+            <ul class="ppw-card__list">
+              <li>Achat débité de votre solde</li>
+              <li>Somme <strong>en attente</strong> de résultat</li>
+              <li>Gagné → tipster crédité</li>
+              <li>Perdu / Annulé → remboursé</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="../js/config.js"></script>
+  <script src="../js/components.js"></script>
+  <script src="../js/tipster-public.js"></script>
+
+</body>
+</html>

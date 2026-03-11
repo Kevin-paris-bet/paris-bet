@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paris-Bet — Mon espace</title>
+  <link rel="stylesheet" href="../css/variables.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="stylesheet" href="../css/dashboard-user.css" />
+</head>
+<body>
+
+<div class="dashboard">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <a href="../index.html" class="sidebar__logo">Paris<span>-Bet</span></a>
+
+    <div class="sidebar__user">
+      <div class="sidebar__avatar" id="sidebar-avatar">TD</div>
+      <div class="sidebar__user-info">
+        <div class="sidebar__user-name" id="sidebar-name">Thomas Dupont</div>
+        <div class="sidebar__user-role">
+          <span class="sidebar__role-badge" style="background:var(--success-pale);color:var(--success)">Acheteur</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar__nav">
+      <div class="sidebar__section-label">Menu</div>
+
+      <button class="sidebar__link" data-page="achats" onclick="navigateTo('achats')">
+        <span class="sidebar__link-icon">🛒</span> Mes achats
+      </button>
+      <button class="sidebar__link" data-page="solde" onclick="navigateTo('solde')">
+        <span class="sidebar__link-icon">💰</span> Mon solde
+      </button>
+
+      <div class="sidebar__section-label">Compte</div>
+
+      <button class="sidebar__link" data-page="parametres" onclick="navigateTo('parametres')">
+        <span class="sidebar__link-icon">⚙️</span> Paramètres
+      </button>
+      <a class="sidebar__link" href="tipster-public.html">
+        <span class="sidebar__link-icon">🔍</span> Explorer les tipsters
+      </a>
+    </nav>
+
+    <div class="sidebar__bottom">
+      <a href="../pages/auth.html" class="sidebar__link" style="color:var(--error)">
+        <span class="sidebar__link-icon">🚪</span> Se déconnecter
+      </a>
+    </div>
+  </aside>
+
+  <!-- CONTENU -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar__title" id="topbar-title">Mes achats</div>
+      <div class="topbar__right">
+        <div class="topbar__balance" id="topbar-balance">💰 —</div>
+        <button class="btn btn-primary btn--sm" onclick="navigateTo('solde')">+ Recharger</button>
+      </div>
+    </div>
+    <div class="page-content" id="page-content"></div>
+  </div>
+
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/dashboard-user.js"></script>
+</body>
+</html>

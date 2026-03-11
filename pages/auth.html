@@ -1,1 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paris-Bet — Connexion / Inscription</title>
 
+  <link rel="stylesheet" href="../css/variables.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/auth.css" />
+</head>
+<body>
+
+<div class="auth-page">
+
+  <!-- ══════════════════════════════
+       COLONNE GAUCHE — Visuelle
+  ══════════════════════════════ -->
+  <div class="auth-left">
+
+    <a href="../index.html" class="auth-left__logo">
+      Paris<span>-Bet</span>
+    </a>
+
+    <div class="auth-left__middle">
+      <h2>La plateforme<br><span>des tipsters</span><br>sérieux.</h2>
+      <p>Publiez vos pronostics, construisez votre audience et encaissez — vos clients ne paient que si vous gagnez.</p>
+
+      <div class="auth-testimonial">
+        <div class="auth-testimonial__stars">★★★★★</div>
+        <p class="auth-testimonial__text">
+          "En 3 semaines j'ai déjà 120 clients actifs. Le Pay-Per-Win fait toute la différence, les gens font confiance beaucoup plus facilement !"
+        </p>
+        <div class="auth-testimonial__author">
+          <div class="auth-testimonial__avatar">M</div>
+          <div>
+            <div class="auth-testimonial__name">Maxime R.</div>
+            <div class="auth-testimonial__role">Tipster ⚽ Ligue 1</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="auth-left__stats">
+      <div>
+        <div class="auth-stat__num">1 200+</div>
+        <div class="auth-stat__label">Tipsters</div>
+      </div>
+      <div>
+        <div class="auth-stat__num">0 €</div>
+        <div class="auth-stat__label">Pour démarrer</div>
+      </div>
+      <div>
+        <div class="auth-stat__num">Lundi</div>
+        <div class="auth-stat__label">Virements</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════
+       COLONNE DROITE — Formulaire
+  ══════════════════════════════ -->
+  <div class="auth-right">
+    <div class="auth-box">
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab" data-tab="login"    onclick="switchTab('login')">Se connecter</button>
+        <button class="auth-tab" data-tab="register" onclick="switchTab('register')">S'inscrire</button>
+      </div>
+
+      <!-- ══ FORMULAIRE CONNEXION ══ -->
+      <div class="auth-form" id="form-login">
+
+        <div class="auth-form__title">Bon retour 👋</div>
+        <p class="auth-form__sub">Connectez-vous à votre espace Paris-Bet</p>
+
+        <div class="form-group">
+          <label for="login-email">Adresse email</label>
+          <div class="input-wrap">
+            <span class="input-icon">✉️</span>
+            <input
+              class="input" type="email" id="login-email"
+              placeholder="vous@exemple.com"
+              oninput="validateEmail('login-email', 'login-email-err')"
+            />
+          </div>
+          <div class="field-error" id="login-email-err">Adresse email invalide</div>
+        </div>
+
+        <div class="form-group">
+          <label for="login-pw">Mot de passe</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input
+              class="input" type="password" id="login-pw"
+              placeholder="Votre mot de passe"
+            />
+            <button class="pw-toggle" type="button" onclick="togglePw('login-pw', this)">👁</button>
+          </div>
+        </div>
+
+        <div class="forgot-link">
+          <a href="#">Mot de passe oublié ?</a>
+        </div>
+
+        <button class="btn-submit" id="btn-login" onclick="handleLogin()">
+          <span class="btn-text">Se connecter</span>
+          <span class="spinner"></span>
+        </button>
+
+        <div class="auth-divider">ou continuer avec</div>
+
+        <button class="btn-google" onclick="handleGoogleAuth()">
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.1 0 5.8 1.1 8 2.9l6-6C34.1 3.1 29.3 1 24 1 15.1 1 7.5 6.2 4 13.6l7 5.4C12.8 13.2 18 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.7-2.1 5-4.4 6.5l7 5.4c4.1-3.8 6.5-9.4 6.5-15.9z"/>
+            <path fill="#FBBC05" d="M11 28.9c-.5-1.5-.8-3.1-.8-4.9s.3-3.4.8-4.9L4 13.6C2.1 17.2 1 21.5 1 24s1.1 6.8 3 10.4l7-5.5z"/>
+            <path fill="#34A853" d="M24 47c5.4 0 9.9-1.8 13.2-4.8l-7-5.4c-1.8 1.2-4.1 1.9-6.2 1.9-6 0-11.1-4-12.9-9.4l-7 5.4C7.4 41.7 15.1 47 24 47z"/>
+          </svg>
+          Continuer avec Google
+        </button>
+
+      </div>
+
+      <!-- Succès connexion -->
+      <div class="auth-success" id="login-success">
+        <div class="auth-success__icon">✓</div>
+        <h3>Connexion réussie !</h3>
+        <p>Vous allez être redirigé vers votre tableau de bord dans quelques instants…</p>
+        <a href="dashboard-user.html" class="btn btn-primary">Accéder à mon tableau de bord →</a>
+      </div>
+
+      <!-- ══ FORMULAIRE INSCRIPTION ══ -->
+      <div class="auth-form" id="form-register">
+
+        <div class="auth-form__title">Créer un compte 🚀</div>
+        <p class="auth-form__sub">Gratuit · Sans carte bancaire requise</p>
+
+        <!-- Choix du rôle -->
+        <div class="role-selector">
+          <div class="role-option selected" data-role="user" onclick="selectRole('user')">
+            <div class="role-option__icon">🎯</div>
+            <div class="role-option__label">Acheteur</div>
+            <div class="role-option__desc">J'achète des pronostics</div>
+          </div>
+          <div class="role-option" data-role="tipster" onclick="selectRole('tipster')">
+            <div class="role-option__icon">📊</div>
+            <div class="role-option__label">Tipster</div>
+            <div class="role-option__desc">Je vends mes pronostics</div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="reg-firstname">Prénom</label>
+            <div class="input-wrap">
+              <span class="input-icon">👤</span>
+              <input
+                class="input" type="text" id="reg-firstname"
+                placeholder="Prénom"
+                oninput="validateNotEmpty('reg-firstname', 'reg-fn-err')"
+              />
+            </div>
+            <div class="field-error" id="reg-fn-err">Champ requis</div>
+          </div>
+          <div class="form-group">
+            <label for="reg-lastname">Nom</label>
+            <div class="input-wrap">
+              <span class="input-icon">👤</span>
+              <input
+                class="input" type="text" id="reg-lastname"
+                placeholder="Nom"
+                oninput="validateNotEmpty('reg-lastname', 'reg-ln-err')"
+              />
+            </div>
+            <div class="field-error" id="reg-ln-err">Champ requis</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-email">Adresse email</label>
+          <div class="input-wrap">
+            <span class="input-icon">✉️</span>
+            <input
+              class="input" type="email" id="reg-email"
+              placeholder="vous@exemple.com"
+              oninput="validateEmail('reg-email', 'reg-email-err')"
+            />
+          </div>
+          <div class="field-error" id="reg-email-err">Adresse email invalide</div>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-pw">Mot de passe</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input
+              class="input" type="password" id="reg-pw"
+              placeholder="Minimum 8 caractères"
+              oninput="checkPasswordStrength('reg-pw')"
+            />
+            <button class="pw-toggle" type="button" onclick="togglePw('reg-pw', this)">👁</button>
+          </div>
+          <!-- Jauge force du mot de passe -->
+          <div class="pw-strength" id="pw-strength">
+            <div class="pw-bars">
+              <div class="pw-bar"></div>
+              <div class="pw-bar"></div>
+              <div class="pw-bar"></div>
+              <div class="pw-bar"></div>
+            </div>
+            <div class="pw-strength__label" id="pw-label">Trop court</div>
+          </div>
+        </div>
+
+        <div class="form-check">
+          <input type="checkbox" id="reg-terms" />
+          <label for="reg-terms">
+            J'accepte les <a href="#">conditions d'utilisation</a> et la
+            <a href="#">politique de confidentialité</a> de Paris-Bet
+          </label>
+        </div>
+
+        <button class="btn-submit" id="btn-register" onclick="handleRegister()">
+          <span class="btn-text">Créer mon compte gratuitement →</span>
+          <span class="spinner"></span>
+        </button>
+
+        <div class="auth-divider">ou s'inscrire avec</div>
+
+        <button class="btn-google" onclick="handleGoogleAuth()">
+          <svg width="18" height="18" viewBox="0 0 48 48">
+            <path fill="#EA4335" d="M24 9.5c3.1 0 5.8 1.1 8 2.9l6-6C34.1 3.1 29.3 1 24 1 15.1 1 7.5 6.2 4 13.6l7 5.4C12.8 13.2 18 9.5 24 9.5z"/>
+            <path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.7-2.1 5-4.4 6.5l7 5.4c4.1-3.8 6.5-9.4 6.5-15.9z"/>
+            <path fill="#FBBC05" d="M11 28.9c-.5-1.5-.8-3.1-.8-4.9s.3-3.4.8-4.9L4 13.6C2.1 17.2 1 21.5 1 24s1.1 6.8 3 10.4l7-5.5z"/>
+            <path fill="#34A853" d="M24 47c5.4 0 9.9-1.8 13.2-4.8l-7-5.4c-1.8 1.2-4.1 1.9-6.2 1.9-6 0-11.1-4-12.9-9.4l-7 5.4C7.4 41.7 15.1 47 24 47z"/>
+          </svg>
+          Continuer avec Google
+        </button>
+
+      </div>
+
+      <!-- Succès inscription -->
+      <div class="auth-success" id="register-success">
+        <div class="auth-success__icon">🎉</div>
+        <h3>Compte créé !</h3>
+        <p>
+          Un email de confirmation vous a été envoyé.<br>
+          Vérifiez votre boîte mail pour activer votre compte.
+        </p>
+        <a href="dashboard-user.html" class="btn btn-primary">Accéder à mon tableau de bord →</a>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- Scripts -->
+<script src="../js/config.js"></script>
+<script src="../js/auth.js"></script>
+
+</body>
+</html>

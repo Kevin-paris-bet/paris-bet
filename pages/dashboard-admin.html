@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Paris-Bet — Panel Admin</title>
+  <link rel="stylesheet" href="../css/variables.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="stylesheet" href="../css/dashboard-admin.css" />
+</head>
+<body>
+
+<div class="dashboard">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <a href="../index.html" class="sidebar__logo">Paris<span>-Bet</span></a>
+
+    <div class="sidebar__user">
+      <div class="sidebar__avatar" id="sidebar-avatar" style="background:var(--error)">AD</div>
+      <div class="sidebar__user-info">
+        <div class="sidebar__user-name">Administration</div>
+        <div class="sidebar__user-role">
+          <span class="sidebar__role-badge" style="background:var(--error-pale);color:var(--error)">Admin</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar__nav">
+      <div class="sidebar__section-label">Tableau de bord</div>
+      <button class="sidebar__link" data-page="overview" onclick="navigateTo('overview')">
+        <span class="sidebar__link-icon">🏠</span> Vue d'ensemble
+        <span class="sidebar__link-badge red" id="badge-urgent">3</span>
+      </button>
+
+      <div class="sidebar__section-label">Gestion</div>
+      <button class="sidebar__link" data-page="pronos" onclick="navigateTo('pronos')">
+        <span class="sidebar__link-icon">⏳</span> Valider résultats
+        <span class="sidebar__link-badge" id="badge-pronos">4</span>
+      </button>
+      <button class="sidebar__link" data-page="tipsters" onclick="navigateTo('tipsters')">
+        <span class="sidebar__link-icon">📊</span> Tipsters
+      </button>
+      <button class="sidebar__link" data-page="users" onclick="navigateTo('users')">
+        <span class="sidebar__link-icon">👥</span> Utilisateurs
+      </button>
+      <button class="sidebar__link" data-page="virements" onclick="navigateTo('virements')">
+        <span class="sidebar__link-icon">💸</span> Virements
+        <span class="sidebar__link-badge" id="badge-vir">2</span>
+      </button>
+    </nav>
+
+    <div class="sidebar__bottom">
+      <a href="../pages/auth.html" class="sidebar__link" style="color:var(--error)">
+        <span class="sidebar__link-icon">🚪</span> Se déconnecter
+      </a>
+    </div>
+  </aside>
+
+  <!-- ── CONTENU ── -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar__title" id="topbar-title">Vue d'ensemble</div>
+      <div class="topbar__right">
+        <div class="topbar__balance" style="background:var(--error-pale);color:var(--error);border-color:rgba(255,61,61,0.2)">
+          🔐 Mode Admin
+        </div>
+      </div>
+    </div>
+    <div class="page-content" id="page-content"></div>
+  </div>
+
+</div>
+
+<script src="../js/config.js"></script>
+<script src="../js/dashboard-admin.js"></script>
+</body>
+</html>
