@@ -42,10 +42,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   const user = await requireAuth(['user', 'admin']);
   if (!user) return;
 
-  MOCK_USER_PROFILE.firstName = user.profile.first_name;
-  MOCK_USER_PROFILE.lastName  = user.profile.last_name;
-  MOCK_USER_PROFILE.balance   = parseFloat(user.profile.balance) || 0;
-  MOCK_USER_PROFILE.pending   = parseFloat(user.profile.pending) || 0;
+  // Remplacer les données de démo par le vrai profil
+  MOCK_USER.firstName = user.profile.first_name;
+  MOCK_USER.lastName  = user.profile.last_name;
+  MOCK_USER.balance   = parseFloat(user.profile.balance) || 0;
+  MOCK_USER.pending   = parseFloat(user.profile.pending) || 0;
 
   renderSidebar();
   renderTopbar();
