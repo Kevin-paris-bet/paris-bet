@@ -6,13 +6,27 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
+// Dire à Vercel de ne PAS parser le body (Stripe a besoin du raw body)
+export const config = {
+  api: { bodyParser: false }
+};
+
+function getRawBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    req.on('data', chunk => chunks.push(chunk));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
+    req.on('error', reject);
+  });
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     return res.status(405).end();
   }
 
   const sig     = req.headers['stripe-signature'];
-  const payload = req.body;
+  const payload = await getRawBody(req);
 
   let event;
   try {
