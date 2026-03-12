@@ -34,7 +34,7 @@ const MOCK_TRANSACTIONS = [
 ];
 
 // ── État ──────────────────────────────────────────────────────
-const userState = { activePage:'achats', achatsFilter:'all' };
+const userState = { activePage:'achats', achatsFilter:'all', realAchats:[], availablePronos:[] };
 
 // ── Init ──────────────────────────────────────────────────────
 // ── Init ──────────────────────────────────────────────────────
@@ -63,6 +63,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   const topbarBalance = document.getElementById('topbar-balance');
   if (topbarBalance) topbarBalance.textContent = '🔥 ' + formatEuros(MOCK_USER.balance);
 
+  // Charger les vrais achats depuis Supabase
+  const { data: achats } = await sb
+    .from('purchases')
+    .select('*, pronos(match, sport, match_date, prediction, odds, tipster_id, profiles(first_name, last_name))')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (achats && achats.length > 0) {
+    userState.realAchats = achats.map(a => ({
+      id:       a.id,
+      match:    a.pronos?.match || '—',
+      sport:    a.pronos?.sport || '—',
+      date:     a.pronos?.match_date || '—',
+      tipster:  a.pronos?.profiles ? a.pronos.profiles.first_name + ' ' + a.pronos.profiles.last_name : '—',
+      price:    parseFloat(a.amount) || 0,
+      status:   a.status || 'pending',
+      prediction: a.pronos?.prediction || '',
+      odds:     a.pronos?.odds || '',
+      pronoId:  a.prono_id,
+    }));
+  } else {
+    userState.realAchats = [];
+  }
+
+  // Charger les pronos disponibles à l'achat
+  const { data: pronos } = await sb
+    .from('pronos')
+    .select('*, profiles(first_name, last_name)')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  userState.availablePronos = pronos || [];
+
   renderSidebar();
   renderTopbar();
 
@@ -88,13 +121,14 @@ function navigateTo(page) {
   document.querySelectorAll('.sidebar__link').forEach(l =>
     l.classList.toggle('active', l.dataset.page === page)
   );
-  const titles = { achats:'Mes achats', solde:'Mon solde & historique', parametres:'Paramètres' };
+  const titles = { achats:'Mes achats', solde:'Mon solde & historique', parametres:'Paramètres', explorer:'Explorer les tipsters' };
   document.getElementById('topbar-title').textContent = titles[page] || '';
   const el = document.getElementById('page-content');
   el.innerHTML = '';
   if (page === 'achats')     renderPageAchats(el);
   if (page === 'solde')      renderPageSolde(el);
   if (page === 'parametres') renderPageParametres(el);
+  if (page === 'explorer')   renderPageExplorer(el);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -102,18 +136,20 @@ function navigateTo(page) {
 // ══════════════════════════════════════════════════════════════
 function renderPageAchats(container) {
   const u   = MOCK_USER;
-  const won = MOCK_ACHATS.filter(a => a.status === CONFIG.betStatus.WON).length;
-  const lost= MOCK_ACHATS.filter(a => a.status === CONFIG.betStatus.LOST).length;
-  const pend= MOCK_ACHATS.filter(a => a.status === CONFIG.betStatus.PENDING).length;
-  const canc= MOCK_ACHATS.filter(a => a.status === CONFIG.betStatus.CANCELLED).length;
+  const achats = userState.realAchats;
+  const won = achats.filter(a => a.status === 'won').length;
+  const lost= achats.filter(a => a.status === 'lost').length;
+  const pend= achats.filter(a => a.status === 'pending').length;
+  const canc= achats.filter(a => a.status === 'cancelled').length;
   const winRate = won + lost > 0 ? Math.round(won / (won + lost) * 100) : 0;
+  const totalSpent = achats.reduce((s,a) => s + a.price, 0);
 
   container.innerHTML = `
     <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
       <div class="stat-card stat-card--blue">
         <div class="stat-card__label">🛒 Total acheté</div>
-        <div class="stat-card__value">${formatEuros(u.totalSpent)}</div>
-        <div class="stat-card__sub">${MOCK_ACHATS.length} pronostic(s)</div>
+        <div class="stat-card__value">${formatEuros(totalSpent)}</div>
+        <div class="stat-card__sub">${achats.length} pronostic(s)</div>
       </div>
       <div class="stat-card">
         <div class="stat-card__label">↩ Remboursé</div>
@@ -155,7 +191,7 @@ function setAchatsFilter(f) {
 }
 
 function renderAchatsList() {
-  let list = MOCK_ACHATS;
+  let list = userState.realAchats;
   if (userState.achatsFilter !== 'all') list = list.filter(a => a.status === userState.achatsFilter);
   if (!list.length) return `<div class="empty-state"><div class="empty-state__icon">🔍</div><h3>Aucun achat ici</h3><p>Essayez un autre filtre.</p></div>`;
 
@@ -357,6 +393,120 @@ function savePassword() {
   if (!o || !n) { showToast('Remplissez les deux champs.', 'error'); return; }
   if (n.length < 8) { showToast('Minimum 8 caractères.', 'error'); return; }
   showToast('Mot de passe mis à jour ✓', 'success');
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE — EXPLORER LES TIPSTERS / ACHETER UN PRONO
+// ══════════════════════════════════════════════════════════════
+function renderPageExplorer(container) {
+  const pronos = userState.availablePronos;
+  const alreadyBought = new Set(userState.realAchats.map(a => a.pronoId));
+
+  if (!pronos.length) {
+    container.innerHTML = `
+      <div class="section-header"><div><h2>Explorer les pronos</h2><p>Pronos disponibles à l'achat</p></div></div>
+      <div class="empty-state"><div class="empty-state__icon">🔍</div><h3>Aucun prono disponible</h3><p>Revenez plus tard !</p></div>`;
+    return;
+  }
+
+  container.innerHTML = `
+    <div class="section-header">
+      <div><h2>Explorer les pronos</h2><p>${pronos.length} prono(s) disponible(s)</p></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:var(--space-md)">
+      ${pronos.map(p => {
+        const tipsterName = p.profiles ? p.profiles.first_name + ' ' + p.profiles.last_name : '—';
+        const bought = alreadyBought.has(p.id);
+        return `
+        <div class="achat-card" style="border-left-color:var(--blue)">
+          <div class="achat-card__header">
+            <div>
+              <div class="achat-card__match">${p.match}</div>
+              <div class="achat-card__meta">${p.sport} · ${p.match_date || '—'} · par <strong>${tipsterName}</strong></div>
+            </div>
+            <div class="achat-card__right">
+              <div class="achat-card__price">${p.price} €</div>
+              ${bought
+                ? `<span class="badge badge-won">✓ Acheté</span>`
+                : `<button class="btn btn-primary" style="font-size:0.85rem;padding:8px 16px" onclick="buyProno('${p.id}', ${p.price}, '${p.match.replace(/'/g,"\'")}')">Acheter</button>`
+              }
+            </div>
+          </div>
+          ${bought ? `<div style="margin-top:8px;padding:10px;background:var(--blue-pale);border-radius:var(--radius-sm);font-size:0.9rem">
+            <strong>Pronostic :</strong> ${p.prediction || '—'} · <strong>Cote :</strong> ${p.odds || '—'}
+          </div>` : `<div style="margin-top:8px;font-size:0.85rem;color:var(--text-muted)">🔒 Achetez pour voir le pronostic</div>`}
+        </div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+async function buyProno(pronoId, price, matchName) {
+  if (MOCK_USER.balance < price) {
+    showToast('Solde insuffisant. Rechargez votre compte !', 'error');
+    return;
+  }
+  if (!confirm('Acheter le prono "' + matchName + '" pour ' + price + ' € ?')) return;
+
+  try {
+    const user = await getCurrentUser();
+
+    // Vérifier qu'il n'a pas déjà acheté
+    const { data: existing } = await sb
+      .from('purchases')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('prono_id', pronoId)
+      .single();
+
+    if (existing) { showToast('Vous avez déjà acheté ce prono.', 'info'); return; }
+
+    // Débiter le solde
+    const newBalance = MOCK_USER.balance - price;
+    const { error: balErr } = await sb
+      .from('profiles')
+      .update({ balance: newBalance })
+      .eq('id', user.id);
+
+    if (balErr) throw balErr;
+
+    // Créer l'achat
+    const { error: purchErr } = await sb
+      .from('purchases')
+      .insert({ user_id: user.id, prono_id: pronoId, amount: price, status: 'pending' });
+
+    if (purchErr) throw purchErr;
+
+    // Incrémenter le nb d'acheteurs sur le prono
+    await sb.rpc('increment_buyers', { prono_id: pronoId }).catch(() => {});
+
+    // Mettre à jour l'état local
+    MOCK_USER.balance = newBalance;
+    const topbarBalance = document.getElementById('topbar-balance');
+    if (topbarBalance) topbarBalance.textContent = '🔥 ' + formatEuros(newBalance);
+
+    // Recharger les achats
+    const { data: achats } = await sb
+      .from('purchases')
+      .select('*, pronos(match, sport, match_date, prediction, odds, tipster_id, profiles(first_name, last_name))')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    userState.realAchats = (achats || []).map(a => ({
+      id: a.id, match: a.pronos?.match || '—', sport: a.pronos?.sport || '—',
+      date: a.pronos?.match_date || '—',
+      tipster: a.pronos?.profiles ? a.pronos.profiles.first_name + ' ' + a.pronos.profiles.last_name : '—',
+      price: parseFloat(a.amount) || 0, status: a.status || 'pending',
+      prediction: a.pronos?.prediction || '', odds: a.pronos?.odds || '',
+      pronoId: a.prono_id,
+    }));
+
+    showToast('Prono acheté ! Bonne chance 🎯', 'success');
+    navigateTo('explorer');
+
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
 }
 
 // ── Utilitaires ───────────────────────────────────────────────
