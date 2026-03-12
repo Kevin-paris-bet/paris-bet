@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     for (const achat of achats) {
       const { data: p } = await sb
         .from('pronos')
-        .select('id, match, sport, match_date, prediction, odds')
+        .select('id, "match", sport, match_date, prediction, odds')
         .eq('id', achat.prono_id)
         .single();
       if (p) pronosData.push(p);
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const p = pronosMap[a.prono_id] || {};
       return {
         id:         a.id,
-        match:      p.match || '—',
+        match:      p["match"] || "—",
         sport:      p.sport || '—',
         date:       p.match_date || '—',
         tipster:    '—',
@@ -512,12 +512,12 @@ async function buyProno(pronoId, price, matchName) {
 
     if (achats && achats.length > 0) {
       const pronoIds = achats.map(a => a.prono_id);
-      const { data: pronosData } = await sb.from('pronos').select('id, match, sport, match_date, prediction, odds').in('id', pronoIds);
+      const { data: pronosData } = await sb.from('pronos').select('id, "match", sport, match_date, prediction, odds').in('id', pronoIds);
       const pronosMap = {};
       (pronosData || []).forEach(p => pronosMap[p.id] = p);
       userState.realAchats = achats.map(a => {
         const p = pronosMap[a.prono_id] || {};
-        return { id: a.id, match: p.match||'—', sport: p.sport||'—', date: p.match_date||'—', tipster:'—', price: parseFloat(a.amount)||0, status: a.status||'pending', prediction: p.prediction||'', odds: p.odds||'', pronoId: a.prono_id };
+        return { id: a.id, match: p["match"]||"—", sport: p.sport||'—', date: p.match_date||'—', tipster:'—', price: parseFloat(a.amount)||0, status: a.status||'pending', prediction: p.prediction||'', odds: p.odds||'', pronoId: a.prono_id };
       });
     } else { userState.realAchats = []; }
 
