@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Charger les vrais pronos depuis Supabase
   const { data: pronos } = await sb
     .from('pronos')
-    .select('prono_id, game, sport, match_date, prediction, odds, price, content, status, buyers, tipster_id, created_at')
+    .select('id, game, sport, match_date, prediction, odds, price, content, status, buyers, tipster_id, created_at')
     .eq('tipster_id', user.id)
     .order('created_at', { ascending: false });
 
@@ -224,12 +224,12 @@ function renderPronoRow(p) {
         <button
           class="btn-icon"
           title="Voir le pronostic"
-          onclick="viewProno(${p.prono_id})"
+          onclick="viewProno(${p.id})"
         >👁</button>
         <button
           class="btn-icon danger"
           title="${canDelete ? 'Supprimer' : 'Impossible : déjà acheté'}"
-          onclick="deleteProno(${p.prono_id})"
+          onclick="deleteProno(${p.id})"
           ${canDelete ? '' : 'disabled'}
         >🗑</button>
       </div>
@@ -300,23 +300,23 @@ async function submitProno() {
 
 // ── Voir le contenu d'un prono ────────────────────────────────
 function viewProno(id) {
-  const p = state.pronos.find(p => p.prono_id === id);
+  const p = state.pronos.find(p => p.id === id);
   if (!p) return;
   alert(`📋 Contenu du pronostic\n\n${p.game}\n\n"${p.content || '(brouillon — contenu vide)'}"`);
 }
 
 // ── Supprimer un prono (seulement si 0 acheteur) ───────────────
 async function deleteProno(id) {
-  const p = state.pronos.find(p => p.prono_id === id);
+  const p = state.pronos.find(p => p.id === id);
   if (!p || p.locked || p.buyers > 0) {
     showToast('Impossible de supprimer ce pronostic.', 'error'); return;
   }
   if (!confirm(`Supprimer "${p.game}" ?`)) return;
 
   try {
-    const { error } = await sb.from('pronos').delete().eq('prono_id', id);
+    const { error } = await sb.from('pronos').delete().eq('id', id);
     if (error) throw error;
-    state.pronos = state.pronos.filter(p => p.prono_id !== id);
+    state.pronos = state.pronos.filter(p => p.id !== id);
     navigateTo('pronos');
     showToast('Pronostic supprimé.', 'success');
   } catch (err) {

@@ -71,14 +71,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     .order('created_at', { ascending: false });
 
   if (achats && achats.length > 0) {
-    // Charger tous les pronos et filtrer côté client
-    const { data: tousLesPronos } = await sb
-      .from('pronos')
-      .select('prono_id, game, sport, match_date, prediction, odds');
-
+    // Charger les pronos via fetch direct
     const pronoIds = new Set(achats.map(a => a.prono_id));
     const pronosMap = {};
-    (tousLesPronos || []).filter(p => pronoIds.has(p.prono_id)).forEach(p => pronosMap[p.prono_id] = p);
+    try {
+      const resp = await fetch(
+        'https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos?select=id,game,sport,match_date,prediction,odds',
+        { headers: {
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI'
+        }}
+      );
+      const tousLesPronos = await resp.json();
+      (tousLesPronos || []).filter(p => pronoIds.has(p.id)).forEach(p => pronosMap[p.id] = p);
+    } catch(e) { console.error('Erreur fetch pronos:', e); }
 
     userState.realAchats = achats.map(a => {
       const p = pronosMap[a.prono_id] || {};
@@ -99,14 +105,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     userState.realAchats = [];
   }
 
-  // Charger les pronos disponibles à l'achat
-  const { data: pronos } = await sb
-    .from('pronos')
-    .select('*, profiles(first_name, last_name)')
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false });
-
-  userState.availablePronos = pronos || [];
+  // Charger les pronos disponibles via fetch direct
+  try {
+    const resp2 = await fetch(
+      'https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos?select=id,game,sport,match_date,prediction,odds,price,status,tipster_id&status=eq.pending&order=created_at.desc',
+      { headers: {
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI'
+      }}
+    );
+    const pronos = await resp2.json();
+    // Charger les profils tipsters
+    const tipsterIds = [...new Set((pronos||[]).map(p => p.tipster_id).filter(Boolean))];
+    let profilesMap = {};
+    if (tipsterIds.length > 0) {
+      const resp3 = await fetch(
+        'https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles_with_email?select=id,first_name,last_name',
+        { headers: {
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI',
+          'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI'
+        }}
+      );
+      const profiles = await resp3.json();
+      (profiles||[]).forEach(p => profilesMap[p.id] = p.first_name + ' ' + p.last_name);
+    }
+    userState.availablePronos = (pronos||[]).map(p => ({...p, tipsterName: profilesMap[p.tipster_id] || '—'}));
+  } catch(e) {
+    console.error('Erreur fetch pronos dispo:', e);
+    userState.availablePronos = [];
+  }
 
   renderSidebar();
   renderTopbar();
@@ -427,8 +454,8 @@ function renderPageExplorer(container) {
     </div>
     <div style="display:flex;flex-direction:column;gap:var(--space-md)">
       ${pronos.map(p => {
-        const tipsterName = p.profiles ? p.profiles.first_name + ' ' + p.profiles.last_name : '—';
-        const bought = alreadyBought.has(p.prono_id);
+        const tipsterName = p.tipsterName || '—';
+        const bought = alreadyBought.has(p.id);
         return `
         <div class="achat-card" style="border-left-color:var(--blue)">
           <div class="achat-card__header">
@@ -440,7 +467,7 @@ function renderPageExplorer(container) {
               <div class="achat-card__price">${p.price} €</div>
               ${bought
                 ? `<span class="badge badge-won">✓ Acheté</span>`
-                : `<button class="btn btn-primary" style="font-size:0.85rem;padding:8px 16px" onclick="buyProno('${p.prono_id}', ${p.price}, '${p.game.replace(/'/g,"\'")}')">Acheter</button>`
+                : `<button class="btn btn-primary" style="font-size:0.85rem;padding:8px 16px" onclick="buyProno('${p.id}', ${p.price}, '${p.game.replace(/'/g,"\'")}')">Acheter</button>`
               }
             </div>
           </div>
@@ -506,9 +533,9 @@ async function buyProno(pronoId, price, matchName) {
 
     if (achats && achats.length > 0) {
       const pronoIds = achats.map(a => a.prono_id);
-      const { data: pronosData } = await sb.from('pronos').select('prono_id, game, sport, match_date, prediction, odds').in('id', pronoIds);
+      const { data: pronosData } = await sb.from('pronos').select('id, game, sport, match_date, prediction, odds').in('id', pronoIds);
       const pronosMap = {};
-      (pronosData || []).forEach(p => pronosMap[p.prono_id] = p);
+      (pronosData || []).forEach(p => pronosMap[p.id] = p);
       userState.realAchats = achats.map(a => {
         const p = pronosMap[a.prono_id] || {};
         return { id: a.id, game: p.game||"—", sport: p.sport||'—', date: p.match_date||'—', tipster:'—', price: parseFloat(a.amount)||0, status: a.status||'pending', prediction: p.prediction||'', odds: p.odds||'', pronoId: a.prono_id };
