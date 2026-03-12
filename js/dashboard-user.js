@@ -59,6 +59,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (sidebarAvatar) sidebarAvatar.textContent  = initials;
   if (topbarName)    topbarName.textContent     = fullName;
 
+  // Mettre à jour le solde dans la topbar
+  const topbarBalance = document.getElementById('topbar-balance');
+  if (topbarBalance) topbarBalance.textContent = '🔥 ' + formatEuros(MOCK_USER.balance);
+
   renderSidebar();
   renderTopbar();
 
