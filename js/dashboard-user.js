@@ -75,15 +75,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pronoIds = new Set(achats.map(a => a.prono_id));
     const pronosMap = {};
     try {
-      const resp = await fetch(
-        'https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos?select=id,game,sport,match_date,prediction,odds',
-        { headers: {
+      const url = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
+      url.searchParams.set('select', 'id,game,sport,match_date,prediction,odds');
+      const resp = await fetch(url.toString(), {
+        headers: {
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI',
           'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI'
-        }}
-      );
+        }
+      });
       const tousLesPronos = await resp.json();
-      (tousLesPronos || []).filter(p => pronoIds.has(p.id)).forEach(p => pronosMap[p.id] = p);
+      if (Array.isArray(tousLesPronos)) {
+        tousLesPronos.filter(p => pronoIds.has(p.id)).forEach(p => pronosMap[p.id] = p);
+      }
     } catch(e) { console.error('Erreur fetch pronos:', e); }
 
     userState.realAchats = achats.map(a => {
@@ -107,8 +110,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Charger les pronos disponibles via fetch direct
   try {
-    const resp2 = await fetch(
-      'https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos?select=id,game,sport,match_date,prediction,odds,price,status,tipster_id&status=eq.pending&order=created_at.desc',
+    const url2 = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
+    url2.searchParams.set('select', 'id,game,sport,match_date,prediction,odds,price,status,tipster_id');
+    url2.searchParams.set('status', 'eq.pending');
+    url2.searchParams.set('order', 'created_at.desc');
+    const resp2 = await fetch(url2.toString(),
       { headers: {
         'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI',
         'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI'
