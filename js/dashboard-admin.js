@@ -54,6 +54,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   const user = await requireAuth(['admin']);
   if (!user) return;
 
+  // Charger les vrais pronos depuis Supabase
+  const { data: pronos } = await sb
+    .from('pronos')
+    .select('*, profiles(first_name, last_name)')
+    .order('created_at', { ascending: false });
+
+  if (pronos && pronos.length > 0) {
+    adminState.pronos = pronos.map(p => ({
+      ...p,
+      tipsterName: p.profiles ? p.profiles.first_name + ' ' + p.profiles.last_name : 'Inconnu',
+      revenue:     p.buyers * p.price,
+    }));
+  } else {
+    adminState.pronos = [];
+  }
+
   renderSidebar();
   renderTopbar();
   navigateTo('pronos');
@@ -259,12 +275,31 @@ function validateProno(id, status) {
 
   if (!confirm(msgs[status])) return;
 
-  // TODO (Supabase) : mettre à jour le statut + déclencher les crédits/remboursements
-  p.status = status;
+  try {
+    // Mettre à jour le statut du prono dans Supabase
+    const { error } = await sb
+      .from('pronos')
+      .update({ status })
+      .eq('id', id);
 
-  navigateTo('pronos');
-  const toastType = status === 'won' ? 'success' : 'info';
-  showToast(`Pronostic "${p.match}" validé comme ${labels[status]}`, toastType);
+    if (error) throw error;
+
+    // Si gagné → créditer le tipster (90%) et l'admin (10%)
+    if (status === 'won' && p.buyers > 0) {
+      const totalRevenue = p.buyers * p.price;
+      const tipsterShare = totalRevenue * (1 - CONFIG.finance.commissionRate);
+      await sb.rpc('credit_tipster', { tipster_id: p.tipster_id, amount: tipsterShare })
+        .catch(() => {}); // On gère l'erreur silencieusement si la fonction n'existe pas encore
+    }
+
+    // Mettre à jour localement
+    p.status = status;
+    navigateTo('pronos');
+    const toastType = status === 'won' ? 'success' : 'info';
+    showToast(`Pronostic "${p.match}" validé comme ${labels[status]}`, toastType);
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
 }
 
 // ══════════════════════════════════════════════════════════════

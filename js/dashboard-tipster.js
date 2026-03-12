@@ -89,6 +89,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   MOCK_TIPSTER.balance   = parseFloat(user.profile.balance) || 0;
   MOCK_TIPSTER.pending   = parseFloat(user.profile.pending) || 0;
 
+  // Charger les vrais pronos depuis Supabase
+  const { data: pronos } = await sb
+    .from('pronos')
+    .select('*')
+    .eq('tipster_id', user.id)
+    .order('created_at', { ascending: false });
+
+  if (pronos && pronos.length > 0) {
+    state.pronos = pronos;
+  } else {
+    state.pronos = []; // Pas de données de démo
+  }
+
   renderSidebar();
   renderTopbar();
   navigateTo('pronos');
@@ -245,25 +258,36 @@ function submitProno() {
     showToast('Le prix minimum est 1 €.', 'error'); return;
   }
 
-  // Créer le prono
-  const newProno = {
-    id:      Date.now(),
-    match,
-    sport,
-    date:    `${date}${time ? ' · ' + time : ''}`,
-    price,
-    buyers:  0,
-    status:  CONFIG.betStatus.PENDING,
-    content,
-    locked:  true, // Immédiatement verrouillé à la publication
-  };
+  const btn = document.getElementById('btn-submit-prono');
+  btn.disabled = true;
+  btn.textContent = '⏳ Publication…';
 
-  // TODO (Supabase) : await sb.from('pronos').insert([newProno])
-  state.pronos.unshift(newProno);
+  try {
+    const user = await getCurrentUser();
+    const { data, error } = await sb.from('pronos').insert([{
+      tipster_id: user.id,
+      match,
+      sport,
+      date:    `${date}${time ? ' · ' + time : ''}`,
+      price,
+      buyers:  0,
+      status:  CONFIG.betStatus.PENDING,
+      content,
+      locked:  true,
+    }]).select().single();
 
-  closeModal();
-  navigateTo('pronos');
-  showToast('Pronostic publié ! Il est maintenant verrouillé. 🔒', 'success');
+    if (error) throw error;
+
+    state.pronos.unshift(data);
+    closeModal();
+    navigateTo('pronos');
+    showToast('Pronostic publié ! Il est maintenant verrouillé. 🔒', 'success');
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Publier et verrouiller 🔒';
+  }
 }
 
 // ── Voir le contenu d'un prono ────────────────────────────────
@@ -281,10 +305,15 @@ function deleteProno(id) {
   }
   if (!confirm(`Supprimer "${p.match}" ?`)) return;
 
-  // TODO (Supabase) : await sb.from('pronos').delete().eq('id', id)
-  state.pronos = state.pronos.filter(p => p.id !== id);
-  navigateTo('pronos');
-  showToast('Pronostic supprimé.', 'success');
+  try {
+    const { error } = await sb.from('pronos').delete().eq('id', id);
+    if (error) throw error;
+    state.pronos = state.pronos.filter(p => p.id !== id);
+    navigateTo('pronos');
+    showToast('Pronostic supprimé.', 'success');
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
