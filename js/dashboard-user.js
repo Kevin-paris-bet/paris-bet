@@ -61,7 +61,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   renderSidebar();
   renderTopbar();
-  navigateTo('achats');
+
+  // Vérifier si retour de Stripe
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('payment') === 'success') {
+    const amount = urlParams.get('amount');
+    window.history.replaceState({}, '', '/pages/dashboard-user.html');
+    navigateTo('solde');
+    setTimeout(() => showToast('Paiement reussi ! ' + amount + 'eur ajoutes a votre solde.', 'success'), 300);
+  } else if (urlParams.get('payment') === 'cancelled') {
+    window.history.replaceState({}, '', '/pages/dashboard-user.html');
+    navigateTo('solde');
+    setTimeout(() => showToast('Paiement annule.', 'info'), 300);
+  } else {
+    navigateTo('achats');
+  }
 });
 
 // ── Navigation ────────────────────────────────────────────────
