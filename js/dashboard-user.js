@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const { data: pronosData } = await sb
       .from('pronos')
       .select('id, match, sport, match_date, prediction, odds')
-      .in('id', pronoIds);
+      .filter('id', 'in', '(' + pronoIds.join(',') + ')');
 
     const pronosMap = {};
     (pronosData || []).forEach(p => pronosMap[p.id] = p);
