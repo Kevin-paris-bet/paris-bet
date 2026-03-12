@@ -208,7 +208,7 @@ function renderPronoRow(p) {
     <div class="table-row">
       <div>
         <div class="prono-title">${p.match}</div>
-        <div class="prono-meta">${p.sport} · ${p.date}</div>
+        <div class="prono-meta">${p.sport} · ${p.match_date || p.date || ""}</div>
         ${p.locked
           ? `<div class="prono-lock">🔒 Verrouillé — modification impossible</div>`
           : `<div class="prono-lock" style="color:var(--warning)">✏️ Brouillon — non encore acheté</div>`
@@ -219,7 +219,7 @@ function renderPronoRow(p) {
       </div>
       <div class="prono-price">${formatEuros(p.price)}</div>
       <div>${statusBadge[p.status] || ''}</div>
-      <div style="font-size:0.8rem;color:var(--text-muted)">${p.date.split('·')[0].trim()}</div>
+      <div style="font-size:0.8rem;color:var(--text-muted)">${(p.match_date || p.date || "").split('·')[0].trim()}</div>
       <div class="table-actions">
         <button
           class="btn-icon"
@@ -276,7 +276,7 @@ async function submitProno() {
       tipster_id: user.id,
       match,
       sport,
-      date:    `${date}${time ? ' · ' + time : ''}`,
+      match_date: `${date}${time ? ' · ' + time : ''}`,
       price,
       buyers:  0,
       status:  CONFIG.betStatus.PENDING,
