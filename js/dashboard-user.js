@@ -16,12 +16,12 @@ const MOCK_USER = {
 };
 
 const MOCK_ACHATS = [
-  { id:1, tipster:'Alexis Martin', match:'Real Madrid vs Barça',   sport:'⚽ Liga',       date:'16 mars 2025', price:8.00, status:CONFIG.betStatus.WON,       content:'Real Madrid victoire. Avantage domicile, Barça avec plusieurs absents.' },
-  { id:2, tipster:'Alexis Martin', match:'Djokovic vs Alcaraz',     sport:'🎾 Roland Garros',date:'16 mars 2025', price:6.00, status:CONFIG.betStatus.LOST,      content:'Djokovic en 3 sets. Meilleure forme sur terre battue.' },
-  { id:3, tipster:'Alexis Martin', match:'PSG vs Marseille',        sport:'⚽ Ligue 1',    date:'15 mars 2025', price:5.00, status:CONFIG.betStatus.PENDING,    content:'PSG gagne avec +1.5 buts. Très bonne forme à domicile.' },
-  { id:4, tipster:'MaxiPronos',    match:'Lakers vs Warriors',      sport:'🏀 NBA',        date:'14 mars 2025', price:4.00, status:CONFIG.betStatus.PENDING,    content:'Lakers favoris à domicile. James en grande forme.' },
-  { id:5, tipster:'BetKing',       match:'Lens vs Lyon',            sport:'⚽ Ligue 1',    date:'13 mars 2025', price:5.00, status:CONFIG.betStatus.CANCELLED,  content:'Match reporté — remboursement effectué automatiquement.' },
-  { id:6, tipster:'MaxiPronos',    match:'Liverpool vs Man City',   sport:'⚽ Premier League',date:'10 mars 2025', price:7.00, status:CONFIG.betStatus.WON,    content:'Liverpool à domicile, forte motivation après défaite.' },
+  { id:1, tipster:'Alexis Martin', game:'Real Madrid vs Barça',   sport:'⚽ Liga',       date:'16 mars 2025', price:8.00, status:CONFIG.betStatus.WON,       content:'Real Madrid victoire. Avantage domicile, Barça avec plusieurs absents.' },
+  { id:2, tipster:'Alexis Martin', game:'Djokovic vs Alcaraz',     sport:'🎾 Roland Garros',date:'16 mars 2025', price:6.00, status:CONFIG.betStatus.LOST,      content:'Djokovic en 3 sets. Meilleure forme sur terre battue.' },
+  { id:3, tipster:'Alexis Martin', game:'PSG vs Marseille',        sport:'⚽ Ligue 1',    date:'15 mars 2025', price:5.00, status:CONFIG.betStatus.PENDING,    content:'PSG gagne avec +1.5 buts. Très bonne forme à domicile.' },
+  { id:4, tipster:'MaxiPronos',    game:'Lakers vs Warriors',      sport:'🏀 NBA',        date:'14 mars 2025', price:4.00, status:CONFIG.betStatus.PENDING,    content:'Lakers favoris à domicile. James en grande forme.' },
+  { id:5, tipster:'BetKing',       game:'Lens vs Lyon',            sport:'⚽ Ligue 1',    date:'13 mars 2025', price:5.00, status:CONFIG.betStatus.CANCELLED,  content:'Match reporté — remboursement effectué automatiquement.' },
+  { id:6, tipster:'MaxiPronos',    game:'Liverpool vs Man City',   sport:'⚽ Premier League',date:'10 mars 2025', price:7.00, status:CONFIG.betStatus.WON,    content:'Liverpool à domicile, forte motivation après défaite.' },
 ];
 
 const MOCK_TRANSACTIONS = [
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     for (const achat of achats) {
       const { data: p } = await sb
         .from('pronos')
-        .select('id, "match", sport, match_date, prediction, odds')
+        .select('id, game, sport, match_date, prediction, odds')
         .eq('id', achat.prono_id)
         .single();
       if (p) pronosData.push(p);
@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const p = pronosMap[a.prono_id] || {};
       return {
         id:         a.id,
-        match:      p["match"] || "—",
+        game:      p[game] || "—",
         sport:      p.sport || '—',
         date:       p.match_date || '—',
         tipster:    '—',
@@ -227,7 +227,7 @@ function renderAchatsList() {
       <div class="achat-card" style="border-left-color:${borderColor[a.status]}">
         <div class="achat-card__header">
           <div>
-            <div class="achat-card__match">${a.match}</div>
+            <div class="achat-card__match">${a.game}</div>
             <div class="achat-card__meta">${a.sport} · ${a.date} · par <strong>${a.tipster}</strong></div>
           </div>
           <div class="achat-card__right">
@@ -439,14 +439,14 @@ function renderPageExplorer(container) {
         <div class="achat-card" style="border-left-color:var(--blue)">
           <div class="achat-card__header">
             <div>
-              <div class="achat-card__match">${p.match}</div>
+              <div class="achat-card__match">${p.game}</div>
               <div class="achat-card__meta">${p.sport} · ${p.match_date || '—'} · par <strong>${tipsterName}</strong></div>
             </div>
             <div class="achat-card__right">
               <div class="achat-card__price">${p.price} €</div>
               ${bought
                 ? `<span class="badge badge-won">✓ Acheté</span>`
-                : `<button class="btn btn-primary" style="font-size:0.85rem;padding:8px 16px" onclick="buyProno('${p.id}', ${p.price}, '${p.match.replace(/'/g,"\'")}')">Acheter</button>`
+                : `<button class="btn btn-primary" style="font-size:0.85rem;padding:8px 16px" onclick="buyProno('${p.id}', ${p.price}, '${p.game.replace(/'/g,"\'")}')">Acheter</button>`
               }
             </div>
           </div>
@@ -512,12 +512,12 @@ async function buyProno(pronoId, price, matchName) {
 
     if (achats && achats.length > 0) {
       const pronoIds = achats.map(a => a.prono_id);
-      const { data: pronosData } = await sb.from('pronos').select('id, "match", sport, match_date, prediction, odds').in('id', pronoIds);
+      const { data: pronosData } = await sb.from('pronos').select('id, game, sport, match_date, prediction, odds').in('id', pronoIds);
       const pronosMap = {};
       (pronosData || []).forEach(p => pronosMap[p.id] = p);
       userState.realAchats = achats.map(a => {
         const p = pronosMap[a.prono_id] || {};
-        return { id: a.id, match: p["match"]||"—", sport: p.sport||'—', date: p.match_date||'—', tipster:'—', price: parseFloat(a.amount)||0, status: a.status||'pending', prediction: p.prediction||'', odds: p.odds||'', pronoId: a.prono_id };
+        return { id: a.id, game: p[game]||"—", sport: p.sport||'—', date: p.match_date||'—', tipster:'—', price: parseFloat(a.amount)||0, status: a.status||'pending', prediction: p.prediction||'', odds: p.odds||'', pronoId: a.prono_id };
       });
     } else { userState.realAchats = []; }
 

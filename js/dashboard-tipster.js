@@ -19,7 +19,7 @@ const MOCK_TIPSTER = {
 const MOCK_PRONOS = [
   {
     id: 1,
-    match:    'PSG vs Marseille',
+    game:    'PSG vs Marseille',
     sport:    '⚽ Ligue 1',
     date:     'Sam. 15 mars · 20h45',
     price:    5.00,
@@ -30,7 +30,7 @@ const MOCK_PRONOS = [
   },
   {
     id: 2,
-    match:    'Real Madrid vs Barça',
+    game:    'Real Madrid vs Barça',
     sport:    '⚽ Liga',
     date:     'Dim. 16 mars · 21h00',
     price:    8.00,
@@ -41,7 +41,7 @@ const MOCK_PRONOS = [
   },
   {
     id: 3,
-    match:    'Djokovic vs Alcaraz',
+    game:    'Djokovic vs Alcaraz',
     sport:    '🎾 Roland Garros',
     date:     'Dim. 16 mars · 14h00',
     price:    6.00,
@@ -52,7 +52,7 @@ const MOCK_PRONOS = [
   },
   {
     id: 4,
-    match:    'Lakers vs Warriors',
+    game:    'Lakers vs Warriors',
     sport:    '🏀 NBA',
     date:     'Lun. 17 mars · 03h30',
     price:    4.00,
@@ -207,7 +207,7 @@ function renderPronoRow(p) {
   return `
     <div class="table-row">
       <div>
-        <div class="prono-title">${p.match}</div>
+        <div class="prono-title">${p.game}</div>
         <div class="prono-meta">${p.sport} · ${p.match_date || p.date || ""}</div>
         ${p.locked
           ? `<div class="prono-lock">🔒 Verrouillé — modification impossible</div>`
@@ -252,14 +252,14 @@ function closeModal() {
 }
 
 async function submitProno() {
-  const match   = document.getElementById('new-match').value.trim();
+  const game    = document.getElementById('new-match').value.trim();
   const sport   = document.getElementById('new-sport').value.trim();
   const date    = document.getElementById('new-date').value;
   const time    = document.getElementById('new-time').value;
   const price   = parseFloat(document.getElementById('new-price').value);
   const content = document.getElementById('new-content').value.trim();
 
-  if (!match || !sport || !date || !price || !content) {
+  if (!game || !sport || !date || !price || !content) {
     showToast('Veuillez remplir tous les champs.', 'error'); return;
   }
   if (price < 1) {
@@ -274,7 +274,7 @@ async function submitProno() {
     const user = await getCurrentUser();
     const { data, error } = await sb.from('pronos').insert([{
       tipster_id: user.id,
-      match,
+      game,
       sport,
       match_date: `${date}${time ? ' · ' + time : ''}`,
       price,
@@ -302,7 +302,7 @@ async function submitProno() {
 function viewProno(id) {
   const p = state.pronos.find(p => p.id === id);
   if (!p) return;
-  alert(`📋 Contenu du pronostic\n\n${p.match}\n\n"${p.content || '(brouillon — contenu vide)'}"`);
+  alert(`📋 Contenu du pronostic\n\n${p.game}\n\n"${p.content || '(brouillon — contenu vide)'}"`);
 }
 
 // ── Supprimer un prono (seulement si 0 acheteur) ───────────────
@@ -311,7 +311,7 @@ async function deleteProno(id) {
   if (!p || p.locked || p.buyers > 0) {
     showToast('Impossible de supprimer ce pronostic.', 'error'); return;
   }
-  if (!confirm(`Supprimer "${p.match}" ?`)) return;
+  if (!confirm(`Supprimer "${p.game}" ?`)) return;
 
   try {
     const { error } = await sb.from('pronos').delete().eq('id', id);

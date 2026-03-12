@@ -8,13 +8,13 @@
 const MOCK_ADMIN = { firstName: 'Admin', lastName: 'Paris-Bet' };
 
 const MOCK_PRONOS_ADMIN = [
-  { id:1, tipster:'Alexis Martin', match:'PSG vs Marseille',    sport:'⚽ Ligue 1', date:'15/03/2026', price:5.00,  buyers:47, status:'pending',   revenue:235.00 },
-  { id:2, tipster:'Alexis Martin', match:'Real Madrid vs Barça',sport:'⚽ Liga',    date:'16/03/2026', price:8.00,  buyers:83, status:'pending',   revenue:664.00 },
-  { id:3, tipster:'Karim B.',      match:'Djokovic vs Alcaraz', sport:'🎾 Tennis',  date:'16/03/2026', price:6.00,  buyers:31, status:'pending',   revenue:186.00 },
-  { id:4, tipster:'Alexis Martin', match:'Lakers vs Warriors',  sport:'🏀 NBA',     date:'17/03/2026', price:4.00,  buyers:12, status:'pending',   revenue:48.00  },
-  { id:5, tipster:'Sofia R.',      match:'Lens vs Lyon',        sport:'⚽ Ligue 1', date:'18/03/2026', price:5.00,  buyers:28, status:'won',       revenue:140.00 },
-  { id:6, tipster:'Karim B.',      match:'Federer vs Nadal',    sport:'🎾 Tennis',  date:'10/03/2026', price:7.00,  buyers:54, status:'lost',      revenue:378.00 },
-  { id:7, tipster:'Sofia R.',      match:'OM vs Nice',          sport:'⚽ Ligue 1', date:'09/03/2026', price:4.00,  buyers:19, status:'cancelled', revenue:76.00  },
+  { id:1, tipster:'Alexis Martin', game:'PSG vs Marseille',    sport:'⚽ Ligue 1', date:'15/03/2026', price:5.00,  buyers:47, status:'pending',   revenue:235.00 },
+  { id:2, tipster:'Alexis Martin', game:'Real Madrid vs Barça',sport:'⚽ Liga',    date:'16/03/2026', price:8.00,  buyers:83, status:'pending',   revenue:664.00 },
+  { id:3, tipster:'Karim B.',      game:'Djokovic vs Alcaraz', sport:'🎾 Tennis',  date:'16/03/2026', price:6.00,  buyers:31, status:'pending',   revenue:186.00 },
+  { id:4, tipster:'Alexis Martin', game:'Lakers vs Warriors',  sport:'🏀 NBA',     date:'17/03/2026', price:4.00,  buyers:12, status:'pending',   revenue:48.00  },
+  { id:5, tipster:'Sofia R.',      game:'Lens vs Lyon',        sport:'⚽ Ligue 1', date:'18/03/2026', price:5.00,  buyers:28, status:'won',       revenue:140.00 },
+  { id:6, tipster:'Karim B.',      game:'Federer vs Nadal',    sport:'🎾 Tennis',  date:'10/03/2026', price:7.00,  buyers:54, status:'lost',      revenue:378.00 },
+  { id:7, tipster:'Sofia R.',      game:'OM vs Nice',          sport:'⚽ Ligue 1', date:'09/03/2026', price:4.00,  buyers:19, status:'cancelled', revenue:76.00  },
 ];
 
 const MOCK_TIPSTERS_ADMIN = [
@@ -283,7 +283,7 @@ function renderPronosTable(pronos, compact) {
       ${pronos.map(p => `
         <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr ${compact?'0':'140px'}">
           <div>
-            <div class="prono-title">${p.match}</div>
+            <div class="prono-title">${p.game}</div>
             <div class="prono-meta">${p.sport} · ${p.match_date || p.date || "—"}</div>
           </div>
           <div style="font-size:0.85rem;color:var(--text-muted)">${p.tipsterName || "—"}</div>
@@ -337,7 +337,7 @@ async function validateProno(id, status) {
     p.status = status;
     navigateTo('pronos');
     const toastType = status === 'won' ? 'success' : 'info';
-    showToast(`Pronostic "${p.match}" validé comme ${labels[status]}`, toastType);
+    showToast(`Pronostic "${p.game}" validé comme ${labels[status]}`, toastType);
   } catch (err) {
     showToast('Erreur : ' + err.message, 'error');
   }

@@ -26,7 +26,7 @@ const MOCK_USER = {
 const MOCK_PUBLIC_PRONOS = [
   {
     id: 1,
-    match:    'PSG vs Marseille',
+    game:    'PSG vs Marseille',
     sport:    '⚽ Ligue 1',
     date:     'Sam. 15 mars · 20h45',
     price:    5.00,
@@ -37,7 +37,7 @@ const MOCK_PUBLIC_PRONOS = [
   },
   {
     id: 2,
-    match:    'Real Madrid vs Barça',
+    game:    'Real Madrid vs Barça',
     sport:    '⚽ Liga',
     date:     'Dim. 16 mars · 21h00',
     price:    8.00,
@@ -48,7 +48,7 @@ const MOCK_PUBLIC_PRONOS = [
   },
   {
     id: 3,
-    match:    'Djokovic vs Alcaraz',
+    game:    'Djokovic vs Alcaraz',
     sport:    '🎾 Roland Garros',
     date:     'Dim. 16 mars · 14h00',
     price:    6.00,
@@ -59,7 +59,7 @@ const MOCK_PUBLIC_PRONOS = [
   },
   {
     id: 4,
-    match:    'Lakers vs Warriors',
+    game:    'Lakers vs Warriors',
     sport:    '🏀 NBA',
     date:     'Lun. 17 mars · 03h30',
     price:    4.00,
@@ -70,7 +70,7 @@ const MOCK_PUBLIC_PRONOS = [
   },
   {
     id: 5,
-    match:    'Lens vs Lyon',
+    game:    'Lens vs Lyon',
     sport:    '⚽ Ligue 1',
     date:     'Mar. 18 mars · 21h00',
     price:    5.00,
@@ -245,7 +245,7 @@ function renderPronoCard(p) {
     <div class="prono-card prono-card--${statusClass[p.status]}">
       <div class="prono-card__header">
         <div>
-          <div class="prono-card__match">${p.match}</div>
+          <div class="prono-card__match">${p.game}</div>
           <div class="prono-card__meta">
             ${p.sport}
             <span>·</span>
@@ -292,7 +292,7 @@ function openBuyModal(id) {
       🛒 Confirmer l'achat
       <button class="buy-panel__close" onclick="closeBuyModal()">✕</button>
     </div>
-    <div class="buy-panel__match">${prono.match} · ${formatEuros(prono.price)}</div>
+    <div class="buy-panel__match">${prono.game} · ${formatEuros(prono.price)}</div>
     <div class="buy-panel__rows">
       <div class="buy-panel__row">
         <span class="buy-panel__row-label">Prix</span>
