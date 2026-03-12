@@ -52,7 +52,7 @@
     </nav>
 
     <div class="sidebar__bottom">
-      <a href="../pages/auth.html" class="sidebar__link" style="color:var(--error)">
+      <a href="#" onclick="logout()" class="sidebar__link" style="color:var(--error)">
         <span class="sidebar__link-icon">🚪</span> Se déconnecter
       </a>
     </div>
@@ -73,7 +73,9 @@
 
 </div>
 
-<script src="../js/config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase.js"></script>
+  <script src="../js/config.js"></script>
 <script src="../js/dashboard-admin.js"></script>
 </body>
 </html>
