@@ -49,9 +49,14 @@ const adminState = {
 };
 
 // ── Init ──────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('sidebar-avatar').textContent = 'AD';
-  navigateTo('overview');
+// ── Init ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = await requireAuth(['admin']);
+  if (!user) return;
+
+  renderSidebar();
+  renderTopbar();
+  navigateTo('pronos');
 });
 
 // ── Navigation ────────────────────────────────────────────────

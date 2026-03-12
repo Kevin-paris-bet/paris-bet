@@ -125,21 +125,26 @@ async function handleLogin() {
   setLoading(btn, true);
 
   try {
-    // ─────────────────────────────────────────────────────────────
-    // TODO (étape Supabase) : remplacer par l'appel réel
-    // const { data, error } = await sb.auth.signInWithPassword({ email, password: pw })
-    // if (error) throw new Error(error.message)
-    // ─────────────────────────────────────────────────────────────
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+    if (error) throw new Error(error.message);
 
-    // Simulation réponse API (2s)
-    await sleep(1800);
+    // Récupérer le profil pour rediriger selon le rôle
+    const { data: profile } = await sb
+      .from('profiles')
+      .select('role')
+      .eq('id', data.user.id)
+      .single();
 
-    // Succès → afficher l'état de succès
-    document.getElementById('form-login').style.display = 'none';
-    document.getElementById('login-success').classList.add('show');
+    const role = profile?.role || 'user';
+    if (role === 'admin')   window.location.href = '/pages/dashboard-admin.html';
+    else if (role === 'tipster') window.location.href = '/pages/dashboard-tipster.html';
+    else                    window.location.href = '/pages/dashboard-user.html';
 
   } catch (err) {
-    showToast(err.message || 'Email ou mot de passe incorrect.', 'error');
+    const msg = err.message.includes('Invalid login')
+      ? 'Email ou mot de passe incorrect.'
+      : err.message;
+    showToast(msg, 'error');
   } finally {
     setLoading(btn, false);
   }
@@ -163,18 +168,20 @@ async function handleRegister() {
   setLoading(btn, true);
 
   try {
-    // ─────────────────────────────────────────────────────────────
-    // TODO (étape Supabase) : remplacer par l'appel réel
-    // const { data, error } = await sb.auth.signUp({
-    //   email, password: pw,
-    //   options: { data: { first_name: firstName, last_name: lastName, role: authState.selectedRole } }
-    // })
-    // if (error) throw new Error(error.message)
-    // ─────────────────────────────────────────────────────────────
+    const { data, error } = await sb.auth.signUp({
+      email,
+      password: pw,
+      options: {
+        data: {
+          first_name: firstName,
+          last_name:  lastName,
+          role:       authState.selectedRole,
+        }
+      }
+    });
+    if (error) throw new Error(error.message);
 
-    await sleep(1800);
-
-    // Succès
+    // Succès — email de confirmation envoyé
     document.getElementById('form-register').style.display = 'none';
     document.getElementById('register-success').classList.add('show');
 
@@ -186,9 +193,11 @@ async function handleRegister() {
 }
 
 // ── Google Auth ───────────────────────────────────────────────
-function handleGoogleAuth() {
-  // TODO (étape Supabase) : sb.auth.signInWithOAuth({ provider: 'google' })
-  showToast('Connexion Google disponible bientôt 🚀', 'info');
+async function handleGoogleAuth() {
+  await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + '/pages/dashboard-user.html' }
+  });
 }
 
 // ── Helpers ───────────────────────────────────────────────────

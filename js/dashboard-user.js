@@ -37,11 +37,18 @@ const MOCK_TRANSACTIONS = [
 const userState = { activePage:'achats', achatsFilter:'all' };
 
 // ── Init ──────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-  const u = MOCK_USER;
-  document.getElementById('sidebar-avatar').textContent = u.firstName[0] + u.lastName[0];
-  document.getElementById('sidebar-name').textContent   = u.firstName + ' ' + u.lastName;
-  document.getElementById('topbar-balance').textContent = '💰 ' + formatEuros(u.balance);
+// ── Init ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = await requireAuth(['user', 'admin']);
+  if (!user) return;
+
+  MOCK_USER_PROFILE.firstName = user.profile.first_name;
+  MOCK_USER_PROFILE.lastName  = user.profile.last_name;
+  MOCK_USER_PROFILE.balance   = parseFloat(user.profile.balance) || 0;
+  MOCK_USER_PROFILE.pending   = parseFloat(user.profile.pending) || 0;
+
+  renderSidebar();
+  renderTopbar();
   navigateTo('achats');
 });
 

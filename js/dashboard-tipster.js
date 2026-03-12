@@ -77,7 +77,18 @@ const state = {
 };
 
 // ── Init ──────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
+// ── Init ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  // Vérifier que l'utilisateur est bien connecté en tant que tipster
+  const user = await requireAuth(['tipster', 'admin']);
+  if (!user) return;
+
+  // Charger le vrai profil
+  MOCK_TIPSTER.firstName = user.profile.first_name;
+  MOCK_TIPSTER.lastName  = user.profile.last_name;
+  MOCK_TIPSTER.balance   = parseFloat(user.profile.balance) || 0;
+  MOCK_TIPSTER.pending   = parseFloat(user.profile.pending) || 0;
+
   renderSidebar();
   renderTopbar();
   navigateTo('pronos');
