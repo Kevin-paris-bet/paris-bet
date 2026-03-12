@@ -478,7 +478,7 @@ async function buyProno(pronoId, price, matchName) {
     if (purchErr) throw purchErr;
 
     // Incrémenter le nb d'acheteurs sur le prono
-    await sb.rpc('increment_buyers', { prono_id: pronoId }).catch(() => {});
+    try { await sb.rpc('increment_buyers', { prono_id: pronoId }); } catch(e) {}
 
     // Mettre à jour l'état local
     MOCK_USER.balance = newBalance;
