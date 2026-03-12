@@ -66,23 +66,36 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Charger les vrais achats depuis Supabase
   const { data: achats } = await sb
     .from('purchases')
-    .select('*, pronos(match, sport, match_date, prediction, odds, tipster_id)')
+    .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
   if (achats && achats.length > 0) {
-    userState.realAchats = achats.map(a => ({
-      id:       a.id,
-      match:    a.pronos?.match || '—',
-      sport:    a.pronos?.sport || '—',
-      date:     a.pronos?.match_date || '—',
-      tipster:  '—',
-      price:    parseFloat(a.amount) || 0,
-      status:   a.status || 'pending',
-      prediction: a.pronos?.prediction || '',
-      odds:     a.pronos?.odds || '',
-      pronoId:  a.prono_id,
-    }));
+    // Charger les détails des pronos séparément
+    const pronoIds = achats.map(a => a.prono_id);
+    const { data: pronosData } = await sb
+      .from('pronos')
+      .select('id, match, sport, match_date, prediction, odds')
+      .in('id', pronoIds);
+
+    const pronosMap = {};
+    (pronosData || []).forEach(p => pronosMap[p.id] = p);
+
+    userState.realAchats = achats.map(a => {
+      const p = pronosMap[a.prono_id] || {};
+      return {
+        id:         a.id,
+        match:      p.match || '—',
+        sport:      p.sport || '—',
+        date:       p.match_date || '—',
+        tipster:    '—',
+        price:      parseFloat(a.amount) || 0,
+        status:     a.status || 'pending',
+        prediction: p.prediction || '',
+        odds:       p.odds || '',
+        pronoId:    a.prono_id,
+      };
+    });
   } else {
     userState.realAchats = [];
   }
@@ -488,17 +501,20 @@ async function buyProno(pronoId, price, matchName) {
     // Recharger les achats
     const { data: achats } = await sb
       .from('purchases')
-      .select('*, pronos(match, sport, match_date, prediction, odds, tipster_id)')
+      .select('*')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
-    userState.realAchats = (achats || []).map(a => ({
-      id: a.id, match: a.pronos?.match || '—', sport: a.pronos?.sport || '—',
-      date: a.pronos?.match_date || '—', tipster: '—',
-      price: parseFloat(a.amount) || 0, status: a.status || 'pending',
-      prediction: a.pronos?.prediction || '', odds: a.pronos?.odds || '',
-      pronoId: a.prono_id,
-    }));
+    if (achats && achats.length > 0) {
+      const pronoIds = achats.map(a => a.prono_id);
+      const { data: pronosData } = await sb.from('pronos').select('id, match, sport, match_date, prediction, odds').in('id', pronoIds);
+      const pronosMap = {};
+      (pronosData || []).forEach(p => pronosMap[p.id] = p);
+      userState.realAchats = achats.map(a => {
+        const p = pronosMap[a.prono_id] || {};
+        return { id: a.id, match: p.match||'—', sport: p.sport||'—', date: p.match_date||'—', tipster:'—', price: parseFloat(a.amount)||0, status: a.status||'pending', prediction: p.prediction||'', odds: p.odds||'', pronoId: a.prono_id };
+      });
+    } else { userState.realAchats = []; }
 
     showToast('Prono acheté ! Bonne chance 🎯', 'success');
     navigateTo('explorer');
