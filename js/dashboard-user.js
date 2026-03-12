@@ -72,11 +72,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (achats && achats.length > 0) {
     // Charger les détails des pronos séparément
-    const pronoIds = achats.map(a => a.prono_id);
-    const { data: pronosData } = await sb
-      .from('pronos')
-      .select('id, match, sport, match_date, prediction, odds')
-      .filter('id', 'in', '(' + pronoIds.join(',') + ')');
+    // Charger chaque prono individuellement
+    const pronosData = [];
+    for (const achat of achats) {
+      const { data: p } = await sb
+        .from('pronos')
+        .select('id, match, sport, match_date, prediction, odds')
+        .eq('id', achat.prono_id)
+        .single();
+      if (p) pronosData.push(p);
+    }
 
     const pronosMap = {};
     (pronosData || []).forEach(p => pronosMap[p.id] = p);
