@@ -70,6 +70,47 @@ document.addEventListener('DOMContentLoaded', async () => {
     adminState.pronos = [];
   }
 
+  // Charger les vrais tipsters
+  const { data: tipsters } = await sb
+    .from('profiles_with_email')
+    .select('*')
+    .eq('role', 'tipster')
+    .order('created_at', { ascending: false });
+
+  if (tipsters && tipsters.length > 0) {
+    adminState.tipsters = tipsters.map(t => ({
+      ...t,
+      name:     t.first_name + ' ' + t.last_name,
+      email:    t.email || '—',
+      pronos:   0,
+      winRate:  0,
+      balance:  parseFloat(t.balance) || 0,
+      ribSaved: !!(t.rib_iban),
+      suspended: false,
+    }));
+  } else {
+    adminState.tipsters = [];
+  }
+
+  // Charger les vrais utilisateurs
+  const { data: users } = await sb
+    .from('profiles_with_email')
+    .select('*')
+    .eq('role', 'user')
+    .order('created_at', { ascending: false });
+
+  if (users && users.length > 0) {
+    adminState.users = users.map(u => ({
+      ...u,
+      name:    u.first_name + ' ' + u.last_name,
+      email:   u.email || '—',
+      balance: parseFloat(u.balance) || 0,
+      spent:   0,
+    }));
+  } else {
+    adminState.users = [];
+  }
+
   renderSidebar();
   renderTopbar();
   navigateTo('pronos');
@@ -326,7 +367,7 @@ function renderTipsters(c) {
           <div style="font-weight:700;color:${t.winRate>=60?'var(--success)':'var(--warning)'}">${t.winRate}%</div>
           <div class="prono-price">${formatEuros(t.balance)}</div>
           <div>
-            ${t.ribOk
+            ${t.ribSaved
               ? `<span class="badge badge-won" style="font-size:0.7rem">✓ Enregistré</span>`
               : `<span class="badge badge-lost" style="font-size:0.7rem">✕ Manquant</span>`}
           </div>
@@ -372,7 +413,7 @@ function renderUsers(c) {
       </div>
       <div class="stat-card">
         <div class="stat-card__label">⏳ En attente</div>
-        <div class="stat-card__value">${formatEuros(adminState.users.reduce((s,u)=>s+u.pending,0))}</div>
+        <div class="stat-card__value">${formatEuros(adminState.users.reduce((s,u)=>s+(parseFloat(u.pending)||0),0))}</div>
         <div class="stat-card__sub">pronos non validés</div>
       </div>
     </div>
