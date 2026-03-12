@@ -74,11 +74,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Charger tous les pronos et filtrer côté client
     const { data: tousLesPronos } = await sb
       .from('pronos')
-      .select('id, game, sport, match_date, prediction, odds');
+      .select('prono_id, game, sport, match_date, prediction, odds');
 
     const pronoIds = new Set(achats.map(a => a.prono_id));
     const pronosMap = {};
-    (tousLesPronos || []).filter(p => pronoIds.has(p.id)).forEach(p => pronosMap[p.id] = p);
+    (tousLesPronos || []).filter(p => pronoIds.has(p.prono_id)).forEach(p => pronosMap[p.prono_id] = p);
 
     userState.realAchats = achats.map(a => {
       const p = pronosMap[a.prono_id] || {};
@@ -428,7 +428,7 @@ function renderPageExplorer(container) {
     <div style="display:flex;flex-direction:column;gap:var(--space-md)">
       ${pronos.map(p => {
         const tipsterName = p.profiles ? p.profiles.first_name + ' ' + p.profiles.last_name : '—';
-        const bought = alreadyBought.has(p.id);
+        const bought = alreadyBought.has(p.prono_id);
         return `
         <div class="achat-card" style="border-left-color:var(--blue)">
           <div class="achat-card__header">
@@ -440,7 +440,7 @@ function renderPageExplorer(container) {
               <div class="achat-card__price">${p.price} €</div>
               ${bought
                 ? `<span class="badge badge-won">✓ Acheté</span>`
-                : `<button class="btn btn-primary" style="font-size:0.85rem;padding:8px 16px" onclick="buyProno('${p.id}', ${p.price}, '${p.game.replace(/'/g,"\'")}')">Acheter</button>`
+                : `<button class="btn btn-primary" style="font-size:0.85rem;padding:8px 16px" onclick="buyProno('${p.prono_id}', ${p.price}, '${p.game.replace(/'/g,"\'")}')">Acheter</button>`
               }
             </div>
           </div>
@@ -506,12 +506,12 @@ async function buyProno(pronoId, price, matchName) {
 
     if (achats && achats.length > 0) {
       const pronoIds = achats.map(a => a.prono_id);
-      const { data: pronosData } = await sb.from('pronos').select('id, game, sport, match_date, prediction, odds').in('id', pronoIds);
+      const { data: pronosData } = await sb.from('pronos').select('prono_id, game, sport, match_date, prediction, odds').in('id', pronoIds);
       const pronosMap = {};
-      (pronosData || []).forEach(p => pronosMap[p.id] = p);
+      (pronosData || []).forEach(p => pronosMap[p.prono_id] = p);
       userState.realAchats = achats.map(a => {
         const p = pronosMap[a.prono_id] || {};
-        return { id: a.id, game: p[game]||"—", sport: p.sport||'—', date: p.match_date||'—', tipster:'—', price: parseFloat(a.amount)||0, status: a.status||'pending', prediction: p.prediction||'', odds: p.odds||'', pronoId: a.prono_id };
+        return { id: a.id, game: p.game||"—", sport: p.sport||'—', date: p.match_date||'—', tipster:'—', price: parseFloat(a.amount)||0, status: a.status||'pending', prediction: p.prediction||'', odds: p.odds||'', pronoId: a.prono_id };
       });
     } else { userState.realAchats = []; }
 

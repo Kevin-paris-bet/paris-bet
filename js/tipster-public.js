@@ -237,7 +237,7 @@ function renderPronoCard(p) {
     ? `<span style="font-size:0.8rem;color:var(--success);font-weight:600">✓ Acheté</span>`
     : p.status !== CONFIG.betStatus.PENDING
     ? `<span style="font-size:0.8rem;color:var(--text-muted)">Terminé</span>`
-    : `<button class="btn-buy" onclick="openBuyModal(${p.id})">
+    : `<button class="btn-buy" onclick="openBuyModal(${p.prono_id})">
         Acheter — ${formatEuros(p.price)}
        </button>`;
 
@@ -273,7 +273,7 @@ function renderPronoCard(p) {
 
 // ── Panneau achat inline ─────────────────────────────────────
 function openBuyModal(id) {
-  const prono = pubState.pronos.find(p => p.id === id);
+  const prono = pubState.pronos.find(p => p.prono_id === id);
   if (!prono) return;
   pubState.buyingProno = prono;
 
@@ -351,7 +351,7 @@ function confirmBuy() {
     pubState.user.balance -= prono.price;
     pubState.user.pending += prono.price;
 
-    const idx = pubState.pronos.findIndex(p => p.id === prono.id);
+    const idx = pubState.pronos.findIndex(p => p.prono_id === prono.prono_id);
     if (idx !== -1) {
       pubState.pronos[idx].purchased = true;
       pubState.pronos[idx].buyers   += 1;

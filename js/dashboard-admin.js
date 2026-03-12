@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Charger les vrais pronos depuis Supabase
   const { data: pronos } = await sb
     .from('pronos')
-    .select('*, profiles(first_name, last_name)')
+    .select('prono_id, game, sport, match_date, prediction, odds, price, status, buyers, tipster_id, created_at, profiles(first_name, last_name)')
     .order('created_at', { ascending: false });
 
   if (pronos && pronos.length > 0) {
@@ -294,9 +294,9 @@ function renderPronosTable(pronos, compact) {
             <div>
               ${p.status === 'pending' ? `
                 <div style="display:flex;gap:4px;flex-wrap:wrap">
-                  <button class="btn-validate btn-validate--won"   onclick="validateProno(${p.id},'won')">✓ Gagné</button>
-                  <button class="btn-validate btn-validate--lost"  onclick="validateProno(${p.id},'lost')">✕ Perdu</button>
-                  <button class="btn-validate btn-validate--cancel" onclick="validateProno(${p.id},'cancelled')">⊘</button>
+                  <button class="btn-validate btn-validate--won"   onclick="validateProno(${p.prono_id},'won')">✓ Gagné</button>
+                  <button class="btn-validate btn-validate--lost"  onclick="validateProno(${p.prono_id},'lost')">✕ Perdu</button>
+                  <button class="btn-validate btn-validate--cancel" onclick="validateProno(${p.prono_id},'cancelled')">⊘</button>
                 </div>` : `<span style="font-size:0.75rem;color:var(--text-light)">Validé</span>`}
             </div>`}
         </div>`).join('')}
@@ -304,7 +304,7 @@ function renderPronosTable(pronos, compact) {
 }
 
 async function validateProno(id, status) {
-  const p = adminState.pronos.find(p => p.id === id);
+  const p = adminState.pronos.find(p => p.prono_id === id);
   if (!p) return;
 
   const labels = { won:'GAGNÉ', lost:'PERDU', cancelled:'ANNULÉ' };
@@ -321,7 +321,7 @@ async function validateProno(id, status) {
     const { error } = await sb
       .from('pronos')
       .update({ status })
-      .eq('id', id);
+      .eq('prono_id', id);
 
     if (error) throw error;
 
