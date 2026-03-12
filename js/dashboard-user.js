@@ -64,11 +64,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (topbarBalance) topbarBalance.textContent = '🔥 ' + formatEuros(MOCK_USER.balance);
 
   // Charger les vrais achats depuis Supabase
-  const { data: achats } = await sb
+  const { data: achats, error: achatsError } = await sb
     .from('purchases')
     .select('*, pronos(match, sport, match_date, prediction, odds, tipster_id, profiles(first_name, last_name))')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
+
+  console.log('Achats:', achats, 'Erreur:', achatsError, 'User ID:', user.id);
 
   if (achats && achats.length > 0) {
     userState.realAchats = achats.map(a => ({
