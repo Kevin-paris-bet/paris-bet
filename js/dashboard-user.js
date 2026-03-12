@@ -79,7 +79,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         .from('pronos')
         .select('id, game, sport, match_date, prediction, odds')
         .eq('id', achat.prono_id)
-        .single();
+        .maybeSingle();
       if (p) pronosData.push(p);
     }
 
@@ -475,7 +475,7 @@ async function buyProno(pronoId, price, matchName) {
       .select('id')
       .eq('user_id', user.id)
       .eq('prono_id', pronoId)
-      .single();
+      .maybeSingle();
 
     if (existing) { showToast('Vous avez déjà acheté ce prono.', 'info'); return; }
 
