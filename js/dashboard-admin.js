@@ -243,9 +243,9 @@ function renderPronosTable(pronos, compact) {
         <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr ${compact?'0':'140px'}">
           <div>
             <div class="prono-title">${p.match}</div>
-            <div class="prono-meta">${p.sport} · ${p.date}</div>
+            <div class="prono-meta">${p.sport} · ${p.match_date || p.date || "—"}</div>
           </div>
-          <div style="font-size:0.85rem;color:var(--text-muted)">${p.tipster}</div>
+          <div style="font-size:0.85rem;color:var(--text-muted)">${p.tipsterName || "—"}</div>
           <div class="buyers-count"><span>👥</span>${p.buyers}</div>
           <div class="prono-price">${formatEuros(p.revenue)}</div>
           <div>${statusBadge[p.status]||''}</div>
