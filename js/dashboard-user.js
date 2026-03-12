@@ -247,12 +247,32 @@ function selectAmount(v) {
   );
 }
 
-function handleDeposit() {
+async function handleDeposit() {
   const val = parseFloat(document.getElementById('deposit-amount').value);
   const min = CONFIG.finance.minDeposit || 5;
   if (!val || val < min) { showToast('Montant minimum : ' + min + ' €', 'error'); return; }
-  // TODO (Stripe) : window.location.href = stripeCheckoutUrl
-  showToast('Redirection vers Stripe pour ' + formatEuros(val) + '… 🚀', 'info');
+
+  const btn = document.querySelector('[onclick="handleDeposit()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Redirection…'; }
+
+  try {
+    const user = await getCurrentUser();
+    const response = await fetch('/api/create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: val, userId: user.id })
+    });
+
+    const data = await response.json();
+    if (data.error) throw new Error(data.error);
+
+    // Rediriger vers la page de paiement Stripe
+    window.location.href = data.url;
+
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = 'Recharger via Stripe →'; }
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
