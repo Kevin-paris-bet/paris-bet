@@ -64,13 +64,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (topbarBalance) topbarBalance.textContent = '🔥 ' + formatEuros(MOCK_USER.balance);
 
   // Charger les vrais achats depuis Supabase
-  const { data: achats, error: achatsError } = await sb
+  const { data: achats } = await sb
     .from('purchases')
-    .select('*, pronos(match, sport, match_date, prediction, odds, tipster_id, profiles(first_name, last_name))')
+    .select('*, pronos(match, sport, match_date, prediction, odds, tipster_id)')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
-
-  console.log('Achats:', achats, 'Erreur:', achatsError, 'User ID:', user.id);
 
   if (achats && achats.length > 0) {
     userState.realAchats = achats.map(a => ({
@@ -78,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       match:    a.pronos?.match || '—',
       sport:    a.pronos?.sport || '—',
       date:     a.pronos?.match_date || '—',
-      tipster:  a.pronos?.profiles ? a.pronos.profiles.first_name + ' ' + a.pronos.profiles.last_name : '—',
+      tipster:  '—',
       price:    parseFloat(a.amount) || 0,
       status:   a.status || 'pending',
       prediction: a.pronos?.prediction || '',
@@ -490,14 +488,13 @@ async function buyProno(pronoId, price, matchName) {
     // Recharger les achats
     const { data: achats } = await sb
       .from('purchases')
-      .select('*, pronos(match, sport, match_date, prediction, odds, tipster_id, profiles(first_name, last_name))')
+      .select('*, pronos(match, sport, match_date, prediction, odds, tipster_id)')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false });
 
     userState.realAchats = (achats || []).map(a => ({
       id: a.id, match: a.pronos?.match || '—', sport: a.pronos?.sport || '—',
-      date: a.pronos?.match_date || '—',
-      tipster: a.pronos?.profiles ? a.pronos.profiles.first_name + ' ' + a.pronos.profiles.last_name : '—',
+      date: a.pronos?.match_date || '—', tipster: '—',
       price: parseFloat(a.amount) || 0, status: a.status || 'pending',
       prediction: a.pronos?.prediction || '', odds: a.pronos?.odds || '',
       pronoId: a.prono_id,
@@ -509,6 +506,18 @@ async function buyProno(pronoId, price, matchName) {
   } catch (err) {
     showToast('Erreur : ' + err.message, 'error');
   }
+}
+
+
+// ── Sidebar & Topbar ──────────────────────────────────────────
+function renderSidebar() {
+  document.querySelectorAll('.sidebar__link').forEach(l =>
+    l.classList.toggle('active', l.dataset.page === userState.activePage)
+  );
+}
+
+function renderTopbar() {
+  // déjà géré dans navigateTo
 }
 
 // ── Utilitaires ───────────────────────────────────────────────
