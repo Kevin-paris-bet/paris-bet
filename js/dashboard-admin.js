@@ -262,7 +262,7 @@ function renderPronosTable(pronos, compact) {
     </div>`;
 }
 
-function validateProno(id, status) {
+async function validateProno(id, status) {
   const p = adminState.pronos.find(p => p.id === id);
   if (!p) return;
 

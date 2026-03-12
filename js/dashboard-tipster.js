@@ -251,7 +251,7 @@ function closeModal() {
   });
 }
 
-function submitProno() {
+async function submitProno() {
   const match   = document.getElementById('new-match').value.trim();
   const sport   = document.getElementById('new-sport').value.trim();
   const date    = document.getElementById('new-date').value;
@@ -306,7 +306,7 @@ function viewProno(id) {
 }
 
 // ── Supprimer un prono (seulement si 0 acheteur) ───────────────
-function deleteProno(id) {
+async function deleteProno(id) {
   const p = state.pronos.find(p => p.id === id);
   if (!p || p.locked || p.buyers > 0) {
     showToast('Impossible de supprimer ce pronostic.', 'error'); return;
