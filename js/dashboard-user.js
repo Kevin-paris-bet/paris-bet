@@ -45,8 +45,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Remplacer les données de démo par le vrai profil
   MOCK_USER.firstName = user.profile.first_name;
   MOCK_USER.lastName  = user.profile.last_name;
+  MOCK_USER.email     = user.email;
   MOCK_USER.balance   = parseFloat(user.profile.balance) || 0;
   MOCK_USER.pending   = parseFloat(user.profile.pending) || 0;
+
+  // Mettre à jour la sidebar avec le vrai nom
+  const fullName = MOCK_USER.firstName + ' ' + MOCK_USER.lastName;
+  const initials = (MOCK_USER.firstName[0] + MOCK_USER.lastName[0]).toUpperCase();
+  const sidebarName   = document.getElementById('sidebar-name');
+  const sidebarAvatar = document.getElementById('sidebar-avatar');
+  const topbarName    = document.getElementById('topbar-user-name');
+  if (sidebarName)   sidebarName.textContent   = fullName;
+  if (sidebarAvatar) sidebarAvatar.textContent  = initials;
+  if (topbarName)    topbarName.textContent     = fullName;
 
   renderSidebar();
   renderTopbar();
