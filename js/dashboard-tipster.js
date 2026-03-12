@@ -89,6 +89,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   MOCK_TIPSTER.balance   = parseFloat(user.profile.balance) || 0;
   MOCK_TIPSTER.pending   = parseFloat(user.profile.pending) || 0;
 
+  // Mettre à jour la sidebar immédiatement
+  const fullName = MOCK_TIPSTER.firstName + ' ' + MOCK_TIPSTER.lastName;
+  const initials = (MOCK_TIPSTER.firstName[0] + MOCK_TIPSTER.lastName[0]).toUpperCase();
+  const sidebarName   = document.getElementById('sidebar-name');
+  const sidebarAvatar = document.getElementById('sidebar-avatar');
+  if (sidebarName)   sidebarName.textContent  = fullName;
+  if (sidebarAvatar) sidebarAvatar.textContent = initials;
+
   // Charger les vrais pronos depuis Supabase
   const { data: pronos } = await sb
     .from('pronos')
