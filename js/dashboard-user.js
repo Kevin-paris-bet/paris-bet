@@ -90,7 +90,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const p = pronosMap[a.prono_id] || {};
       return {
         id:         a.id,
-        game:      p[game] || "—",
+        game:      p.game || "—",
         sport:      p.sport || '—',
         date:       p.match_date || '—',
         tipster:    '—',
