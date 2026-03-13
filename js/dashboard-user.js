@@ -285,29 +285,54 @@ function renderPageSolde(container) {
   const u = MOCK_USER;
   const min = CONFIG.finance.minDeposit || 5;
 
+  // Construire les transactions depuis les vrais achats
+  const transactions = (userState.realAchats || []).map(a => ({
+    label: a.game || 'Pronostic',
+    date:  a.date || '—',
+    amount: -a.price,
+    type:  a.status === 'cancelled' || a.status === 'lost' ? 'remboursement' : 'achat',
+    status: a.status,
+  }));
+
+  // Ajouter les remboursements
+  const remboursements = (userState.realAchats || [])
+    .filter(a => a.status === 'cancelled' || a.status === 'lost')
+    .map(a => ({
+      label: 'Remboursement — ' + (a.game || 'Pronostic'),
+      date:  a.date || '—',
+      amount: a.price,
+      type: 'remboursement',
+    }));
+
+  const allTransactions = [...transactions, ...remboursements]
+    .sort((a, b) => (b.date > a.date ? 1 : -1));
+
   container.innerHTML = `
     <div class="solde-layout">
       <!-- Historique -->
       <div>
         <div class="section-header"><div><h2>Historique des transactions</h2></div></div>
         <div class="pronos-table" style="padding:0 var(--space-lg)">
-          ${MOCK_TRANSACTIONS.map(t => {
-            const icons = { depot:'⬇️', achat:'🛒', remboursement:'↩️' };
-            const pos = t.amount > 0;
-            return `
-              <div class="virement-row">
-                <div class="virement-info">
-                  <div class="virement-icon ${pos?'sent':'pending'}">${icons[t.type]||'·'}</div>
-                  <div>
-                    <div class="virement-label">${t.label}</div>
-                    <div class="virement-date">${t.date}</div>
-                  </div>
-                </div>
-                <div class="virement-amount" style="color:${pos?'var(--success)':'var(--text-dark)'}">
-                  ${pos?'+':''}${formatEuros(Math.abs(t.amount))}
-                </div>
-              </div>`;
-          }).join('')}
+          ${allTransactions.length === 0
+            ? `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted);font-size:0.88rem">Aucune transaction pour l'instant.</div>`
+            : allTransactions.map(t => {
+                const icons = { depot:'⬇️', achat:'🛒', remboursement:'↩️' };
+                const pos = t.amount > 0;
+                return `
+                  <div class="virement-row">
+                    <div class="virement-info">
+                      <div class="virement-icon ${pos?'sent':'pending'}">${icons[t.type]||'·'}</div>
+                      <div>
+                        <div class="virement-label">${t.label}</div>
+                        <div class="virement-date">${t.date}</div>
+                      </div>
+                    </div>
+                    <div class="virement-amount" style="color:${pos?'var(--success)':'var(--text-dark)'}">
+                      ${pos?'+':''}${formatEuros(Math.abs(t.amount))}
+                    </div>
+                  </div>`;
+              }).join('')
+          }
         </div>
       </div>
 
