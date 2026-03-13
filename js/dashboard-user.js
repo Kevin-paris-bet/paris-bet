@@ -76,15 +76,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pronosMap = {};
     try {
       const url = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
-      url.searchParams.set('select', 'id,game,sport,match_date,content');
+      url.searchParams.set('select', 'id,game,sport,match_date,content,tipster_id');
       url.searchParams.set('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI');
       const resp = await fetch(url.toString());
       const tousLesPronos = await resp.json();
       if (Array.isArray(tousLesPronos)) {
         tousLesPronos.filter(p => pronoIds.has(p.id)).forEach(p => pronosMap[p.id] = p);
 
-        // Charger les noms des tipsters
-        const tipsterIds = [...new Set(tousLesPronos.map(p => p.tipster_id).filter(Boolean))];
+        // Charger les noms des tipsters (depuis les pronos achetés uniquement)
+        const tipsterIds = [...new Set(Object.values(pronosMap).map(p => p.tipster_id).filter(Boolean))];
         if (tipsterIds.length > 0) {
           const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
           const rp = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id,first_name,last_name&apikey=' + ANON);
