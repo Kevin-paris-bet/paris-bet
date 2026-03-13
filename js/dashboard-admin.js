@@ -73,11 +73,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     const profilesMap = {};
     if (Array.isArray(profilesList)) profilesList.forEach(p => profilesMap[p.id] = p.first_name + ' ' + p.last_name);
 
+    // Charger les purchases pour avoir le vrai nombre d acheteurs et montant
+    const urlPurch = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/purchases');
+    urlPurch.searchParams.set('select', 'prono_id,amount');
+    urlPurch.searchParams.set('apikey', ANON);
+    const rpurch = await fetch(urlPurch.toString());
+    const allPurchases = await rpurch.json();
+    const purchasesMap = {};
+    if (Array.isArray(allPurchases)) {
+      allPurchases.forEach(a => {
+        if (!purchasesMap[a.prono_id]) purchasesMap[a.prono_id] = { count: 0, total: 0 };
+        purchasesMap[a.prono_id].count++;
+        purchasesMap[a.prono_id].total += parseFloat(a.amount || 0);
+      });
+    }
+
     if (Array.isArray(pronos) && pronos.length > 0) {
       adminState.pronos = pronos.map(p => ({
         ...p,
         tipsterName: profilesMap[p.tipster_id] || 'Inconnu',
-        revenue:     (p.buyers || 0) * (p.price || 0),
+        buyers:      (purchasesMap[p.id] || {}).count || 0,
+        revenue:     (purchasesMap[p.id] || {}).total || 0,
       }));
     } else {
       adminState.pronos = [];
