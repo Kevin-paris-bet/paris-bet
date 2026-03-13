@@ -556,6 +556,15 @@ function markVirementDone(id) {
   showToast(`Virement de ${formatEuros(v.amount)} à ${v.tipster} confirmé ✓`, 'success');
 }
 
+// ── Sidebar / Topbar ──────────────────────────────────────────
+function renderSidebar() {
+  document.querySelectorAll('.sidebar__link').forEach(l =>
+    l.classList.toggle('active', l.dataset.page === adminState.activePage)
+  );
+}
+
+function renderTopbar() {}
+
 // ── Utilitaires ───────────────────────────────────────────────
 function formatEuros(n) {
   return n % 1 === 0
