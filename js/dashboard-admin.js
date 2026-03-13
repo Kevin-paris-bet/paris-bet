@@ -498,79 +498,119 @@ function renderUsers(c) {
 // ══════════════════════════════════════════════════════════════
 //  PAGE — VIREMENTS
 // ══════════════════════════════════════════════════════════════
-function renderVirements(c) {
-  const pending = adminState.virements.filter(v => v.status === 'pending');
-  const done    = adminState.virements.filter(v => v.status === 'done');
-  const totalPending = pending.reduce((s,v) => s + v.amount, 0);
+async function renderVirements(c) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA  = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+
+  c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>';
+
+  // Charger les tipsters avec leur solde
+  const urlT = new URL(SUPA + '/rest/v1/profiles');
+  urlT.searchParams.set('select', 'id,first_name,last_name,balance,rib');
+  urlT.searchParams.set('role', 'eq.tipster');
+  urlT.searchParams.set('apikey', ANON);
+  const rT = await fetch(urlT.toString());
+  const tipsters = await rT.json();
+
+  // Charger l'historique des virements
+  const urlP = new URL(SUPA + '/rest/v1/payouts');
+  urlP.searchParams.set('select', 'id,tipster_id,amount,created_at');
+  urlP.searchParams.set('order', 'created_at.desc');
+  urlP.searchParams.set('apikey', ANON);
+  const rP = await fetch(urlP.toString());
+  const payoutsRaw = await rP.json();
+  const payouts = Array.isArray(payoutsRaw) ? payoutsRaw : [];
+
+  // Enrichir les payouts avec le nom du tipster
+  const tipstersMap = {};
+  if (Array.isArray(tipsters)) tipsters.forEach(t => { tipstersMap[t.id] = t.first_name + ' ' + t.last_name; });
+
+  const minPayout = 30;
+  const pending = Array.isArray(tipsters) ? tipsters.filter(t => parseFloat(t.balance) >= minPayout) : [];
+  const totalPending = pending.reduce((s,t) => s + parseFloat(t.balance), 0);
 
   c.innerHTML = `
-    <!-- Alerte virements à faire -->
     ${pending.length > 0 ? `
       <div style="background:var(--warning-pale);border:1px solid var(--warning);border-radius:var(--radius-lg);padding:var(--space-lg);margin-bottom:var(--space-xl);display:flex;gap:var(--space-md);align-items:center">
         <div style="font-size:1.8rem">💸</div>
         <div>
-          <div style="font-weight:700;color:var(--text-dark)">${pending.length} virement(s) à effectuer ce lundi</div>
-          <div style="font-size:0.85rem;color:var(--text-muted);margin-top:3px">Total : <strong>${formatEuros(totalPending)}</strong> à virer sur les RIB des tipsters</div>
+          <div style="font-weight:700;color:var(--text-dark)">${pending.length} virement(s) à effectuer</div>
+          <div style="font-size:0.85rem;color:var(--text-muted);margin-top:3px">Total : <strong>${formatEuros(totalPending)}</strong> à virer</div>
         </div>
       </div>` : ''}
 
-    <!-- Virements en attente -->
-    ${pending.length > 0 ? `
-      <div class="section-header">
-        <div><h2>À effectuer</h2><p>Lundi prochain · ${formatEuros(totalPending)} au total</p></div>
+    <div class="section-header">
+      <div><h2>À effectuer</h2><p>Tipsters avec solde ≥ ${minPayout}€</p></div>
+    </div>
+    <div class="pronos-table" style="margin-bottom:var(--space-xl)">
+      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 120px">
+        <span>Tipster</span><span>Solde</span><span>RIB</span><span>Action</span>
       </div>
-      <div class="pronos-table" style="margin-bottom:var(--space-xl)">
-        <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 120px">
-          <span>Tipster</span><span>Montant</span><span>Date prévue</span><span>Action</span>
-        </div>
-        ${pending.map(v => `
+      ${pending.length === 0
+        ? `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">✅ Aucun virement en attente.</div>`
+        : pending.map(t => `
           <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 120px">
             <div>
-              <div class="prono-title">${v.tipster}</div>
+              <div class="prono-title">${t.first_name} ${t.last_name}</div>
               <div class="prono-meta">Virement hebdomadaire</div>
             </div>
-            <div style="font-weight:700;font-size:1.05rem;color:var(--blue)">${formatEuros(v.amount)}</div>
-            <div style="font-size:0.82rem;color:var(--text-muted)">${v.date}</div>
+            <div style="font-weight:700;font-size:1.05rem;color:var(--blue)">${formatEuros(parseFloat(t.balance))}</div>
+            <div style="font-size:0.82rem;color:var(--text-muted)">${t.rib || '⚠️ Non renseigné'}</div>
             <div>
-              <button class="btn btn-primary btn--sm" onclick="markVirementDone(${v.id})">
+              <button class="btn btn-primary btn--sm" onclick="markVirementDone('${t.id}','${t.first_name} ${t.last_name}',${parseFloat(t.balance)})">
                 ✓ Effectué
               </button>
             </div>
           </div>`).join('')}
-      </div>` : `
-      <div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">
-        ✅ Aucun virement en attente.
-      </div>`}
-
-    <!-- Historique -->
-    <div class="section-header">
-      <div><h2>Historique</h2></div>
     </div>
+
+    <div class="section-header"><div><h2>Historique des virements</h2></div></div>
     <div class="pronos-table">
       <div class="table-header" style="grid-template-columns:2fr 1fr 1fr">
         <span>Tipster</span><span>Montant</span><span>Date</span>
       </div>
-      ${done.map(v => `
-        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr">
-          <div>
-            <div class="prono-title">${v.tipster}</div>
-            <div class="prono-meta">Virement effectué</div>
-          </div>
-          <div style="font-weight:700;color:var(--success)">+${formatEuros(v.amount)}</div>
-          <div style="font-size:0.82rem;color:var(--text-muted)">${v.date}</div>
-        </div>`).join('')}
+      ${!Array.isArray(payouts) || payouts.length === 0
+        ? `<div style="text-align:center;padding:var(--space-xl);color:var(--text-muted);font-size:0.88rem">Aucun virement effectué pour l'instant.</div>`
+        : payouts.map(v => `
+          <div class="table-row" style="grid-template-columns:2fr 1fr 1fr">
+            <div>
+              <div class="prono-title">${tipstersMap[v.tipster_id] || '—'}</div>
+              <div class="prono-meta">Virement effectué</div>
+            </div>
+            <div style="font-weight:700;color:var(--success)">+${formatEuros(v.amount)}</div>
+            <div style="font-size:0.82rem;color:var(--text-muted)">${new Date(v.created_at).toLocaleDateString('fr-FR')}</div>
+          </div>`).join('')}
     </div>
   `;
 }
 
-function markVirementDone(id) {
-  const v = adminState.virements.find(v => v.id === id);
-  if (!v) return;
-  if (!confirm(`Confirmer le virement de ${formatEuros(v.amount)} à ${v.tipster} ?`)) return;
-  // TODO (Supabase) : mettre à jour le statut + décrémenter le solde du tipster
-  v.status = 'done';
-  navigateTo('virements');
-  showToast(`Virement de ${formatEuros(v.amount)} à ${v.tipster} confirmé ✓`, 'success');
+async function markVirementDone(tipsterId, tipsterName, amount) {
+  if (!confirm(`Confirmer le virement de ${formatEuros(amount)} à ${tipsterName} ?\nCela mettra leur solde à 0.`)) return;
+
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA  = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+
+  try {
+    // 1. Créer le payout
+    await fetch(SUPA + '/rest/v1/payouts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+      body: JSON.stringify({ tipster_id: tipsterId, amount: amount })
+    });
+
+    // 2. Remettre le solde du tipster à 0
+    await fetch(SUPA + '/rest/v1/profiles?id=eq.' + tipsterId, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+      body: JSON.stringify({ balance: 0 })
+    });
+
+    showToast(`Virement de ${formatEuros(amount)} à ${tipsterName} confirmé ✓`, 'success');
+    navigateTo('virements');
+  } catch(e) {
+    console.error(e);
+    showToast('Erreur lors du virement', 'error');
+  }
 }
 
 // ── Sidebar / Topbar ──────────────────────────────────────────
