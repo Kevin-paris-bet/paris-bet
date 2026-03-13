@@ -311,9 +311,9 @@ function renderPronosTable(pronos, compact) {
             <div>
               ${p.status === 'pending' ? `
                 <div style="display:flex;gap:4px;flex-wrap:wrap">
-                  <button class="btn-validate btn-validate--won"   onclick="validateProno(${p.id},'won')">✓ Gagné</button>
-                  <button class="btn-validate btn-validate--lost"  onclick="validateProno(${p.id},'lost')">✕ Perdu</button>
-                  <button class="btn-validate btn-validate--cancel" onclick="validateProno(${p.id},'cancelled')">⊘</button>
+                  <button class="btn-validate btn-validate--won"   onclick="validateProno('${p.id}','won')">✓ Gagné</button>
+                  <button class="btn-validate btn-validate--lost"  onclick="validateProno('${p.id}','lost')">✕ Perdu</button>
+                  <button class="btn-validate btn-validate--cancel" onclick="validateProno('${p.id}','cancelled')">⊘</button>
                 </div>` : `<span style="font-size:0.75rem;color:var(--text-light)">Validé</span>`}
             </div>`}
         </div>`).join('')}
