@@ -506,11 +506,11 @@ async function renderVirements(c) {
 
   // Charger les tipsters avec leur solde
   const urlT = new URL(SUPA + '/rest/v1/profiles');
-  urlT.searchParams.set('select', 'id,first_name,last_name,balance,rib');
-  urlT.searchParams.set('role', 'eq.tipster');
+  urlT.searchParams.set('select', 'id,first_name,last_name,balance,rib,role');
   urlT.searchParams.set('apikey', ANON);
-  const rT = await fetch(urlT.toString());
-  const tipsters = await rT.json();
+  const rT = await fetch(urlT.toString(), { headers: { 'apikey': ANON } });
+  const allProfiles = await rT.json();
+  const tipsters = Array.isArray(allProfiles) ? allProfiles.filter(p => p.role === 'tipster') : [];
 
   // Charger l'historique des virements
   const urlP = new URL(SUPA + '/rest/v1/payouts');
