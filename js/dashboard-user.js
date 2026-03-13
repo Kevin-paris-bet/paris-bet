@@ -499,7 +499,7 @@ function renderPageExplorer(container) {
           <div class="achat-card__header">
             <div>
               <div class="achat-card__match">${p.game}</div>
-              <div class="achat-card__meta">${p.sport} · ${p.match_date || '—'} · par <strong>${tipsterName}</strong></div>
+              <div class="achat-card__meta">${p.sport} · ${p.match_date || '—'} · par <a href="../pages/tipster-public.html?id=${p.tipster_id}" style="color:var(--blue);font-weight:600">${tipsterName}</a></div>
             </div>
             <div class="achat-card__right">
               <div class="achat-card__price">${p.price} €</div>
