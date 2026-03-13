@@ -505,7 +505,7 @@ async function renderVirements(c) {
   c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>';
 
   // Charger les tipsters avec leur solde
-  const rT = await fetch(SUPA + '/rest/v1/profiles?select=id,first_name,last_name,balance,rib,role&apikey=' + ANON, {
+  const rT = await fetch(SUPA + '/rest/v1/profiles?select=id,first_name,last_name,balance,rib_iban,rib_bic,role&apikey=' + ANON, {
     headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
   });
   const allProfiles = await rT.json();
@@ -554,7 +554,7 @@ async function renderVirements(c) {
               <div class="prono-meta">Virement hebdomadaire</div>
             </div>
             <div style="font-weight:700;font-size:1.05rem;color:var(--blue)">${formatEuros(parseFloat(t.balance))}</div>
-            <div style="font-size:0.82rem;color:var(--text-muted)">${t.rib || '⚠️ Non renseigné'}</div>
+            <div style="font-size:0.82rem;color:var(--text-muted)">${t.rib_iban ? t.rib_iban + (t.rib_bic ? ' / ' + t.rib_bic : '') : '⚠️ Non renseigné'}</div>
             <div>
               <button class="btn btn-primary btn--sm" onclick="markVirementDone('${t.id}','${t.first_name} ${t.last_name}',${parseFloat(t.balance)})">
                 ✓ Effectué
