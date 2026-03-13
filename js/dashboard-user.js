@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pronosMap = {};
     try {
       const url = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
-      url.searchParams.set('select', 'id,game,sport,match_date,prediction,odds');
+      url.searchParams.set('select', 'id,game,sport,match_date,content');
       url.searchParams.set('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI');
       const resp = await fetch(url.toString());
       const tousLesPronos = await resp.json();
@@ -95,8 +95,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         tipster:    '—',
         price:      parseFloat(a.amount) || 0,
         status:     a.status || 'pending',
-        prediction: p.prediction || '',
-        odds:       p.odds || '',
+        content: p.content || '',
+        content_odds:       '' || '',
         pronoId:    a.prono_id,
       };
     });
@@ -107,7 +107,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Charger les pronos disponibles via fetch direct
   try {
     const url2 = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
-    url2.searchParams.set('select', 'id,game,sport,match_date,prediction,odds,price,status,tipster_id');
+    url2.searchParams.set('select', 'id,game,sport,match_date,content,price,status,tipster_id');
     url2.searchParams.set('status', 'eq.pending');
     url2.searchParams.set('order', 'created_at.desc');
     url2.searchParams.set('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI');
@@ -472,7 +472,7 @@ function renderPageExplorer(container) {
             </div>
           </div>
           ${bought ? `<div style="margin-top:8px;padding:10px;background:var(--blue-pale);border-radius:var(--radius-sm);font-size:0.9rem">
-            <strong>Pronostic :</strong> ${p.prediction || '—'} · <strong>Cote :</strong> ${p.odds || '—'}
+            <strong>Pronostic :</strong> ${p.content || '—'} · <strong>Cote :</strong> ${'' || '—'}
           </div>` : `<div style="margin-top:8px;font-size:0.85rem;color:var(--text-muted)">🔒 Achetez pour voir le pronostic</div>`}
         </div>`;
       }).join('')}
@@ -533,12 +533,12 @@ async function buyProno(pronoId, price, matchName) {
 
     if (achats && achats.length > 0) {
       const pronoIds = achats.map(a => a.prono_id);
-      const { data: pronosData } = await sb.from('pronos').select('id, game, sport, match_date, prediction, odds').in('id', pronoIds);
+      const { data: pronosData } = await sb.from('pronos').select('id, game, sport, match_date, content').in('id', pronoIds);
       const pronosMap = {};
       (pronosData || []).forEach(p => pronosMap[p.id] = p);
       userState.realAchats = achats.map(a => {
         const p = pronosMap[a.prono_id] || {};
-        return { id: a.id, game: p.game||"—", sport: p.sport||'—', date: p.match_date||'—', tipster:'—', price: parseFloat(a.amount)||0, status: a.status||'pending', prediction: p.prediction||'', odds: p.odds||'', pronoId: a.prono_id };
+        return { id: a.id, game: p.game||"—", sport: p.sport||'—', date: p.match_date||'—', tipster:'—', price: parseFloat(a.amount)||0, status: a.status||'pending', prediction: p.content||'', content_odds: ''||'', pronoId: a.prono_id };
       });
     } else { userState.realAchats = []; }
 

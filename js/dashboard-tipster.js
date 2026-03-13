@@ -100,7 +100,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Charger les vrais pronos depuis Supabase
   const { data: pronos } = await sb
     .from('pronos')
-    .select('id, game, sport, match_date, prediction, odds, price, content, status, buyers, tipster_id, created_at')
+    .select('id, game, sport, match_date, content, price, content, status, buyers, tipster_id, created_at')
     .eq('tipster_id', user.id)
     .order('created_at', { ascending: false });
 
