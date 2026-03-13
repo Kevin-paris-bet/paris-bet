@@ -54,19 +54,36 @@ document.addEventListener('DOMContentLoaded', async () => {
   const user = await requireAuth(['admin']);
   if (!user) return;
 
-  // Charger les vrais pronos depuis Supabase
-  const { data: pronos } = await sb
-    .from('pronos')
-    .select('id, game, sport, match_date, content, price, status, buyers, tipster_id, created_at, profiles(first_name, last_name)')
-    .order('created_at', { ascending: false });
+  // Charger les vrais pronos via fetch direct
+  try {
+    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+    const urlP = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
+    urlP.searchParams.set('select', 'id,game,sport,match_date,content,price,status,buyers,tipster_id,created_at');
+    urlP.searchParams.set('order', 'created_at.desc');
+    urlP.searchParams.set('apikey', ANON);
+    const rp = await fetch(urlP.toString());
+    const pronos = await rp.json();
 
-  if (pronos && pronos.length > 0) {
-    adminState.pronos = pronos.map(p => ({
-      ...p,
-      tipsterName: p.profiles ? p.profiles.first_name + ' ' + p.profiles.last_name : 'Inconnu',
-      revenue:     p.buyers * p.price,
-    }));
-  } else {
+    // Charger les profils pour les noms tipsters
+    const urlPr = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles');
+    urlPr.searchParams.set('select', 'id,first_name,last_name');
+    urlPr.searchParams.set('apikey', ANON);
+    const rpr = await fetch(urlPr.toString());
+    const profilesList = await rpr.json();
+    const profilesMap = {};
+    if (Array.isArray(profilesList)) profilesList.forEach(p => profilesMap[p.id] = p.first_name + ' ' + p.last_name);
+
+    if (Array.isArray(pronos) && pronos.length > 0) {
+      adminState.pronos = pronos.map(p => ({
+        ...p,
+        tipsterName: profilesMap[p.tipster_id] || 'Inconnu',
+        revenue:     (p.buyers || 0) * (p.price || 0),
+      }));
+    } else {
+      adminState.pronos = [];
+    }
+  } catch(e) {
+    console.error('Erreur chargement pronos admin:', e);
     adminState.pronos = [];
   }
 
@@ -325,12 +342,37 @@ async function validateProno(id, status) {
 
     if (error) throw error;
 
-    // Si gagné → créditer le tipster (90%) et l'admin (10%)
-    if (status === 'won' && p.buyers > 0) {
-      const totalRevenue = p.buyers * p.price;
-      const tipsterShare = totalRevenue * (1 - CONFIG.finance.commissionRate);
-      await sb.rpc('credit_tipster', { tipster_id: p.tipster_id, amount: tipsterShare })
-        .catch(() => {}); // On gère l'erreur silencieusement si la fonction n'existe pas encore
+    // Récupérer tous les achats de ce prono
+    const { data: purchases } = await sb
+      .from('purchases')
+      .select('*')
+      .eq('prono_id', p.id)
+      .eq('status', 'pending');
+
+    if (purchases && purchases.length > 0) {
+      if (status === 'won') {
+        // Créditer le tipster à 90% du total
+        const totalRevenue = purchases.reduce((sum, a) => sum + parseFloat(a.amount || 0), 0);
+        const tipsterShare = totalRevenue * 0.9;
+        await sb.from('profiles').update({ balance: sb.rpc('increment_balance', { user_id: p.tipster_id, amount: tipsterShare }) });
+        // Mettre à jour les achats en "won"
+        await sb.from('purchases').update({ status: 'won' }).eq('prono_id', p.id);
+        // Créditer directement le solde du tipster
+        const { data: tipsterProfile } = await sb.from('profiles').select('balance').eq('id', p.tipster_id).single();
+        if (tipsterProfile) {
+          await sb.from('profiles').update({ balance: parseFloat(tipsterProfile.balance || 0) + tipsterShare }).eq('id', p.tipster_id);
+        }
+      } else {
+        // Rembourser chaque acheteur
+        for (const achat of purchases) {
+          const { data: userProfile } = await sb.from('profiles').select('balance').eq('id', achat.user_id).single();
+          if (userProfile) {
+            await sb.from('profiles').update({ balance: parseFloat(userProfile.balance || 0) + parseFloat(achat.amount || 0) }).eq('id', achat.user_id);
+          }
+        }
+        // Mettre à jour les achats
+        await sb.from('purchases').update({ status }).eq('prono_id', p.id);
+      }
     }
 
     // Mettre à jour localement
