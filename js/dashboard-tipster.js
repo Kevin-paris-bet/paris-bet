@@ -97,17 +97,39 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (sidebarName)   sidebarName.textContent  = fullName;
   if (sidebarAvatar) sidebarAvatar.textContent = initials;
 
-  // Charger les vrais pronos depuis Supabase
-  const { data: pronos } = await sb
-    .from('pronos')
-    .select('id, game, sport, match_date, content, price, content, status, buyers, tipster_id, created_at')
-    .eq('tipster_id', user.id)
-    .order('created_at', { ascending: false });
+  // Charger les vrais pronos via fetch direct
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  try {
+    const urlP = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
+    urlP.searchParams.set('select', 'id,game,sport,match_date,content,price,status,buyers,tipster_id,created_at');
+    urlP.searchParams.set('tipster_id', 'eq.' + user.id);
+    urlP.searchParams.set('order', 'created_at.desc');
+    urlP.searchParams.set('apikey', ANON);
+    const rp = await fetch(urlP.toString());
+    const pronos = await rp.json();
 
-  if (pronos && pronos.length > 0) {
-    state.pronos = pronos;
-  } else {
-    state.pronos = []; // Pas de données de démo
+    // Charger les purchases pour avoir le vrai nombre d acheteurs
+    const urlPurch = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/purchases');
+    urlPurch.searchParams.set('select', 'prono_id,amount');
+    urlPurch.searchParams.set('apikey', ANON);
+    const rpurch = await fetch(urlPurch.toString());
+    const allPurchases = await rpurch.json();
+    const purchasesMap = {};
+    if (Array.isArray(allPurchases)) {
+      allPurchases.forEach(a => {
+        if (!purchasesMap[a.prono_id]) purchasesMap[a.prono_id] = 0;
+        purchasesMap[a.prono_id]++;
+      });
+    }
+
+    if (Array.isArray(pronos) && pronos.length > 0) {
+      state.pronos = pronos.map(p => ({ ...p, buyers: purchasesMap[p.id] || 0 }));
+    } else {
+      state.pronos = [];
+    }
+  } catch(e) {
+    console.error('Erreur chargement pronos tipster:', e);
+    state.pronos = [];
   }
 
   renderSidebar();
@@ -357,23 +379,10 @@ function renderPageSolde(container) {
       </div>
     </div>
 
-    <div class="pronos-table" style="padding: 0 var(--space-lg);">
-      ${MOCK_VIREMENTS.map(v => `
-        <div class="virement-row">
-          <div class="virement-info">
-            <div class="virement-icon ${v.status}">
-              ${v.status === 'sent' ? '✓' : '⏳'}
-            </div>
-            <div>
-              <div class="virement-label">${v.label}</div>
-              <div class="virement-date">${v.date}</div>
-            </div>
-          </div>
-          <div class="virement-amount ${v.status === 'sent' ? 'positive' : 'pending'}">
-            ${v.status === 'sent' ? '+' : ''}${formatEuros(v.amount)}
-          </div>
-        </div>
-      `).join('')}
+    <div class="pronos-table" style="padding: 0 var(--space-lg);" id="virements-list">
+      <div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted);font-size:0.88rem">
+        ⏳ Aucun virement effectué pour l'instant.
+      </div>
     </div>
 
     <p style="font-size:0.78rem;color:var(--text-muted);margin-top:var(--space-md);text-align:center;">
