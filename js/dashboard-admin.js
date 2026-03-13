@@ -342,33 +342,34 @@ async function validateProno(id, status) {
 
     if (error) throw error;
 
-    // Récupérer tous les achats de ce prono
+    // Récupérer tous les achats de ce prono (sans filtre status)
     const { data: purchases } = await sb
       .from('purchases')
       .select('*')
-      .eq('prono_id', p.id)
-      .eq('status', 'pending');
+      .eq('prono_id', p.id);
 
     if (purchases && purchases.length > 0) {
       if (status === 'won') {
-        // Créditer le tipster à 90% du total
+        // Calculer le total réel depuis les achats
         const totalRevenue = purchases.reduce((sum, a) => sum + parseFloat(a.amount || 0), 0);
         const tipsterShare = totalRevenue * 0.9;
-        await sb.from('profiles').update({ balance: sb.rpc('increment_balance', { user_id: p.tipster_id, amount: tipsterShare }) });
+
+        // Lire le solde actuel du tipster
+        const { data: tipsterProfile } = await sb.from('profiles').select('balance').eq('id', p.tipster_id).single();
+        const currentBalance = parseFloat(tipsterProfile?.balance || 0);
+
+        // Créditer le tipster
+        await sb.from('profiles').update({ balance: currentBalance + tipsterShare }).eq('id', p.tipster_id);
+
         // Mettre à jour les achats en "won"
         await sb.from('purchases').update({ status: 'won' }).eq('prono_id', p.id);
-        // Créditer directement le solde du tipster
-        const { data: tipsterProfile } = await sb.from('profiles').select('balance').eq('id', p.tipster_id).single();
-        if (tipsterProfile) {
-          await sb.from('profiles').update({ balance: parseFloat(tipsterProfile.balance || 0) + tipsterShare }).eq('id', p.tipster_id);
-        }
+
       } else {
         // Rembourser chaque acheteur
         for (const achat of purchases) {
           const { data: userProfile } = await sb.from('profiles').select('balance').eq('id', achat.user_id).single();
-          if (userProfile) {
-            await sb.from('profiles').update({ balance: parseFloat(userProfile.balance || 0) + parseFloat(achat.amount || 0) }).eq('id', achat.user_id);
-          }
+          const currentBalance = parseFloat(userProfile?.balance || 0);
+          await sb.from('profiles').update({ balance: currentBalance + parseFloat(achat.amount || 0) }).eq('id', achat.user_id);
         }
         // Mettre à jour les achats
         await sb.from('purchases').update({ status }).eq('prono_id', p.id);
