@@ -505,10 +505,9 @@ async function renderVirements(c) {
   c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>';
 
   // Charger les tipsters avec leur solde
-  const urlT = new URL(SUPA + '/rest/v1/profiles');
-  urlT.searchParams.set('select', 'id,first_name,last_name,balance,rib,role');
-  urlT.searchParams.set('apikey', ANON);
-  const rT = await fetch(urlT.toString(), { headers: { 'apikey': ANON } });
+  const rT = await fetch(SUPA + '/rest/v1/profiles?select=id,first_name,last_name,balance,rib,role&apikey=' + ANON, {
+    headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
+  });
   const allProfiles = await rT.json();
   const tipsters = Array.isArray(allProfiles) ? allProfiles.filter(p => p.role === 'tipster') : [];
 
