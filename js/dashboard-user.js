@@ -82,6 +82,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       const tousLesPronos = await resp.json();
       if (Array.isArray(tousLesPronos)) {
         tousLesPronos.filter(p => pronoIds.has(p.id)).forEach(p => pronosMap[p.id] = p);
+
+        // Charger les noms des tipsters
+        const tipsterIds = [...new Set(tousLesPronos.map(p => p.tipster_id).filter(Boolean))];
+        if (tipsterIds.length > 0) {
+          const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+          const rp = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id,first_name,last_name&apikey=' + ANON);
+          const profiles = await rp.json();
+          if (Array.isArray(profiles)) {
+            const profilesMap = {};
+            profiles.forEach(p => profilesMap[p.id] = p.first_name + ' ' + p.last_name);
+            Object.values(pronosMap).forEach(p => p.tipsterName = profilesMap[p.tipster_id] || '—');
+          }
+        }
       }
     } catch(e) { console.error('Erreur fetch pronos:', e); }
 
@@ -92,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         game:      p.game || "—",
         sport:      p.sport || '—',
         date:       p.match_date || '—',
-        tipster:    '—',
+        tipster:    (pronosMap[a.prono_id] || {}).tipsterName || '—',
         price:      parseFloat(a.amount) || 0,
         status:     a.status || 'pending',
         content: p.content || '',
