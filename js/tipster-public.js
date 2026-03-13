@@ -130,29 +130,31 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       if (Array.isArray(pronos)) {
         // Charger les achats de l'utilisateur connecté si connecté
-        const { data: { user } } = await sb.auth.getUser();
         let myPurchasedIds = new Set();
-        if (user) {
-          const urlMyP = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/purchases');
-          urlMyP.searchParams.set('select', 'prono_id');
-          urlMyP.searchParams.set('user_id', 'eq.' + user.id);
-          urlMyP.searchParams.set('apikey', ANON);
-          const rMyP = await fetch(urlMyP.toString());
-          const myP = await rMyP.json();
-          if (Array.isArray(myP)) myP.forEach(p => myPurchasedIds.add(p.prono_id));
+        try {
+          const { data: { user } } = await sb.auth.getUser();
+          if (user) {
+            const urlMyP = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/purchases');
+            urlMyP.searchParams.set('select', 'prono_id');
+            urlMyP.searchParams.set('user_id', 'eq.' + user.id);
+            urlMyP.searchParams.set('apikey', ANON);
+            const rMyP = await fetch(urlMyP.toString());
+            const myP = await rMyP.json();
+            if (Array.isArray(myP)) myP.forEach(p => myPurchasedIds.add(p.prono_id));
 
-          // Charger le solde de l'utilisateur
-          const urlBal = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles');
-          urlBal.searchParams.set('select', 'balance,first_name');
-          urlBal.searchParams.set('id', 'eq.' + user.id);
-          urlBal.searchParams.set('apikey', ANON);
-          const rBal = await fetch(urlBal.toString());
-          const balData = await rBal.json();
-          if (Array.isArray(balData) && balData.length > 0) {
-            pubState.user.balance = parseFloat(balData[0].balance || 0);
-            pubState.user.firstName = balData[0].first_name;
+            // Charger le solde de l'utilisateur
+            const urlBal = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles');
+            urlBal.searchParams.set('select', 'balance,first_name');
+            urlBal.searchParams.set('id', 'eq.' + user.id);
+            urlBal.searchParams.set('apikey', ANON);
+            const rBal = await fetch(urlBal.toString());
+            const balData = await rBal.json();
+            if (Array.isArray(balData) && balData.length > 0) {
+              pubState.user.balance = parseFloat(balData[0].balance || 0);
+              pubState.user.firstName = balData[0].first_name;
+            }
           }
-        }
+        } catch(authErr) { /* utilisateur non connecté */ }
 
         pubState.pronos = pronos.map(p => ({
           ...p,
