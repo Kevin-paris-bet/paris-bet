@@ -338,6 +338,7 @@ function renderPronosTable(pronos, compact) {
           <div>
             <div class="prono-title">${p.game}</div>
             <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
+            ${p.content ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:3px;font-style:italic">📋 ${p.content}</div>` : ''}
           </div>
           <div style="font-size:0.85rem;color:var(--text-muted)">${p.tipsterName || "—"}</div>
           <div class="buyers-count"><span>👥</span>${p.buyers}</div>
