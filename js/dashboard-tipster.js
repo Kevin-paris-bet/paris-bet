@@ -88,6 +88,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   MOCK_TIPSTER.lastName  = user.profile.last_name;
   MOCK_TIPSTER.balance   = parseFloat(user.profile.balance) || 0;
   MOCK_TIPSTER.pending   = parseFloat(user.profile.pending) || 0;
+  MOCK_TIPSTER.ribName   = user.profile.rib_name || '';
+  MOCK_TIPSTER.ribIban   = user.profile.rib_iban || '';
+  MOCK_TIPSTER.ribBic    = user.profile.rib_bic || '';
+  MOCK_TIPSTER.ribSaved  = !!(user.profile.rib_iban);
 
   // Mettre à jour la sidebar immédiatement
   const fullName = MOCK_TIPSTER.firstName + ' ' + MOCK_TIPSTER.lastName;
@@ -464,7 +468,7 @@ function formatIBAN(input) {
   input.value = val.match(/.{1,4}/g)?.join(' ') || val;
 }
 
-function saveRIB() {
+async function saveRIB() {
   const name = document.getElementById('rib-name').value.trim();
   const iban = document.getElementById('rib-iban').value.trim();
   const bic  = document.getElementById('rib-bic').value.trim();
@@ -472,10 +476,27 @@ function saveRIB() {
   if (!name || !iban || !bic) {
     showToast('Veuillez remplir tous les champs.', 'error'); return;
   }
-  // TODO (Supabase) : await sb.from('profiles').update({ rib: { name, iban, bic } })
-  MOCK_TIPSTER.ribSaved = true;
-  showToast('Coordonnées bancaires enregistrées ! ✓', 'success');
-  navigateTo('rib');
+
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) { showToast('Erreur : non connecté', 'error'); return; }
+
+  try {
+    const r = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?id=eq.' + user.id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+      body: JSON.stringify({ rib_name: name, rib_iban: iban, rib_bic: bic })
+    });
+    if (r.ok || r.status === 204) {
+      MOCK_TIPSTER.ribSaved = true;
+      showToast('Coordonnées bancaires enregistrées ! ✓', 'success');
+      navigateTo('rib');
+    } else {
+      showToast('Erreur lors de la sauvegarde', 'error');
+    }
+  } catch(e) {
+    showToast('Erreur réseau', 'error');
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
