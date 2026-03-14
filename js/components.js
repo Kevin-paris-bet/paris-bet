@@ -25,9 +25,9 @@ async function renderNavbar({ transparent = false, activePage = '' } = {}) {
       const prof = await rProf.json();
       if (Array.isArray(prof) && prof.length > 0) {
         const role = prof[0].role;
-        if (role === 'admin') userDashboard = CONFIG.pages.dashboardAdmin;
-        else if (role === 'tipster') userDashboard = CONFIG.pages.dashboardTipster;
-        else userDashboard = CONFIG.pages.dashboardUser;
+        if (role === 'admin') userDashboard = CONFIG.pages.admin;
+        else if (role === 'tipster') userDashboard = CONFIG.pages.tipster;
+        else userDashboard = CONFIG.pages.user;
       }
     }
   } catch(e) {}
