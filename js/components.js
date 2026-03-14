@@ -16,7 +16,8 @@ async function renderNavbar({ transparent = false, activePage = '' } = {}) {
   let isLoggedIn = false;
   let userDashboard = CONFIG.pages.auth + '#login';
   try {
-    const { data: { user } } = await sb.auth.getUser();
+    const { data: { session } } = await sb.auth.getSession();
+    const user = session?.user || null;
     if (user) {
       isLoggedIn = true;
       // Récupérer le rôle pour rediriger vers le bon dashboard
