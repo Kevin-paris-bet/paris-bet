@@ -19,8 +19,8 @@ const MOCK_TIPSTER_PUBLIC = {
 
 const MOCK_USER = {
   firstName: 'Thomas',
-  balance:   42.50,
-  pending:   13.00,  // Sommes en attente
+  balance:   0,
+  pending:   0,
 };
 
 const MOCK_PUBLIC_PRONOS = [
@@ -92,9 +92,6 @@ const pubState = {
 
 // ── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  // Attendre que Supabase récupère la session depuis localStorage
-  await new Promise(resolve => setTimeout(resolve, 300));
-
   await renderNavbar({ transparent: false });
 
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
@@ -136,8 +133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Charger les achats de l'utilisateur connecté si connecté
         let myPurchasedIds = new Set();
         try {
-          const { data: { session } } = await sb.auth.getSession();
-          const user = session?.user || null;
+          const { data: { user } } = await sb.auth.getUser();
           if (user) {
             pubState.isLoggedIn = true;
             const urlMyP = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/purchases');
@@ -148,15 +144,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             const myP = await rMyP.json();
             if (Array.isArray(myP)) myP.forEach(p => myPurchasedIds.add(p.prono_id));
 
-            // Charger le solde de l'utilisateur
+            // Charger le solde ET le pending de l'utilisateur
             const urlBal = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles');
-            urlBal.searchParams.set('select', 'balance,first_name');
+            urlBal.searchParams.set('select', 'balance,pending,first_name');
             urlBal.searchParams.set('id', 'eq.' + user.id);
             urlBal.searchParams.set('apikey', ANON);
             const rBal = await fetch(urlBal.toString());
             const balData = await rBal.json();
             if (Array.isArray(balData) && balData.length > 0) {
               pubState.user.balance = parseFloat(balData[0].balance || 0);
+              pubState.user.pending = parseFloat(balData[0].pending || 0);
               pubState.user.firstName = balData[0].first_name;
             }
           }
@@ -378,7 +375,7 @@ function openBuyModal(id) {
   const alertHtml = !hasEnough ? `
     <div class="buy-panel__alert">
       ⚠️ Solde insuffisant.
-      <a href="dashboard-user.html">Recharger →</a>
+      <a href="/pages/dashboard-user.html?page=solde">Recharger →</a>
     </div>` : '';
 
   const html = `
