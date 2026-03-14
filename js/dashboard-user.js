@@ -120,7 +120,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Charger les pronos disponibles via fetch direct
   try {
     const url2 = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
-    url2.searchParams.set('select', 'id,game,sport,match_date,content,price,status,tipster_id');
+    url2.searchParams.set('select', 'id,game,sport,match_date,content,price,status,tipster_id,cote');
     url2.searchParams.set('status', 'eq.pending');
     url2.searchParams.set('order', 'created_at.desc');
     url2.searchParams.set('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI');
@@ -503,6 +503,7 @@ function renderPageExplorer(container) {
             </div>
             <div class="achat-card__right">
               <div class="achat-card__price">${p.price} €</div>
+              ${p.cote ? `<div style="font-size:0.75rem;color:var(--text-muted);text-align:right">📊 Cote : <strong style="color:var(--primary)">${parseFloat(p.cote).toFixed(2).replace('.', ',')}</strong></div>` : ''}
               ${bought
                 ? `<span class="badge badge-won">✓ Acheté</span>`
                 : `<button class="btn btn-primary" style="font-size:0.85rem;padding:8px 16px" onclick="buyProno('${p.id}', ${p.price}, '${p.game.replace(/'/g,"\'")}')">Acheter</button>`
