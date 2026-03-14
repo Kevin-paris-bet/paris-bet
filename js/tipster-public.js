@@ -472,7 +472,16 @@ async function confirmBuy() {
     pubState.user.balance = newBalance;
     pubState.user.pending = newPending;
     const idx = pubState.pronos.findIndex(p => p.id === prono.id);
-    if (idx !== -1) { pubState.pronos[idx].purchased = true; pubState.pronos[idx].buyers += 1; }
+    if (idx !== -1) {
+      pubState.pronos[idx].purchased = true;
+      pubState.pronos[idx].buyers += 1;
+      // Incrémenter buyers en base
+      await fetch(SUPA + '/rest/v1/pronos?id=eq.' + prono.id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + JWT },
+        body: JSON.stringify({ buyers: pubState.pronos[idx].buyers })
+      });
+    }
 
     closeBuyModal();
     renderUserBalance();

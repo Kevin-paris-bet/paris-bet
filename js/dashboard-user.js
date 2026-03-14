@@ -556,7 +556,19 @@ async function buyProno(pronoId, price, matchName) {
     if (purchErr) throw purchErr;
 
     // Incrémenter le nb d'acheteurs sur le prono
-    try { await sb.rpc('increment_buyers', { prono_id: pronoId }); } catch(e) {}
+    try {
+      const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+      const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+      // Lire le buyers actuel puis incrémenter
+      const rB = await fetch(SUPA + '/rest/v1/pronos?select=buyers&id=eq.' + pronoId + '&apikey=' + ANON);
+      const bData = await rB.json();
+      const currentBuyers = (Array.isArray(bData) && bData.length > 0) ? (parseInt(bData[0].buyers) || 0) : 0;
+      await fetch(SUPA + '/rest/v1/pronos?id=eq.' + pronoId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+        body: JSON.stringify({ buyers: currentBuyers + 1 })
+      });
+    } catch(e) { console.error('Erreur increment buyers:', e); }
 
     // Mettre à jour l'état local
     MOCK_USER.balance = newBalance;
