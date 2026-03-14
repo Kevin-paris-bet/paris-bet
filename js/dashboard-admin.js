@@ -467,6 +467,7 @@ function renderTipsters(c) {
               : `<span class="badge badge-lost" style="font-size:0.7rem">✕ Manquant</span>`}
           </div>
           <div class="table-actions">
+            <button class="btn-icon" title="Voir la fiche" onclick="openFicheTipster('${t.id}')">👁</button>
             <button class="btn-icon ${t.suspended?'':'danger'}" title="${t.suspended?'Réactiver':'Suspendre'}"
               onclick="toggleSuspend('${t.id}')">
               ${t.suspended ? '✓' : '⛔'}
@@ -524,11 +525,11 @@ function renderUsers(c) {
     </div>
 
     <div class="pronos-table">
-      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr">
-        <span>Utilisateur</span><span>Solde dispo</span><span>En attente</span><span>Inscrit</span>
+      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 60px">
+        <span>Utilisateur</span><span>Solde dispo</span><span>En attente</span><span>Inscrit</span><span></span>
       </div>
       ${adminState.users.map(u => `
-        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
+        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 60px">
           <div>
             <div class="prono-title">${u.name}</div>
             <div class="prono-meta">${u.email}</div>
@@ -536,6 +537,7 @@ function renderUsers(c) {
           <div style="font-weight:700;color:var(--blue)">${formatEuros(u.balance)}</div>
           <div style="font-weight:600;color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</div>
           <div style="font-size:0.8rem;color:var(--text-muted)">${u.joined}</div>
+          <div><button class="btn-icon" title="Voir la fiche" onclick="openFicheUser('${u.id}')">👁</button></div>
         </div>`).join('')}
     </div>
   `;
@@ -872,6 +874,178 @@ async function loadFinances() {
   } catch(e) {
     console.error('Erreur finances:', e);
     table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur de chargement.</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MODALES — FICHES DÉTAILLÉES
+// ══════════════════════════════════════════════════════════════
+function closeFicheModal(e) {
+  if (!e || e.target === document.getElementById('fiche-modal-overlay')) {
+    document.getElementById('fiche-modal-overlay').style.display = 'none';
+  }
+}
+
+async function openFicheTipster(id) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  const overlay = document.getElementById('fiche-modal-overlay');
+  const modal   = document.getElementById('fiche-modal-content');
+  overlay.style.display = 'block';
+  modal.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Chargement...</div>';
+
+  try {
+    // Profil
+    const rP = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,rib_iban,rib_bic,rib_name,created_at&id=eq.${id}&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const profiles = await rP.json();
+    const p = profiles[0] || {};
+
+    // Pronos
+    const rPr = await fetch(`${SUPA}/rest/v1/pronos?select=id,game,sport,match_date,status,buyers,price,content,cote&tipster_id=eq.${id}&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const pronos = await rPr.json();
+
+    // Stats financières
+    const pronoIds = (pronos||[]).map(p => p.id);
+    let totalCA = 0, totalComm = 0;
+    if (pronoIds.length > 0) {
+      const rPurch = await fetch(`${SUPA}/rest/v1/purchases?select=amount,status&prono_id=in.(${pronoIds.join(',')})&apikey=${ANON}`, { headers: { apikey: ANON } });
+      const purchases = await rPurch.json();
+      totalCA = (purchases||[]).reduce((s,p) => s + parseFloat(p.amount||0), 0);
+      totalComm = totalCA * 0.10;
+    }
+
+    const won  = (pronos||[]).filter(p => p.status === 'won').length;
+    const lost = (pronos||[]).filter(p => p.status === 'lost').length;
+    const wr   = (won+lost) > 0 ? Math.round(won/(won+lost)*100) : 0;
+
+    modal.innerHTML = `
+      <h2 style="margin-bottom:4px">${p.first_name} ${p.last_name}</h2>
+      <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">
+        Membre depuis ${formatDate(p.created_at?.split('T')[0])}
+      </div>
+
+      <!-- Stats rapides -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-md);margin-bottom:var(--space-lg)">
+        <div class="stat-card"><div class="stat-card__label">Pronos</div><div class="stat-card__value">${(pronos||[]).length}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Win Rate</div><div class="stat-card__value" style="color:var(--success)">${wr}%</div></div>
+        <div class="stat-card"><div class="stat-card__label">CA Total</div><div class="stat-card__value">${formatEuros(totalCA)}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Mes 10%</div><div class="stat-card__value" style="color:var(--success)">${formatEuros(totalComm)}</div></div>
+      </div>
+
+      <!-- Infos bancaires -->
+      <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-lg);font-size:0.85rem">
+        <strong>🏦 RIB</strong><br>
+        Titulaire : ${p.rib_name || '—'}<br>
+        IBAN : ${p.rib_iban || '—'}<br>
+        BIC : ${p.rib_bic || '—'}<br>
+        Solde disponible : <strong>${formatEuros(p.balance||0)}</strong> · En attente : <strong>${formatEuros(p.pending||0)}</strong>
+      </div>
+
+      <!-- Liste des pronos -->
+      <h3 style="margin-bottom:var(--space-md)">Historique des pronos</h3>
+      ${(pronos||[]).length === 0 ? '<p style="color:var(--text-muted)">Aucun prono.</p>' : `
+        <div style="display:flex;flex-direction:column;gap:8px;max-height:350px;overflow-y:auto">
+          ${(pronos||[]).map(pr => {
+            const badge = { won:'<span class="badge badge-won">✓ Gagné</span>', lost:'<span class="badge badge-lost">✕ Perdu</span>', cancelled:'<span class="badge badge-cancelled">⊘ Annulé</span>', pending:'<span class="badge badge-pending">⏳ En attente</span>' };
+            return `<div style="background:var(--bg-soft);border-radius:var(--radius-sm);padding:10px 14px;font-size:0.85rem">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <strong>${pr.game}</strong>
+                ${badge[pr.status]||''}
+              </div>
+              <div style="color:var(--text-muted);margin-top:2px">${pr.sport} · ${formatDate(pr.match_date)} · 👥 ${pr.buyers||0} · ${formatEuros(pr.price)}${pr.cote ? ` · 📊 ${parseFloat(pr.cote).toFixed(2).replace('.',',')}` : ''}</div>
+              ${pr.content ? `<div style="margin-top:4px;font-style:italic;color:var(--text-muted)">📋 ${pr.content}</div>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+      `}
+    `;
+  } catch(e) {
+    modal.innerHTML = `<div style="color:var(--error)">Erreur de chargement.</div>`;
+  }
+}
+
+async function openFicheUser(id) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  const overlay = document.getElementById('fiche-modal-overlay');
+  const modal   = document.getElementById('fiche-modal-content');
+  overlay.style.display = 'block';
+  modal.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Chargement...</div>';
+
+  try {
+    // Profil
+    const rP = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,created_at&id=eq.${id}&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const profiles = await rP.json();
+    const p = profiles[0] || {};
+
+    // Achats
+    const rA = await fetch(`${SUPA}/rest/v1/purchases?select=id,prono_id,amount,status,created_at&user_id=eq.${id}&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const purchases = await rA.json();
+
+    // Pronos associés
+    let pronosMap = {};
+    if ((purchases||[]).length > 0) {
+      const pronoIds = [...new Set(purchases.map(a => a.prono_id))];
+      const rPr = await fetch(`${SUPA}/rest/v1/pronos?select=id,game,sport,match_date,tipster_id&id=in.(${pronoIds.join(',')})&apikey=${ANON}`, { headers: { apikey: ANON } });
+      const pronos = await rPr.json();
+      (pronos||[]).forEach(pr => pronosMap[pr.id] = pr);
+
+      // Noms tipsters
+      const tipsterIds = [...new Set(Object.values(pronosMap).map(pr => pr.tipster_id).filter(Boolean))];
+      if (tipsterIds.length > 0) {
+        const rT = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name&id=in.(${tipsterIds.join(',')})&apikey=${ANON}`, { headers: { apikey: ANON } });
+        const tipsters = await rT.json();
+        const tMap = {};
+        (tipsters||[]).forEach(t => tMap[t.id] = t.first_name + ' ' + t.last_name);
+        Object.values(pronosMap).forEach(pr => pr.tipsterName = tMap[pr.tipster_id] || '—');
+      }
+    }
+
+    const totalDepense   = (purchases||[]).reduce((s,a) => s + parseFloat(a.amount||0), 0);
+    const totalRembourse = (purchases||[]).filter(a => a.status === 'lost' || a.status === 'cancelled').reduce((s,a) => s + parseFloat(a.amount||0), 0);
+    const totalWon       = (purchases||[]).filter(a => a.status === 'won').length;
+
+    modal.innerHTML = `
+      <h2 style="margin-bottom:4px">${p.first_name} ${p.last_name}</h2>
+      <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">
+        Membre depuis ${formatDate(p.created_at?.split('T')[0])}
+      </div>
+
+      <!-- Stats rapides -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-md);margin-bottom:var(--space-lg)">
+        <div class="stat-card"><div class="stat-card__label">Achats</div><div class="stat-card__value">${(purchases||[]).length}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Total dépensé</div><div class="stat-card__value">${formatEuros(totalDepense)}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Remboursés</div><div class="stat-card__value" style="color:var(--success)">${formatEuros(totalRembourse)}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Pronos gagnés</div><div class="stat-card__value" style="color:var(--primary)">${totalWon}</div></div>
+      </div>
+
+      <!-- Solde -->
+      <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-lg);font-size:0.85rem">
+        💰 Solde disponible : <strong>${formatEuros(p.balance||0)}</strong> · ⏳ En attente : <strong>${formatEuros(p.pending||0)}</strong>
+      </div>
+
+      <!-- Historique achats -->
+      <h3 style="margin-bottom:var(--space-md)">Historique des achats</h3>
+      ${(purchases||[]).length === 0 ? '<p style="color:var(--text-muted)">Aucun achat.</p>' : `
+        <div style="display:flex;flex-direction:column;gap:8px;max-height:350px;overflow-y:auto">
+          ${(purchases||[]).map(a => {
+            const pr = pronosMap[a.prono_id] || {};
+            const badge = { won:'<span class="badge badge-won">✓ Gagné</span>', lost:'<span class="badge badge-lost">✕ Perdu</span>', cancelled:'<span class="badge badge-cancelled">⊘ Annulé</span>', pending:'<span class="badge badge-pending">⏳ En attente</span>' };
+            return `<div style="background:var(--bg-soft);border-radius:var(--radius-sm);padding:10px 14px;font-size:0.85rem">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <strong>${pr.game || '—'}</strong>
+                ${badge[a.status]||''}
+              </div>
+              <div style="color:var(--text-muted);margin-top:2px">
+                ${pr.sport||'—'} · ${formatDate(pr.match_date)} · par ${pr.tipsterName||'—'} · <strong>${formatEuros(a.amount)}</strong>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      `}
+    `;
+  } catch(e) {
+    modal.innerHTML = `<div style="color:var(--error)">Erreur de chargement.</div>`;
   }
 }
 
