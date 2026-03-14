@@ -454,7 +454,11 @@ function renderTipsters(c) {
       ${adminState.tipsters.map(t => `
         <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px;${t.suspended?'opacity:0.55':''}">
           <div>
-            <div class="prono-title">${t.name}</div>
+            <div class="prono-title">
+              <a href="../pages/tipster-public.html?id=${t.id}" target="_blank" style="color:var(--primary);text-decoration:none;font-weight:700" title="Voir la page publique">
+                ${t.name} 🔗
+              </a>
+            </div>
             <div class="prono-meta">${t.email}</div>
             ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
           </div>
