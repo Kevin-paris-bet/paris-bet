@@ -180,6 +180,7 @@ function navigateTo(page) {
     tipsters:  'Gestion des tipsters',
     users:     'Gestion des utilisateurs',
     virements: 'Virements',
+    finances:  'Finances & Commissions',
   };
   document.getElementById('topbar-title').textContent = titles[page] || 'Admin';
   const content = document.getElementById('page-content');
@@ -189,6 +190,7 @@ function navigateTo(page) {
   if (page === 'tipsters')  renderTipsters(content);
   if (page === 'users')     renderUsers(content);
   if (page === 'virements') renderVirements(content);
+  if (page === 'finances')  renderFinances(content);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -689,6 +691,190 @@ function renderSidebar() {
 function renderTopbar() {}
 
 // ── Utilitaires ───────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+//  PAGE — FINANCES & COMMISSIONS
+// ══════════════════════════════════════════════════════════════
+async function renderFinances(container) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+
+  container.innerHTML = `
+    <div class="section-header">
+      <div><h2>Finances & Commissions</h2><p>Revenus par tipster sur les pronos terminés</p></div>
+    </div>
+
+    <!-- Filtres date -->
+    <div style="display:flex;gap:var(--space-md);align-items:flex-end;margin-bottom:var(--space-lg);flex-wrap:wrap">
+      <div class="form-group" style="margin:0">
+        <label style="font-size:0.8rem;color:var(--text-muted)">Date début (match)</label>
+        <input class="input" type="date" id="fin-date-from" style="width:160px" />
+      </div>
+      <div class="form-group" style="margin:0">
+        <label style="font-size:0.8rem;color:var(--text-muted)">Date fin (match)</label>
+        <input class="input" type="date" id="fin-date-to" style="width:160px" />
+      </div>
+      <button class="btn btn-primary" onclick="loadFinances()">Filtrer</button>
+      <button class="btn btn-outline" onclick="
+        document.getElementById('fin-date-from').value='';
+        document.getElementById('fin-date-to').value='';
+        loadFinances();
+      ">Tout afficher</button>
+    </div>
+
+    <!-- Totaux globaux -->
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:var(--space-lg)" id="fin-totals">
+      <div class="stat-card"><div class="stat-card__label">CA Total</div><div class="stat-card__value" id="fin-total-ca">—</div></div>
+      <div class="stat-card"><div class="stat-card__label">Mes commissions (10%)</div><div class="stat-card__value" id="fin-total-comm" style="color:var(--success)">—</div></div>
+      <div class="stat-card"><div class="stat-card__label">Versé aux tipsters (90%)</div><div class="stat-card__value" id="fin-total-net">—</div></div>
+    </div>
+
+    <!-- Tableau par tipster -->
+    <div id="fin-table">
+      <div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>
+    </div>
+  `;
+
+  loadFinances();
+}
+
+async function loadFinances() {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+
+  const dateFrom = document.getElementById('fin-date-from')?.value || '';
+  const dateTo   = document.getElementById('fin-date-to')?.value   || '';
+  const table    = document.getElementById('fin-table');
+  if (!table) return;
+
+  table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>`;
+
+  try {
+    // 1. Charger les pronos terminés (won/lost/cancelled)
+    const urlP = new URL(SUPA + '/rest/v1/pronos');
+    urlP.searchParams.set('select', 'id,game,sport,match_date,status,tipster_id,buyers');
+    urlP.searchParams.set('status', 'in.(won,lost,cancelled)');
+    if (dateFrom) urlP.searchParams.set('match_date', 'gte.' + dateFrom);
+    if (dateTo)   urlP.searchParams.append('match_date', 'lte.' + dateTo);
+    urlP.searchParams.set('apikey', ANON);
+    const rP = await fetch(urlP.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
+    const pronos = await rP.json();
+
+    if (!Array.isArray(pronos) || pronos.length === 0) {
+      table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun prono terminé sur cette période.</div>`;
+      document.getElementById('fin-total-ca').textContent   = '0 €';
+      document.getElementById('fin-total-comm').textContent = '0 €';
+      document.getElementById('fin-total-net').textContent  = '0 €';
+      return;
+    }
+
+    // 2. Charger les purchases des pronos terminés (won uniquement = CA réel)
+    const pronoIds = pronos.map(p => p.id);
+    const urlPurch = new URL(SUPA + '/rest/v1/purchases');
+    urlPurch.searchParams.set('select', 'prono_id,amount,status');
+    urlPurch.searchParams.set('prono_id', 'in.(' + pronoIds.join(',') + ')');
+    urlPurch.searchParams.set('apikey', ANON);
+    const rPurch = await fetch(urlPurch.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
+    const purchases = await rPurch.json();
+
+    // 3. Charger les profils tipsters
+    const tipsterIds = [...new Set(pronos.map(p => p.tipster_id).filter(Boolean))];
+    const urlProf = new URL(SUPA + '/rest/v1/profiles');
+    urlProf.searchParams.set('select', 'id,first_name,last_name');
+    urlProf.searchParams.set('id', 'in.(' + tipsterIds.join(',') + ')');
+    urlProf.searchParams.set('apikey', ANON);
+    const rProf = await fetch(urlProf.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
+    const profiles = await rProf.json();
+    const profilesMap = {};
+    (profiles || []).forEach(p => profilesMap[p.id] = p.first_name + ' ' + p.last_name);
+
+    // 4. Calculer par tipster
+    const tipsterStats = {};
+    pronos.forEach(prono => {
+      const tid = prono.tipster_id;
+      if (!tid) return;
+      if (!tipsterStats[tid]) {
+        tipsterStats[tid] = {
+          name: profilesMap[tid] || '—',
+          pronos: 0, won: 0, lost: 0, cancelled: 0,
+          ca: 0, commission: 0, net: 0,
+          acheteurs: 0,
+        };
+      }
+      const s = tipsterStats[tid];
+      s.pronos++;
+      if (prono.status === 'won') s.won++;
+      else if (prono.status === 'lost') s.lost++;
+      else if (prono.status === 'cancelled') s.cancelled++;
+
+      // CA = somme des purchases de ce prono
+      const pPurchases = (purchases || []).filter(p => p.prono_id === prono.id);
+      const pronoCA = pPurchases.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
+      s.ca += pronoCA;
+      s.acheteurs += prono.buyers || 0;
+    });
+
+    // Calculer commissions et net
+    Object.values(tipsterStats).forEach(s => {
+      s.commission = s.ca * 0.10;
+      s.net = s.ca * 0.90;
+    });
+
+    // Filtrer tipsters avec CA > 0
+    const tipsters = Object.values(tipsterStats).filter(s => s.ca > 0);
+
+    if (tipsters.length === 0) {
+      table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucune vente sur cette période.</div>`;
+      document.getElementById('fin-total-ca').textContent   = '0 €';
+      document.getElementById('fin-total-comm').textContent = '0 €';
+      document.getElementById('fin-total-net').textContent  = '0 €';
+      return;
+    }
+
+    // Totaux globaux
+    const totalCA   = tipsters.reduce((s, t) => s + t.ca, 0);
+    const totalComm = totalCA * 0.10;
+    const totalNet  = totalCA * 0.90;
+    document.getElementById('fin-total-ca').textContent   = formatEuros(totalCA);
+    document.getElementById('fin-total-comm').textContent = formatEuros(totalComm);
+    document.getElementById('fin-total-net').textContent  = formatEuros(totalNet);
+
+    // Tableau
+    table.innerHTML = `
+      <div class="pronos-table">
+        <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr">
+          <span>Tipster</span>
+          <span>Pronos</span>
+          <span>Win Rate</span>
+          <span>Acheteurs</span>
+          <span>CA Total</span>
+          <span style="color:var(--success)">Mes 10%</span>
+          <span>Net Tipster</span>
+        </div>
+        ${tipsters.sort((a,b) => b.ca - a.ca).map(t => {
+          const winRate = (t.won + t.lost) > 0 ? Math.round(t.won / (t.won + t.lost) * 100) : 0;
+          return `
+          <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr">
+            <div>
+              <div class="prono-title">${t.name}</div>
+              <div class="prono-meta">${t.won}W · ${t.lost}L · ${t.cancelled} annulés</div>
+            </div>
+            <div style="font-weight:600">${t.pronos}</div>
+            <div style="color:${winRate >= 60 ? 'var(--success)' : 'var(--text-muted)'};font-weight:600">${winRate}%</div>
+            <div>👥 ${t.acheteurs}</div>
+            <div style="font-weight:700;color:var(--primary)">${formatEuros(t.ca)}</div>
+            <div style="font-weight:700;color:var(--success)">${formatEuros(t.commission)}</div>
+            <div style="font-weight:600">${formatEuros(t.net)}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+
+  } catch(e) {
+    console.error('Erreur finances:', e);
+    table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur de chargement.</div>`;
+  }
+}
+
 function formatDate(str) {
   if (!str) return "—";
   const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
