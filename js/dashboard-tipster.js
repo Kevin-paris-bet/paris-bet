@@ -234,7 +234,7 @@ function renderPronoRow(p) {
     <div class="table-row">
       <div>
         <div class="prono-title">${p.game}</div>
-        <div class="prono-meta">${p.sport} · ${p.match_date || p.date || ""}</div>
+        <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
         ${p.buyers > 0 || p.status !== 'pending'
           ? `<div class="prono-lock">🔒 Verrouillé — modification impossible</div>`
           : `<div class="prono-lock" style="color:var(--warning)">✏️ Brouillon — non encore acheté</div>`
@@ -245,7 +245,7 @@ function renderPronoRow(p) {
       </div>
       <div class="prono-price">${formatEuros(p.price)}</div>
       <div>${statusBadge[p.status] || ''}</div>
-      <div style="font-size:0.8rem;color:var(--text-muted)">${(p.match_date || p.date || "").split('·')[0].trim()}</div>
+      <div style="font-size:0.8rem;color:var(--text-muted)">${formatDate(p.match_date || p.date)}</div>
       <div class="table-actions">
         <button
           class="btn-icon"
@@ -560,6 +560,13 @@ function renderPageStats(container) {
 }
 
 // ── Utilitaires ───────────────────────────────────────────────
+function formatDate(str) {
+  if (!str) return "—";
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) return `${match[3]}/${match[2]}/${match[1].slice(2)}`;
+  return str;
+}
+
 function formatEuros(n) {
   return Math.round(n * 100) / 100 === Math.round(n)
     ? Math.round(n).toLocaleString('fr-FR') + ' €'

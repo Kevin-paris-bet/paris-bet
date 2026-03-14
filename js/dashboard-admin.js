@@ -337,7 +337,7 @@ function renderPronosTable(pronos, compact) {
         <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr ${compact?'0':'140px'}">
           <div>
             <div class="prono-title">${p.game}</div>
-            <div class="prono-meta">${p.sport} · ${p.match_date || p.date || "—"}</div>
+            <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
           </div>
           <div style="font-size:0.85rem;color:var(--text-muted)">${p.tipsterName || "—"}</div>
           <div class="buyers-count"><span>👥</span>${p.buyers}</div>
@@ -688,6 +688,13 @@ function renderSidebar() {
 function renderTopbar() {}
 
 // ── Utilitaires ───────────────────────────────────────────────
+function formatDate(str) {
+  if (!str) return "—";
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) return `${match[3]}/${match[2]}/${match[1].slice(2)}`;
+  return str;
+}
+
 function formatEuros(n) {
   return n % 1 === 0
     ? Math.round(n).toLocaleString('fr-FR') + ' €'
