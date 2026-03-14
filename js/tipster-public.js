@@ -455,8 +455,12 @@ async function confirmBuy() {
     if (!r1.ok && r1.status !== 201) throw new Error('Erreur purchase');
 
     // 2. Débiter le solde et incrémenter pending
-    const newBalance = pubState.user.balance - prono.price;
-    const newPending = (pubState.user.pending || 0) + prono.price;
+    const price      = parseFloat(prono.price)   || 0;
+    const balance    = parseFloat(pubState.user.balance) || 0;
+    const pending    = parseFloat(pubState.user.pending) || 0;
+    const newBalance = balance - price;
+    const newPending = pending + price;
+    console.log('[confirmBuy] price:', price, 'balance:', balance, 'pending:', pending, '→ newBalance:', newBalance, 'newPending:', newPending);
     await fetch(SUPA + '/rest/v1/profiles?id=eq.' + user.id, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + JWT },
