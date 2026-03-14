@@ -441,13 +441,15 @@ async function confirmBuy() {
   const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
 
   try {
-    const { data: { user } } = await sb.auth.getUser();
+    const { data: { session } } = await sb.auth.getSession();
+    const user = session?.user;
+    const JWT = session?.access_token || ANON;
     if (!user) { showToast('Connectez-vous pour acheter', 'error'); btn.disabled = false; btn.textContent = 'Confirmer'; return; }
 
     // 1. Créer le purchase
     const r1 = await fetch(SUPA + '/rest/v1/purchases', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + JWT },
       body: JSON.stringify({ user_id: user.id, prono_id: prono.id, amount: prono.price, status: 'pending' })
     });
     if (!r1.ok && r1.status !== 201) throw new Error('Erreur purchase');
@@ -457,7 +459,7 @@ async function confirmBuy() {
     const newPending = (pubState.user.pending || 0) + prono.price;
     await fetch(SUPA + '/rest/v1/profiles?id=eq.' + user.id, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + JWT },
       body: JSON.stringify({ balance: newBalance, pending: newPending })
     });
 
