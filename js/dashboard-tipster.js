@@ -86,6 +86,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Charger le vrai profil
   MOCK_TIPSTER.firstName = user.profile.first_name;
   MOCK_TIPSTER.lastName  = user.profile.last_name;
+  MOCK_TIPSTER.email     = user.email;
   MOCK_TIPSTER.balance   = parseFloat(user.profile.balance) || 0;
   MOCK_TIPSTER.pending   = parseFloat(user.profile.pending) || 0;
   MOCK_TIPSTER.ribName   = user.profile.rib_name || '';
@@ -169,6 +170,7 @@ function navigateTo(page) {
     solde:  'Solde & Virements',
     rib:    'Mes informations bancaires',
     stats:  'Mes statistiques',
+    compte: 'Mon compte',
   };
   document.getElementById('topbar-title').textContent = titles[page] || 'Dashboard';
 
@@ -180,6 +182,7 @@ function navigateTo(page) {
   if (page === 'solde')  renderPageSolde(content);
   if (page === 'rib')    renderPageRIB(content);
   if (page === 'stats')  renderPageStats(content);
+  if (page === 'compte') renderPageCompte(content);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -560,6 +563,103 @@ function renderPageStats(container) {
 }
 
 // ── Utilitaires ───────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+//  PAGE — MON COMPTE
+// ══════════════════════════════════════════════════════════════
+function renderPageCompte(container) {
+  container.innerHTML = `
+    <div style="max-width:560px;display:flex;flex-direction:column;gap:var(--space-lg)">
+
+      <!-- Modifier l'email -->
+      <div class="rib-card">
+        <div class="rib-card__header">
+          <div style="font-size:1.6rem">✉️</div>
+          <div>
+            <h3>Adresse email</h3>
+            <p>Email actuel : <strong>${MOCK_TIPSTER.email || '—'}</strong></p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Nouvel email</label>
+          <div class="input-wrap">
+            <span class="input-icon">✉️</span>
+            <input class="input" type="email" id="new-email" placeholder="nouveau@email.com" />
+          </div>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="saveEmail()">
+          Mettre à jour l'email
+        </button>
+      </div>
+
+      <!-- Modifier le mot de passe -->
+      <div class="rib-card">
+        <div class="rib-card__header">
+          <div style="font-size:1.6rem">🔒</div>
+          <div>
+            <h3>Mot de passe</h3>
+            <p>Choisissez un mot de passe sécurisé</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Nouveau mot de passe</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input class="input" type="password" id="new-password" placeholder="Minimum 8 caractères" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Confirmer le mot de passe</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔒</span>
+            <input class="input" type="password" id="confirm-password" placeholder="Répétez le mot de passe" />
+          </div>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="savePassword()">
+          Mettre à jour le mot de passe
+        </button>
+      </div>
+
+    </div>
+  `;
+}
+
+async function saveEmail() {
+  const newEmail = document.getElementById('new-email').value.trim();
+  if (!newEmail || !newEmail.includes('@')) {
+    showToast('Veuillez saisir un email valide.', 'error'); return;
+  }
+  try {
+    const { error } = await sb.auth.updateUser({ email: newEmail });
+    if (error) throw error;
+    MOCK_TIPSTER.email = newEmail;
+    showToast('✓ Email mis à jour. Vérifiez votre boîte mail pour confirmer.', 'success');
+    document.getElementById('new-email').value = '';
+    navigateTo('compte');
+  } catch(e) {
+    showToast('Erreur : ' + e.message, 'error');
+  }
+}
+
+async function savePassword() {
+  const newPassword    = document.getElementById('new-password').value;
+  const confirmPassword = document.getElementById('confirm-password').value;
+  if (!newPassword || newPassword.length < 8) {
+    showToast('Le mot de passe doit faire au moins 8 caractères.', 'error'); return;
+  }
+  if (newPassword !== confirmPassword) {
+    showToast('Les mots de passe ne correspondent pas.', 'error'); return;
+  }
+  try {
+    const { error } = await sb.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+    showToast('✓ Mot de passe mis à jour avec succès.', 'success');
+    document.getElementById('new-password').value = '';
+    document.getElementById('confirm-password').value = '';
+  } catch(e) {
+    showToast('Erreur : ' + e.message, 'error');
+  }
+}
+
 function formatDate(str) {
   if (!str) return "—";
   const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
