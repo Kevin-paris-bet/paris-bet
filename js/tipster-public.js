@@ -368,8 +368,10 @@ function openBuyModal(id) {
   if (!prono) return;
   pubState.buyingProno = prono;
 
-  const hasEnough   = pubState.user.balance >= prono.price;
-  const afterAmount = pubState.user.balance - prono.price;
+  const price      = parseFloat(prono.price) || 0;
+  const balance    = parseFloat(pubState.user.balance) || 0;
+  const hasEnough   = balance >= price;
+  const afterAmount = balance - price;
   const isMobile    = window.innerWidth <= 900;
 
   const alertHtml = !hasEnough ? `
@@ -383,15 +385,15 @@ function openBuyModal(id) {
       🛒 Confirmer l'achat
       <button class="buy-panel__close" onclick="closeBuyModal()">✕</button>
     </div>
-    <div class="buy-panel__match">${prono.game} · ${formatEuros(prono.price)}</div>
+    <div class="buy-panel__match">${prono.game} · ${formatEuros(price)}</div>
     <div class="buy-panel__rows">
       <div class="buy-panel__row">
         <span class="buy-panel__row-label">Prix</span>
-        <span class="buy-panel__row-value blue">${formatEuros(prono.price)}</span>
+        <span class="buy-panel__row-value blue">${formatEuros(price)}</span>
       </div>
       <div class="buy-panel__row">
         <span class="buy-panel__row-label">Solde actuel</span>
-        <span class="buy-panel__row-value">${formatEuros(pubState.user.balance)}</span>
+        <span class="buy-panel__row-value">${formatEuros(balance)}</span>
       </div>
       <div class="buy-panel__row buy-panel__row--total">
         <span class="buy-panel__row-label">Solde après</span>
