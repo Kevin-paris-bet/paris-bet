@@ -363,8 +363,15 @@ async function deleteProno(id) {
 // ══════════════════════════════════════════════════════════════
 function renderPageSolde(container) {
   const t = MOCK_TIPSTER;
-  const nextMonday = CONFIG.finance.payoutDay;
   const minPayout  = CONFIG.finance.minTipsterPayout;
+
+  // Calcul dynamique du prochain lundi
+  const today = new Date();
+  const day = today.getDay(); // 0=dim, 1=lun, ..., 6=sam
+  const daysUntilMonday = day === 1 ? 7 : (8 - day) % 7 || 7;
+  const nextMonday = new Date(today);
+  nextMonday.setDate(today.getDate() + daysUntilMonday);
+  const nextMondayStr = nextMonday.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' });
 
   container.innerHTML = `
     <!-- Carte solde principal -->
@@ -372,7 +379,7 @@ function renderPageSolde(container) {
       <div class="balance-card__label">Solde disponible</div>
       <div class="balance-card__amount">${formatEuros(t.balance)}</div>
       <div class="balance-card__sub">
-        Prochain virement le <strong>${nextMonday}</strong>
+        Prochain virement le <strong>lundi ${nextMondayStr}</strong>
         ${t.balance >= minPayout
           ? `· ✓ Seuil de ${minPayout}€ atteint`
           : `· ⚠️ Minimum ${minPayout}€ requis (manque ${formatEuros(minPayout - t.balance)})`
