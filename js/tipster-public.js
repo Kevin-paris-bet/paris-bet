@@ -122,7 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Charger les pronos du tipster
       const urlPronos = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
-      urlPronos.searchParams.set('select', 'id,game,sport,match_date,content,price,status,buyers');
+      urlPronos.searchParams.set('select', 'id,game,sport,match_date,content,price,status,buyers,cote');
       urlPronos.searchParams.set('tipster_id', 'eq.' + tipsterId);
       urlPronos.searchParams.set('order', 'created_at.desc');
       urlPronos.searchParams.set('apikey', ANON);
@@ -347,6 +347,7 @@ function renderPronoCard(p) {
         <div class="prono-card__right">
           <div class="prono-card__price">${formatEuros(p.price)}</div>
           <div class="prono-card__price-label">Pay-Per-Win</div>
+          ${p.cote ? `<div class="prono-card__cote">📊 Cote : <strong>${parseFloat(p.cote).toFixed(2).replace('.', ',')}</strong></div>` : ''}
         </div>
       </div>
 

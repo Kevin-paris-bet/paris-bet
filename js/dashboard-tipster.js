@@ -271,7 +271,7 @@ function openModal() {
 function closeModal() {
   document.getElementById('modal-overlay').classList.remove('open');
   // Reset form
-  ['new-match','new-sport','new-date','new-time','new-price','new-content'].forEach(id => {
+  ['new-match','new-sport','new-date','new-time','new-price','new-cote','new-content'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -283,13 +283,18 @@ async function submitProno() {
   const date    = document.getElementById('new-date').value;
   const time    = document.getElementById('new-time').value;
   const price   = parseFloat(document.getElementById('new-price').value);
+  const coteRaw = document.getElementById('new-cote').value.trim().replace(',', '.');
+  const cote    = coteRaw ? parseFloat(coteRaw) : null;
   const content = document.getElementById('new-content').value.trim();
 
   if (!game || !sport || !date || !price || !content) {
-    showToast('Veuillez remplir tous les champs.', 'error'); return;
+    showToast('Veuillez remplir tous les champs obligatoires.', 'error'); return;
   }
   if (price < 1) {
     showToast('Le prix minimum est 1 €.', 'error'); return;
+  }
+  if (coteRaw && (isNaN(cote) || cote < 1)) {
+    showToast('La cote doit être un nombre supérieur à 1 (ex: 1,76).', 'error'); return;
   }
 
   const btn = document.getElementById('btn-submit-prono');
@@ -304,6 +309,7 @@ async function submitProno() {
       sport,
       match_date: `${date}${time ? ' · ' + time : ''}`,
       price,
+      cote:    cote,
       buyers:  0,
       status:  CONFIG.betStatus.PENDING,
       content,
