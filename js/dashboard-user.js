@@ -262,7 +262,7 @@ function renderAchatsList() {
         <div class="achat-card__header">
           <div>
             <div class="achat-card__match">${a.game}</div>
-            <div class="achat-card__meta">${a.sport} · ${a.date} · par <strong>${a.tipster}</strong></div>
+            <div class="achat-card__meta">${a.sport} · ${formatDate(a.date)} · par <strong>${a.tipster}</strong></div>
           </div>
           <div class="achat-card__right">
             <div class="achat-card__price">${formatEuros(a.price)}</div>
@@ -499,7 +499,7 @@ function renderPageExplorer(container) {
           <div class="achat-card__header">
             <div>
               <div class="achat-card__match">${p.game}</div>
-              <div class="achat-card__meta">${p.sport} · ${p.match_date || '—'} · par <a href="../pages/tipster-public.html?id=${p.tipster_id}" style="color:var(--blue);font-weight:600">${tipsterName}</a></div>
+              <div class="achat-card__meta">${p.sport} · ${formatDate(p.match_date)} · par <a href="../pages/tipster-public.html?id=${p.tipster_id}" style="color:var(--blue);font-weight:600">${tipsterName}</a></div>
             </div>
             <div class="achat-card__right">
               <div class="achat-card__price">${p.price} €</div>
@@ -616,6 +616,13 @@ function renderTopbar() {
 }
 
 // ── Utilitaires ───────────────────────────────────────────────
+function formatDate(str) {
+  if (!str) return '—';
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) return `${match[3]}/${match[2]}/${match[1].slice(2)}`;
+  return str;
+}
+
 function formatEuros(n) {
   return n % 1 === 0 ? Math.round(n).toLocaleString('fr-FR') + ' €' : n.toFixed(2).replace('.', ',') + ' €';
 }

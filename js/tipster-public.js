@@ -340,7 +340,7 @@ function renderPronoCard(p) {
           <div class="prono-card__meta">
             ${p.sport}
             <span>·</span>
-            ${p.date}
+            ${formatDate(p.date)}
             ${statusBadge[p.status]}
           </div>
         </div>
@@ -497,6 +497,14 @@ async function confirmBuy() {
 }
 
 // ── Utilitaires ───────────────────────────────────────────────
+function formatDate(str) {
+  if (!str) return '—';
+  // Format "2026-03-15" → "15/03/26"
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) return `${match[3]}/${match[2]}/${match[1].slice(2)}`;
+  return str;
+}
+
 function formatEuros(n) {
   return n % 1 === 0
     ? Math.round(n).toLocaleString('fr-FR') + ' €'
