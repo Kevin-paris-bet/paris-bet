@@ -162,6 +162,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.history.replaceState({}, '', '/pages/dashboard-user.html');
     navigateTo('solde');
     setTimeout(() => showToast('Paiement annule.', 'info'), 300);
+  } else if (urlParams.get('page') === 'solde') {
+    window.history.replaceState({}, '', '/pages/dashboard-user.html');
+    navigateTo('solde');
   } else {
     navigateTo('achats');
   }

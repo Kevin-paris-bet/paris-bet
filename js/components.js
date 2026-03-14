@@ -16,8 +16,7 @@ async function renderNavbar({ transparent = false, activePage = '' } = {}) {
   let isLoggedIn = false;
   let userDashboard = CONFIG.pages.auth + '#login';
   try {
-    const { data: { session } } = await sb.auth.getSession();
-    const user = session?.user || null;
+    const { data: { user } } = await sb.auth.getUser();
     if (user) {
       isLoggedIn = true;
       // Récupérer le rôle pour rediriger vers le bon dashboard
@@ -37,7 +36,7 @@ async function renderNavbar({ transparent = false, activePage = '' } = {}) {
     <nav class="navbar ${transparent ? 'navbar--transparent' : ''}">
       <div class="container navbar__inner">
 
-        <a href="${CONFIG.pages.home}" class="navbar__logo">
+        <a href="/" class="navbar__logo">
           Paris<span>-Bet</span>
         </a>
 
@@ -49,9 +48,9 @@ async function renderNavbar({ transparent = false, activePage = '' } = {}) {
 
         <div class="navbar__actions">
           ${isLoggedIn
-            ? `<a href="${userDashboard}" class="btn btn-primary btn--sm">Mon espace →</a>`
-            : `<a href="${CONFIG.pages.auth}#login"    class="btn btn-outline btn--sm">Connexion</a>
-               <a href="${CONFIG.pages.auth}#register" class="btn btn-primary btn--sm">Démarrer</a>`
+            ? `<a href="/${userDashboard}" class="btn btn-primary btn--sm">Mon espace →</a>`
+            : `<a href="/pages/auth.html#login"    class="btn btn-outline btn--sm">Connexion</a>
+               <a href="/pages/auth.html#register" class="btn btn-primary btn--sm">Démarrer</a>`
           }
         </div>
 
@@ -67,9 +66,9 @@ async function renderNavbar({ transparent = false, activePage = '' } = {}) {
         `).join('')}
         <div class="navbar__mobile-actions">
           ${isLoggedIn
-            ? `<a href="${userDashboard}" class="btn btn-primary">Mon espace →</a>`
-            : `<a href="${CONFIG.pages.auth}#login"    class="btn btn-outline">Connexion</a>
-               <a href="${CONFIG.pages.auth}#register" class="btn btn-primary">Démarrer gratuitement</a>`
+            ? `<a href="/${userDashboard}" class="btn btn-primary">Mon espace →</a>`
+            : `<a href="/pages/auth.html#login"    class="btn btn-outline">Connexion</a>
+               <a href="/pages/auth.html#register" class="btn btn-primary">Démarrer gratuitement</a>`
           }
         </div>
       </div>
