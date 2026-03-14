@@ -10,7 +10,7 @@ const MOCK_TIPSTER_PUBLIC = {
   firstName:  'Alexis',
   lastName:   'Martin',
   url:        'paris-bet.fr/alexis',
-  sports:     ['⚽ Ligue 1', '🎾 Tennis', '🏀 NBA'],
+  sports:     [],
   winRate:    71,
   totalPronos: 48,
   totalBuyers: 312,
@@ -91,7 +91,7 @@ const pubState = {
 
 // ── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  renderNavbar({ transparent: true });
+  await renderNavbar({ transparent: true });
 
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
 
@@ -195,7 +195,7 @@ function renderHero() {
         <h1 class="tipster-hero__name">${t.firstName} ${t.lastName}</h1>
         <div class="tipster-hero__url">🔗 ${t.url}</div>
         <div class="tipster-hero__tags">
-          ${t.sports.map(s => `<span class="tipster-tag">${s}</span>`).join('')}
+          ${(t.sports||[]).map(s => `<span class="tipster-tag">${s}</span>`).join('')}
         </div>
       </div>
     </div>
@@ -238,8 +238,15 @@ function formatMemberDate(str) {
 // ── Solde utilisateur (sidebar) ───────────────────────────────
 function renderUserBalance() {
   const u = pubState.user;
+  const card = document.querySelector('.user-balance-card');
+  if (!u || u.balance === undefined || u.firstName === 'Thomas') {
+    // Non connecté — cacher le bloc solde
+    if (card) card.style.display = 'none';
+    return;
+  }
+  if (card) card.style.display = '';
   document.getElementById('user-balance').textContent  = formatEuros(u.balance);
-  document.getElementById('user-pending').textContent  = formatEuros(u.pending);
+  document.getElementById('user-pending').textContent  = formatEuros(u.pending || 0);
 }
 
 // ── Infos tipster (sidebar) ───────────────────────────────────
@@ -319,7 +326,7 @@ function renderPronoCard(p) {
     ? `<span style="font-size:0.8rem;color:var(--success);font-weight:600">✓ Acheté</span>`
     : p.status !== CONFIG.betStatus.PENDING
     ? `<span style="font-size:0.8rem;color:var(--text-muted)">Terminé</span>`
-    : `<button class="btn-buy" onclick="openBuyModal(${p.id})">
+    : `<button class="btn-buy" onclick="openBuyModal('${p.id}')">
         Acheter — ${formatEuros(p.price)}
        </button>`;
 
@@ -420,30 +427,51 @@ function closeBuyModal() {
   pubState.buyingProno = null;
 }
 
-function confirmBuy() {
+async function confirmBuy() {
   const prono = pubState.buyingProno;
   if (!prono) return;
 
   const btn = document.getElementById('btn-confirm-buy');
-  btn.disabled    = true;
+  btn.disabled = true;
   btn.textContent = '⏳…';
 
-  setTimeout(() => {
-    // TODO (Supabase) : débiter le solde + enregistrer l'achat
-    pubState.user.balance -= prono.price;
-    pubState.user.pending += prono.price;
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
 
+  try {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) { showToast('Connectez-vous pour acheter', 'error'); btn.disabled = false; btn.textContent = 'Confirmer'; return; }
+
+    // 1. Créer le purchase
+    const r1 = await fetch(SUPA + '/rest/v1/purchases', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+      body: JSON.stringify({ user_id: user.id, prono_id: prono.id, amount: prono.price, status: 'pending' })
+    });
+    if (!r1.ok && r1.status !== 201) throw new Error('Erreur purchase');
+
+    // 2. Débiter le solde
+    const newBalance = pubState.user.balance - prono.price;
+    await fetch(SUPA + '/rest/v1/profiles?id=eq.' + user.id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+      body: JSON.stringify({ balance: newBalance })
+    });
+
+    pubState.user.balance = newBalance;
     const idx = pubState.pronos.findIndex(p => p.id === prono.id);
-    if (idx !== -1) {
-      pubState.pronos[idx].purchased = true;
-      pubState.pronos[idx].buyers   += 1;
-    }
+    if (idx !== -1) { pubState.pronos[idx].purchased = true; pubState.pronos[idx].buyers += 1; }
 
     closeBuyModal();
     renderUserBalance();
     renderPronos();
     showToast('✓ Pronostic acheté ! La somme est en attente de résultat.', 'success');
-  }, 1000);
+  } catch(e) {
+    console.error(e);
+    showToast('Erreur lors de l'achat', 'error');
+    btn.disabled = false;
+    btn.textContent = 'Confirmer';
+  }
 }
 
 // ── Utilitaires ───────────────────────────────────────────────
