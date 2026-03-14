@@ -231,7 +231,7 @@ function renderPronoRow(p) {
       <div>
         <div class="prono-title">${p.game}</div>
         <div class="prono-meta">${p.sport} · ${p.match_date || p.date || ""}</div>
-        ${p.locked
+        ${p.buyers > 0 || p.status !== 'pending'
           ? `<div class="prono-lock">🔒 Verrouillé — modification impossible</div>`
           : `<div class="prono-lock" style="color:var(--warning)">✏️ Brouillon — non encore acheté</div>`
         }
@@ -493,7 +493,7 @@ function renderPageStats(container) {
     <div class="stats-grid" style="grid-template-columns: repeat(4,1fr)">
       <div class="stat-card stat-card--blue">
         <div class="stat-card__label">💰 Total gagné</div>
-        <div class="stat-card__value">${formatEuros(MOCK_TIPSTER.totalEarned)}</div>
+        <div class="stat-card__value">${formatEuros(MOCK_TIPSTER.balance)}</div>
         <div class="stat-card__sub">Depuis l'inscription</div>
       </div>
       <div class="stat-card">

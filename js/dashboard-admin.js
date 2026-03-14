@@ -111,16 +111,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     .order('created_at', { ascending: false });
 
   if (tipsters && tipsters.length > 0) {
-    adminState.tipsters = tipsters.map(t => ({
-      ...t,
-      name:     t.first_name + ' ' + t.last_name,
-      email:    t.email || '—',
-      pronos:   0,
-      winRate:  0,
-      balance:  parseFloat(t.balance) || 0,
-      ribSaved: !!(t.rib_iban),
-      suspended: false,
-    }));
+    // Charger les pronos pour calculer win rate et nb pronos par tipster
+    const ANON2 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+    const rAllPronos = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos?select=tipster_id,status&apikey=' + ANON2, { headers: { 'apikey': ANON2, 'Authorization': 'Bearer ' + ANON2 } });
+    const allPronos = await rAllPronos.json();
+    const pronosMap = {};
+    if (Array.isArray(allPronos)) {
+      allPronos.forEach(p => {
+        if (!pronosMap[p.tipster_id]) pronosMap[p.tipster_id] = [];
+        pronosMap[p.tipster_id].push(p.status);
+      });
+    }
+    adminState.tipsters = tipsters.map(t => {
+      const tp = pronosMap[t.id] || [];
+      const won = tp.filter(s => s === 'won').length;
+      const finished = tp.filter(s => s === 'won' || s === 'lost').length;
+      return {
+        ...t,
+        name:     t.first_name + ' ' + t.last_name,
+        email:    t.email || '—',
+        pronos:   tp.length,
+        winRate:  finished > 0 ? Math.round(won / finished * 100) : 0,
+        balance:  parseFloat(t.balance) || 0,
+        ribSaved: !!(t.rib_iban),
+        ribOk:    !!(t.rib_iban),
+        suspended: false,
+      };
+    });
   } else {
     adminState.tipsters = [];
   }
@@ -138,7 +155,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       name:    u.first_name + ' ' + u.last_name,
       email:   u.email || '—',
       balance: parseFloat(u.balance) || 0,
+      pending: parseFloat(u.pending) || 0,
       spent:   0,
+      joined:  u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '—',
     }));
   } else {
     adminState.users = [];
@@ -177,13 +196,14 @@ function navigateTo(page) {
 // ══════════════════════════════════════════════════════════════
 function renderOverview(c) {
   const pendingPronos  = adminState.pronos.filter(p => p.status === 'pending').length;
-  const pendingVir     = adminState.virements.filter(v => v.status === 'pending').length;
+  const pendingVirTipsters = adminState.tipsters.filter(t => parseFloat(t.balance) >= 30);
+  const pendingVir     = pendingVirTipsters.length;
   const pendingRevenue = adminState.pronos
     .filter(p => p.status === 'pending')
-    .reduce((s, p) => s + p.revenue, 0);
+    .reduce((s, p) => s + (parseFloat(p.price) * (p.buyers || 0)), 0);
   const commission     = adminState.pronos
     .filter(p => p.status === 'won')
-    .reduce((s, p) => s + p.revenue * CONFIG.finance.commissionRate, 0);
+    .reduce((s, p) => s + (parseFloat(p.price) * (p.buyers || 0) * CONFIG.finance.commissionRate), 0);
 
   c.innerHTML = `
     <div class="stats-grid">
@@ -230,7 +250,7 @@ function renderOverview(c) {
           <div class="action-card__body">
             <div class="action-card__title">${pendingVir} virement(s) à effectuer ce lundi</div>
             <div class="action-card__sub">
-              ${adminState.virements.filter(v=>v.status==='pending').map(v=>`${v.tipster} — ${formatEuros(v.amount)}`).join(' · ')}
+              ${pendingVirTipsters.map(t=>`${t.first_name} ${t.last_name} — ${formatEuros(parseFloat(t.balance))}`).join(' · ')}
             </div>
           </div>
           <div class="action-card__arrow">→</div>
@@ -617,6 +637,29 @@ function renderSidebar() {
   document.querySelectorAll('.sidebar__link').forEach(l =>
     l.classList.toggle('active', l.dataset.page === adminState.activePage)
   );
+
+  // Mettre à jour les badges avec les vraies données
+  const pendingPronos = adminState.pronos.filter(p => p.status === 'pending').length;
+  const badgePronos = document.getElementById('badge-pronos');
+  if (badgePronos) {
+    badgePronos.textContent = pendingPronos;
+    badgePronos.style.display = pendingPronos > 0 ? '' : 'none';
+  }
+
+  // Badge virements = tipsters avec solde >= 30€
+  const pendingVir = adminState.tipsters.filter(t => parseFloat(t.balance) >= 30).length;
+  const badgeVir = document.getElementById('badge-vir');
+  if (badgeVir) {
+    badgeVir.textContent = pendingVir;
+    badgeVir.style.display = pendingVir > 0 ? '' : 'none';
+  }
+
+  // Badge urgent = pronos en attente
+  const badgeUrgent = document.getElementById('badge-urgent');
+  if (badgeUrgent) {
+    badgeUrgent.textContent = pendingPronos;
+    badgeUrgent.style.display = pendingPronos > 0 ? '' : 'none';
+  }
 }
 
 function renderTopbar() {}

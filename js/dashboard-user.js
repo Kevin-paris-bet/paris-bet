@@ -205,7 +205,7 @@ function renderPageAchats(container) {
       </div>
       <div class="stat-card">
         <div class="stat-card__label">↩ Remboursé</div>
-        <div class="stat-card__value">${formatEuros(u.totalRefunded)}</div>
+        <div class="stat-card__value">${formatEuros(achats.filter(a=>a.status==='lost'||a.status==='cancelled').reduce((s,a)=>s+a.price,0))}</div>
         <div class="stat-card__sub">Perdus + annulés</div>
       </div>
       <div class="stat-card">
@@ -510,7 +510,7 @@ function renderPageExplorer(container) {
             </div>
           </div>
           ${bought ? `<div style="margin-top:8px;padding:10px;background:var(--blue-pale);border-radius:var(--radius-sm);font-size:0.9rem">
-            <strong>Pronostic :</strong> ${p.content || '—'} · <strong>Cote :</strong> ${'' || '—'}
+            <strong>Pronostic :</strong> ${p.content || '—'}
           </div>` : `<div style="margin-top:8px;font-size:0.85rem;color:var(--text-muted)">🔒 Achetez pour voir le pronostic</div>`}
         </div>`;
       }).join('')}
