@@ -162,9 +162,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.history.replaceState({}, '', '/pages/dashboard-user.html');
     navigateTo('solde');
     setTimeout(() => showToast('Paiement annule.', 'info'), 300);
-  } else if (urlParams.get('page') === 'solde') {
-    window.history.replaceState({}, '', '/pages/dashboard-user.html');
-    navigateTo('solde');
   } else {
     navigateTo('achats');
   }
@@ -541,11 +538,12 @@ async function buyProno(pronoId, price, matchName) {
 
     if (existing) { showToast('Vous avez déjà acheté ce prono.', 'info'); return; }
 
-    // Débiter le solde
+    // Débiter le solde et incrémenter pending
     const newBalance = MOCK_USER.balance - price;
+    const newPending = (MOCK_USER.pending || 0) + price;
     const { error: balErr } = await sb
       .from('profiles')
-      .update({ balance: newBalance })
+      .update({ balance: newBalance, pending: newPending })
       .eq('id', user.id);
 
     if (balErr) throw balErr;
@@ -562,6 +560,7 @@ async function buyProno(pronoId, price, matchName) {
 
     // Mettre à jour l'état local
     MOCK_USER.balance = newBalance;
+    MOCK_USER.pending = newPending;
     const topbarBalance = document.getElementById('topbar-balance');
     if (topbarBalance) topbarBalance.textContent = '🔥 ' + formatEuros(newBalance);
 

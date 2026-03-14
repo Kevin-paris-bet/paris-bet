@@ -92,6 +92,9 @@ const pubState = {
 
 // ── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  // Attendre que Supabase récupère la session depuis localStorage
+  await new Promise(resolve => setTimeout(resolve, 300));
+
   await renderNavbar({ transparent: false });
 
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
@@ -133,7 +136,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Charger les achats de l'utilisateur connecté si connecté
         let myPurchasedIds = new Set();
         try {
-          const { data: { user } } = await sb.auth.getUser();
+          const { data: { session } } = await sb.auth.getSession();
+          const user = session?.user || null;
           if (user) {
             pubState.isLoggedIn = true;
             const urlMyP = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/purchases');
@@ -144,16 +148,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             const myP = await rMyP.json();
             if (Array.isArray(myP)) myP.forEach(p => myPurchasedIds.add(p.prono_id));
 
-            // Charger le solde ET le pending de l'utilisateur
+            // Charger le solde de l'utilisateur
             const urlBal = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles');
-            urlBal.searchParams.set('select', 'balance,pending,first_name');
+            urlBal.searchParams.set('select', 'balance,first_name');
             urlBal.searchParams.set('id', 'eq.' + user.id);
             urlBal.searchParams.set('apikey', ANON);
             const rBal = await fetch(urlBal.toString());
             const balData = await rBal.json();
             if (Array.isArray(balData) && balData.length > 0) {
               pubState.user.balance = parseFloat(balData[0].balance || 0);
-              pubState.user.pending = parseFloat(balData[0].pending || 0);
               pubState.user.firstName = balData[0].first_name;
             }
           }
@@ -375,7 +378,7 @@ function openBuyModal(id) {
   const alertHtml = !hasEnough ? `
     <div class="buy-panel__alert">
       ⚠️ Solde insuffisant.
-      <a href="/pages/dashboard-user.html?page=solde">Recharger →</a>
+      <a href="dashboard-user.html">Recharger →</a>
     </div>` : '';
 
   const html = `
@@ -452,15 +455,17 @@ async function confirmBuy() {
     });
     if (!r1.ok && r1.status !== 201) throw new Error('Erreur purchase');
 
-    // 2. Débiter le solde
+    // 2. Débiter le solde et incrémenter pending
     const newBalance = pubState.user.balance - prono.price;
+    const newPending = (pubState.user.pending || 0) + prono.price;
     await fetch(SUPA + '/rest/v1/profiles?id=eq.' + user.id, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
-      body: JSON.stringify({ balance: newBalance })
+      body: JSON.stringify({ balance: newBalance, pending: newPending })
     });
 
     pubState.user.balance = newBalance;
+    pubState.user.pending = newPending;
     const idx = pubState.pronos.findIndex(p => p.id === prono.id);
     if (idx !== -1) { pubState.pronos[idx].purchased = true; pubState.pronos[idx].buyers += 1; }
 
