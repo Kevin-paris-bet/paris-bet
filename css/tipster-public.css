@@ -200,6 +200,17 @@
   text-align: right;
 }
 
+.prono-card__cote {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-align: right;
+  margin-top: 2px;
+}
+.prono-card__cote strong {
+  color: var(--primary);
+  font-weight: 700;
+}
+
 .prono-card__footer {
   padding: var(--space-md) var(--space-lg);
   border-top: 1px solid var(--border);
