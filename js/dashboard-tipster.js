@@ -423,7 +423,7 @@ function renderPageRIB(container) {
             <span class="input-icon">👤</span>
             <input class="input" type="text" id="rib-name"
               placeholder="Prénom NOM"
-              value="${MOCK_TIPSTER.ribSaved ? 'Alexis MARTIN' : ''}"
+              value="${MOCK_TIPSTER.ribName || ''}"
             />
           </div>
         </div>
@@ -434,7 +434,7 @@ function renderPageRIB(container) {
             <span class="input-icon">🏦</span>
             <input class="input" type="text" id="rib-iban"
               placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"
-              value="${MOCK_TIPSTER.ribSaved ? 'FR76 3000 4028 3700 0100 0000 943' : ''}"
+              value="${MOCK_TIPSTER.ribIban || ''}"
               oninput="formatIBAN(this)"
             />
           </div>
@@ -446,7 +446,7 @@ function renderPageRIB(container) {
             <span class="input-icon">🔢</span>
             <input class="input" type="text" id="rib-bic"
               placeholder="BNPAFRPPXXX"
-              value="${MOCK_TIPSTER.ribSaved ? 'BNPAFRPP' : ''}"
+              value="${MOCK_TIPSTER.ribBic || ''}"
             />
           </div>
         </div>
