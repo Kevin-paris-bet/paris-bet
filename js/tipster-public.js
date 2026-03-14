@@ -468,7 +468,7 @@ async function confirmBuy() {
     showToast('✓ Pronostic acheté ! La somme est en attente de résultat.', 'success');
   } catch(e) {
     console.error(e);
-    showToast('Erreur lors de l'achat', 'error');
+    showToast("Erreur lors de l'achat", 'error');
     btn.disabled = false;
     btn.textContent = 'Confirmer';
   }
