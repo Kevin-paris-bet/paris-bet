@@ -87,11 +87,12 @@ const pubState = {
   filter:      'all',       // 'all' | 'pending' | 'won' | 'lost'
   buyingProno: null,        // Prono en cours d'achat
   user:        { ...MOCK_USER },
+  isLoggedIn:  false,
 };
 
 // ── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
-  await renderNavbar({ transparent: true });
+  await renderNavbar({ transparent: false });
 
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
 
@@ -134,6 +135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
           const { data: { user } } = await sb.auth.getUser();
           if (user) {
+            pubState.isLoggedIn = true;
             const urlMyP = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/purchases');
             urlMyP.searchParams.set('select', 'prono_id');
             urlMyP.searchParams.set('user_id', 'eq.' + user.id);
@@ -239,13 +241,12 @@ function formatMemberDate(str) {
 function renderUserBalance() {
   const u = pubState.user;
   const card = document.querySelector('.user-balance-card');
-  if (!u || u.balance === undefined || u.firstName === 'Thomas') {
-    // Non connecté — cacher le bloc solde
+  if (!pubState.isLoggedIn) {
     if (card) card.style.display = 'none';
     return;
   }
   if (card) card.style.display = '';
-  document.getElementById('user-balance').textContent  = formatEuros(u.balance);
+  document.getElementById('user-balance').textContent  = formatEuros(u.balance || 0);
   document.getElementById('user-pending').textContent  = formatEuros(u.pending || 0);
 }
 
