@@ -22,15 +22,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
-// ── Stats héro ────────────────────────────────────────────────
-function injectStats() {
-  const el = (id, val) => {
+// ── Stats héro (temps réel depuis Supabase) ───────────────────
+async function injectStats() {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+
+  const set = (id, val) => {
     const node = document.getElementById(id);
     if (node) node.textContent = val;
   };
-  el('stat-tipsters', CONFIG.stats.tipsters);
-  el('stat-users',    CONFIG.stats.users);
-  el('stat-paid',     CONFIG.stats.paidOut);
+
+  try {
+    // Tipsters actifs
+    const r1 = await fetch(`${SUPA}/rest/v1/profiles?select=id&role=eq.tipster&apikey=${ANON}`);
+    const tipsters = await r1.json();
+    set('stat-tipsters', Array.isArray(tipsters) ? tipsters.length + '+' : '0');
+
+    // Utilisateurs
+    const r2 = await fetch(`${SUPA}/rest/v1/profiles?select=id&role=eq.user&apikey=${ANON}`);
+    const users = await r2.json();
+    set('stat-users', Array.isArray(users) ? users.length + '+' : '0');
+
+    // Total versé aux tipsters (payouts done)
+    const r3 = await fetch(`${SUPA}/rest/v1/payouts?select=amount&status=eq.done&apikey=${ANON}`);
+    const payouts = await r3.json();
+    const total = Array.isArray(payouts)
+      ? payouts.reduce((s, p) => s + parseFloat(p.amount || 0), 0)
+      : 0;
+    set('stat-paid', total > 0 ? Math.round(total).toLocaleString('fr-FR') + '€+' : '0€');
+
+  } catch(e) {
+    // Fallback sur les stats CONFIG si erreur réseau
+    set('stat-tipsters', CONFIG.stats.tipsters);
+    set('stat-users',    CONFIG.stats.users);
+    set('stat-paid',     CONFIG.stats.paidOut);
+  }
 }
 
 // ── FAQ générée depuis CONFIG.faq ─────────────────────────────
