@@ -246,7 +246,7 @@ function renderPronoRow(p) {
         <button
           class="btn-icon"
           title="Voir le pronostic"
-          onclick="viewProno(${p.id})"
+          onclick="viewProno('${p.id}')"
         >👁</button>
         <button
           class="btn-icon danger"
@@ -498,7 +498,7 @@ function renderPageStats(container) {
       </div>
       <div class="stat-card">
         <div class="stat-card__label">🏆 Win Rate</div>
-        <div class="stat-card__value">${MOCK_TIPSTER.winRate}%</div>
+        <div class="stat-card__value">${won + lost > 0 ? Math.round(won / (won + lost) * 100) : 0}%</div>
         <div class="stat-card__sub">${won} gagné(s) / ${won + lost} validé(s)</div>
       </div>
       <div class="stat-card">

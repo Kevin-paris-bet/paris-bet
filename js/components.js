@@ -8,9 +8,29 @@
  */
 
 // ── Injecter la Navbar ────────────────────────────────────────
-function renderNavbar({ transparent = false, activePage = '' } = {}) {
+async function renderNavbar({ transparent = false, activePage = '' } = {}) {
   const el = document.getElementById('navbar');
   if (!el) return;
+
+  // Vérifier si l'utilisateur est connecté
+  let isLoggedIn = false;
+  let userDashboard = CONFIG.pages.auth + '#login';
+  try {
+    const { data: { user } } = await sb.auth.getUser();
+    if (user) {
+      isLoggedIn = true;
+      // Récupérer le rôle pour rediriger vers le bon dashboard
+      const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+      const rProf = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=role&id=eq.' + user.id + '&apikey=' + ANON, { headers: { 'apikey': ANON } });
+      const prof = await rProf.json();
+      if (Array.isArray(prof) && prof.length > 0) {
+        const role = prof[0].role;
+        if (role === 'admin') userDashboard = CONFIG.pages.dashboardAdmin;
+        else if (role === 'tipster') userDashboard = CONFIG.pages.dashboardTipster;
+        else userDashboard = CONFIG.pages.dashboardUser;
+      }
+    }
+  } catch(e) {}
 
   el.innerHTML = `
     <nav class="navbar ${transparent ? 'navbar--transparent' : ''}">
@@ -27,8 +47,11 @@ function renderNavbar({ transparent = false, activePage = '' } = {}) {
         </ul>
 
         <div class="navbar__actions">
-          <a href="${CONFIG.pages.auth}#login"    class="btn btn-outline btn--sm">Connexion</a>
-          <a href="${CONFIG.pages.auth}#register" class="btn btn-primary btn--sm">Démarrer</a>
+          ${isLoggedIn
+            ? `<a href="${userDashboard}" class="btn btn-primary btn--sm">Mon espace →</a>`
+            : `<a href="${CONFIG.pages.auth}#login"    class="btn btn-outline btn--sm">Connexion</a>
+               <a href="${CONFIG.pages.auth}#register" class="btn btn-primary btn--sm">Démarrer</a>`
+          }
         </div>
 
         <button class="navbar__burger" onclick="toggleMobileMenu()" aria-label="Menu">
@@ -42,16 +65,23 @@ function renderNavbar({ transparent = false, activePage = '' } = {}) {
           <a href="${l.href}" class="navbar__mobile-link" onclick="toggleMobileMenu()">${l.label}</a>
         `).join('')}
         <div class="navbar__mobile-actions">
-          <a href="${CONFIG.pages.auth}#login"    class="btn btn-outline">Connexion</a>
-          <a href="${CONFIG.pages.auth}#register" class="btn btn-primary">Démarrer gratuitement</a>
+          ${isLoggedIn
+            ? `<a href="${userDashboard}" class="btn btn-primary">Mon espace →</a>`
+            : `<a href="${CONFIG.pages.auth}#login"    class="btn btn-outline">Connexion</a>
+               <a href="${CONFIG.pages.auth}#register" class="btn btn-primary">Démarrer gratuitement</a>`
+          }
         </div>
       </div>
     </nav>
   `;
 
-  // Scroll effect
+  // Scroll effect — pas de transparent au chargement
+  const nav = el.querySelector('.navbar');
+  if (transparent) {
+    nav.classList.toggle('navbar--scrolled', window.scrollY > 40);
+  }
   window.addEventListener('scroll', () => {
-    el.querySelector('.navbar').classList.toggle('navbar--scrolled', window.scrollY > 40);
+    nav.classList.toggle('navbar--scrolled', window.scrollY > 40);
   });
 }
 

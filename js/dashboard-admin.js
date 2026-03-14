@@ -452,7 +452,7 @@ function renderTipsters(c) {
           </div>
           <div class="table-actions">
             <button class="btn-icon ${t.suspended?'':'danger'}" title="${t.suspended?'Réactiver':'Suspendre'}"
-              onclick="toggleSuspend(${t.id})">
+              onclick="toggleSuspend('${t.id}')">
               ${t.suspended ? '✓' : '⛔'}
             </button>
           </div>
@@ -461,15 +461,25 @@ function renderTipsters(c) {
   `;
 }
 
-function toggleSuspend(id) {
+async function toggleSuspend(id) {
   const t = adminState.tipsters.find(t => t.id === id);
   if (!t) return;
   const action = t.suspended ? 'réactiver' : 'suspendre';
   if (!confirm(`Voulez-vous ${action} le compte de ${t.name} ?`)) return;
-  // TODO (Supabase) : mettre à jour le statut du tipster
-  t.suspended = !t.suspended;
-  navigateTo('tipsters');
-  showToast(`${t.name} : compte ${t.suspended ? 'suspendu' : 'réactivé'}`, t.suspended ? 'error' : 'success');
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const newRole = t.suspended ? 'tipster' : 'suspended';
+  try {
+    await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?id=eq.' + id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+      body: JSON.stringify({ role: newRole })
+    });
+    t.suspended = !t.suspended;
+    navigateTo('tipsters');
+    showToast(`${t.name} : compte ${t.suspended ? 'suspendu' : 'réactivé'}`, t.suspended ? 'error' : 'success');
+  } catch(e) {
+    showToast('Erreur lors de la suspension', 'error');
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
