@@ -755,33 +755,47 @@ async function saveAvatar() {
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Upload en cours...'; }
 
   try {
-    const user = await sb.auth.getUser();
-    const userId = user.data.user.id;
+    const { data: { session } } = await sb.auth.getSession();
+    const userId = session?.user?.id;
+    const JWT = session?.access_token;
+    if (!userId || !JWT) throw new Error('Non connecté');
+
+    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+    const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
 
     // Compression
     const compressed = await compressImage(input.files[0]);
-
-    // Upload dans Supabase Storage
     const fileName = `avatar-${userId}.jpg`;
-    const { data, error } = await sb.storage
-      .from('avatars')
-      .upload(fileName, compressed, { upsert: true, contentType: 'image/jpeg' });
 
-    if (error) throw error;
-
-    // Récupérer l'URL publique
-    const { data: urlData } = sb.storage.from('avatars').getPublicUrl(fileName);
-    const avatarUrl = urlData.publicUrl + '?t=' + Date.now(); // cache-bust
-
-    // Sauvegarder dans profiles
-    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-    await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?id=eq.${userId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
-      body: JSON.stringify({ avatar_url: urlData.publicUrl })
+    // Upload via fetch direct avec JWT utilisateur
+    const uploadResp = await fetch(`${SUPA}/storage/v1/object/avatars/${fileName}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + JWT,
+        'apikey': ANON,
+        'Content-Type': 'image/jpeg',
+        'x-upsert': 'true'
+      },
+      body: compressed
     });
 
-    MOCK_TIPSTER.avatarUrl = urlData.publicUrl;
+    if (!uploadResp.ok) {
+      const err = await uploadResp.json().catch(() => ({}));
+      throw new Error(err.message || 'Erreur upload');
+    }
+
+    // URL publique
+    const avatarUrl = `${SUPA}/storage/v1/object/public/avatars/${fileName}`;
+    const avatarUrlCacheBust = avatarUrl + '?t=' + Date.now();
+
+    // Sauvegarder dans profiles
+    await fetch(`${SUPA}/rest/v1/profiles?id=eq.${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + JWT },
+      body: JSON.stringify({ avatar_url: avatarUrl })
+    });
+
+    MOCK_TIPSTER.avatarUrl = avatarUrlCacheBust;
     showToast('✓ Photo de profil mise à jour !', 'success');
     navigateTo('compte');
   } catch(e) {
