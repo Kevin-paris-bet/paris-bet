@@ -131,13 +131,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       }}
     );
     const pronos = await resp2.json();
+    console.log('[Explorer] pronos chargés:', pronos?.length, pronos);
     // Charger les profils tipsters
     const tipsterIds = [...new Set((pronos||[]).map(p => p.tipster_id).filter(Boolean))];
     let profilesMap = {};
     let profilesMapFull = {};
     if (tipsterIds.length > 0) {
       const resp3 = await fetch(
-        'https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles_with_email?select=id,first_name,last_name,pseudo,avatar_url&apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI',
+        'https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id,first_name,last_name,pseudo,avatar_url&apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI',
         {}
       );
       const profiles = await resp3.json();
