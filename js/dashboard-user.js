@@ -131,7 +131,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       }}
     );
     const pronos = await resp2.json();
-    console.log('[Explorer] pronos chargés:', pronos?.length, pronos);
     // Charger les profils tipsters
     const tipsterIds = [...new Set((pronos||[]).map(p => p.tipster_id).filter(Boolean))];
     let profilesMap = {};
