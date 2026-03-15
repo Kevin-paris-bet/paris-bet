@@ -127,6 +127,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         MOCK_TIPSTER_PUBLIC.lastName  = t.pseudo ? '' : t.last_name;
         MOCK_TIPSTER_PUBLIC.description = t.description || '';
         MOCK_TIPSTER_PUBLIC.memberSince = months[createdDate.getMonth()] + ' ' + createdDate.getFullYear();
+        // Mettre à jour le titre de l'onglet
+        const displayName = t.pseudo || (t.first_name + ' ' + t.last_name);
+        document.title = displayName + ' — Paris-Bet';
         // URL affichée : avec pseudo si disponible, sinon avec id
         if (t.pseudo) {
           MOCK_TIPSTER_PUBLIC.url = 'paris-bet.vercel.app/pages/tipster-public.html?pseudo=' + t.pseudo;
