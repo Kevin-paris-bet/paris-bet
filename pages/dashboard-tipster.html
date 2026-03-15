@@ -162,16 +162,22 @@
             />
           </div>
         </div>
+        <div class="form-group">
+          <label for="new-cote">Cote <span style="color:var(--text-muted);font-weight:400">(optionnel)</span></label>
+          <div class="input-wrap">
+            <span class="input-icon">📊</span>
+            <input class="input" type="text" id="new-cote"
+              placeholder="Ex: 1,76"
+              pattern="[0-9]+([,\.][0-9]{1,2})?"
+            />
+          </div>
+        </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label for="new-date">Date du match *</label>
           <input class="input" type="date" id="new-date" />
-        </div>
-        <div class="form-group">
-          <label for="new-time">Heure (optionnel)</label>
-          <input class="input" type="time" id="new-time" />
         </div>
       </div>
 
