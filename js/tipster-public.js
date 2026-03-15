@@ -96,16 +96,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
 
-  // Récupérer l'id du tipster depuis l'URL (?id=xxx)
+  // Récupérer l'id ou le pseudo du tipster depuis l'URL
   const urlParams = new URLSearchParams(window.location.search);
   const tipsterId = urlParams.get('id');
+  const tipsterPseudo = urlParams.get('pseudo');
 
-  if (tipsterId) {
+  // Résoudre l'id depuis le pseudo si nécessaire
+  let resolvedId = tipsterId;
+  if (!resolvedId && tipsterPseudo) {
+    const rPseudo = await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id&pseudo=eq.${tipsterPseudo}&apikey=${ANON}`);
+    const pData = await rPseudo.json();
+    if (Array.isArray(pData) && pData.length > 0) resolvedId = pData[0].id;
+  }
+
+  if (resolvedId) {
     try {
       // Charger le profil du tipster
       const urlProf = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles');
       urlProf.searchParams.set('select', 'id,first_name,last_name,pseudo,description,created_at');
-      urlProf.searchParams.set('id', 'eq.' + tipsterId);
+      urlProf.searchParams.set('id', 'eq.' + resolvedId);
       urlProf.searchParams.set('apikey', ANON);
       const rProf = await fetch(urlProf.toString());
       const profiles = await rProf.json();
@@ -118,14 +127,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         MOCK_TIPSTER_PUBLIC.lastName  = t.pseudo ? '' : t.last_name;
         MOCK_TIPSTER_PUBLIC.description = t.description || '';
         MOCK_TIPSTER_PUBLIC.memberSince = months[createdDate.getMonth()] + ' ' + createdDate.getFullYear();
-        MOCK_TIPSTER_PUBLIC.url = 'paris-bet.vercel.app/pages/tipster-public.html?id=' + t.id;
-        if (t.pseudo) MOCK_TIPSTER_PUBLIC.url = 'paris-bet.vercel.app/tipster/' + t.pseudo;
+        // URL affichée : avec pseudo si disponible, sinon avec id
+        if (t.pseudo) {
+          MOCK_TIPSTER_PUBLIC.url = 'paris-bet.vercel.app/pages/tipster-public.html?pseudo=' + t.pseudo;
+        } else {
+          MOCK_TIPSTER_PUBLIC.url = 'paris-bet.vercel.app/pages/tipster-public.html?id=' + t.id;
+        }
       }
 
       // Charger les pronos du tipster
       const urlPronos = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
       urlPronos.searchParams.set('select', 'id,game,sport,match_date,content,price,status,buyers,cote');
-      urlPronos.searchParams.set('tipster_id', 'eq.' + tipsterId);
+      urlPronos.searchParams.set('tipster_id', 'eq.' + resolvedId);
       urlPronos.searchParams.set('order', 'created_at.desc');
       urlPronos.searchParams.set('apikey', ANON);
       const rPronos = await fetch(urlPronos.toString());

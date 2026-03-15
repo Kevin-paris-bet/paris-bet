@@ -106,7 +106,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Lien vers la page publique
   const linkPublic = document.getElementById('link-public-page');
-  if (linkPublic) linkPublic.href = '/pages/tipster-public.html?id=' + user.id;
+  if (linkPublic) {
+    const pseudo = MOCK_TIPSTER.pseudo;
+    linkPublic.href = pseudo
+      ? '/pages/tipster-public.html?pseudo=' + pseudo
+      : '/pages/tipster-public.html?id=' + user.id;
+  }
 
   // Charger les vrais pronos via fetch direct
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
