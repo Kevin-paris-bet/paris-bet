@@ -252,7 +252,7 @@ function renderPronoRow(p) {
         <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
         ${p.buyers > 0 || p.status !== 'pending'
           ? `<div class="prono-lock">🔒 Verrouillé — modification impossible</div>`
-          : `<div class="prono-lock" style="color:var(--warning)">✏️ Brouillon — non encore acheté</div>`
+          : `<div class="prono-lock" style="color:var(--warning)">✏️ Modifiable — aucun acheteur pour l'instant</div>`
         }
       </div>
       <div class="buyers-count">
@@ -618,6 +618,26 @@ function renderPageCompte(container) {
         </button>
       </div>
 
+      <!-- Modifier la description -->
+      <div class="rib-card">
+        <div class="rib-card__header">
+          <div style="font-size:1.6rem">📝</div>
+          <div>
+            <h3>Description</h3>
+            <p>Présentez-vous à vos acheteurs</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Votre description <span style="color:var(--text-muted);font-weight:400">(max 300 caractères)</span></label>
+          <textarea class="input input-textarea" id="new-description" maxlength="300"
+            placeholder="Ex: Spécialiste Ligue 1 depuis 5 ans, 68% de win rate sur 200+ pronos..."
+            style="min-height:100px">${MOCK_TIPSTER.description || ''}</textarea>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="saveDescription()">
+          Enregistrer la description
+        </button>
+      </div>
+
       <!-- Modifier le pseudo -->
       <div class="rib-card">
         <div class="rib-card__header">
@@ -638,26 +658,6 @@ function renderPageCompte(container) {
         </div>
         <button class="btn btn-primary" style="width:100%" onclick="savePseudo()">
           Mettre à jour le pseudo
-        </button>
-      </div>
-
-      <!-- Modifier la description -->
-      <div class="rib-card">
-        <div class="rib-card__header">
-          <div style="font-size:1.6rem">📝</div>
-          <div>
-            <h3>Description</h3>
-            <p>Présentez-vous à vos acheteurs</p>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Votre description <span style="color:var(--text-muted);font-weight:400">(max 300 caractères)</span></label>
-          <textarea class="input input-textarea" id="new-description" maxlength="300"
-            placeholder="Ex: Spécialiste Ligue 1 depuis 5 ans, 68% de win rate sur 200+ pronos..."
-            style="min-height:100px">${MOCK_TIPSTER.description || ''}</textarea>
-        </div>
-        <button class="btn btn-primary" style="width:100%" onclick="saveDescription()">
-          Enregistrer la description
         </button>
       </div>
 

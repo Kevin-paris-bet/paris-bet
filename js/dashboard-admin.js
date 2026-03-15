@@ -153,12 +153,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (users && users.length > 0) {
     adminState.users = users.map(u => ({
       ...u,
-      name:    u.first_name + ' ' + u.last_name,
-      email:   u.email || '—',
-      balance: parseFloat(u.balance) || 0,
-      pending: parseFloat(u.pending) || 0,
-      spent:   0,
-      joined:  u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '—',
+      name:          u.first_name + ' ' + u.last_name,
+      email:         u.email || '—',
+      balance:       parseFloat(u.balance) || 0,
+      pending:       parseFloat(u.pending) || 0,
+      totalDeposits: parseFloat(u.total_deposits) || 0,
+      joined:        u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '—',
     }));
   } else {
     adminState.users = [];
@@ -514,19 +514,25 @@ async function toggleSuspend(id) {
 //  PAGE — GESTION DES UTILISATEURS
 // ══════════════════════════════════════════════════════════════
 function renderUsers(c) {
-  const totalBalance = adminState.users.reduce((s,u) => s + u.balance + u.pending, 0);
+  const totalBalance  = adminState.users.reduce((s,u) => s + u.balance + u.pending, 0);
+  const totalDeposits = adminState.users.reduce((s,u) => s + u.totalDeposits, 0);
 
   c.innerHTML = `
-    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:var(--space-xl)">
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:var(--space-xl)">
       <div class="stat-card">
         <div class="stat-card__label">👤 Utilisateurs</div>
         <div class="stat-card__value">${adminState.users.length}</div>
         <div class="stat-card__sub">inscrits</div>
       </div>
       <div class="stat-card">
+        <div class="stat-card__label">💳 Total dépôts</div>
+        <div class="stat-card__value" style="color:var(--success)">${formatEuros(totalDeposits)}</div>
+        <div class="stat-card__sub">recharges cumulées</div>
+      </div>
+      <div class="stat-card">
         <div class="stat-card__label">💰 Soldes cumulés</div>
         <div class="stat-card__value">${formatEuros(totalBalance)}</div>
-        <div class="stat-card__sub">dépôts + attentes</div>
+        <div class="stat-card__sub">disponible + attente</div>
       </div>
       <div class="stat-card">
         <div class="stat-card__label">⏳ En attente</div>
@@ -536,17 +542,18 @@ function renderUsers(c) {
     </div>
 
     <div class="pronos-table">
-      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 60px">
-        <span>Utilisateur</span><span>Solde dispo</span><span>En attente</span><span>Inscrit</span><span></span>
+      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 60px">
+        <span>Utilisateur</span><span>Solde dispo</span><span>En attente</span><span>Total dépôts</span><span>Inscrit</span><span></span>
       </div>
       ${adminState.users.map(u => `
-        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 60px">
+        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 60px">
           <div>
             <div class="prono-title">${u.name}</div>
             <div class="prono-meta">${u.email}</div>
           </div>
           <div style="font-weight:700;color:var(--blue)">${formatEuros(u.balance)}</div>
           <div style="font-weight:600;color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</div>
+          <div style="font-weight:700;color:var(--success)">${u.totalDeposits > 0 ? formatEuros(u.totalDeposits) : '—'}</div>
           <div style="font-size:0.8rem;color:var(--text-muted)">${u.joined}</div>
           <div><button class="btn-icon" title="Voir la fiche" onclick="openFicheUser('${u.id}')">👁</button></div>
         </div>`).join('')}

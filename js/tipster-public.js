@@ -490,7 +490,6 @@ async function confirmBuy() {
     const pending    = parseFloat(pubState.user.pending) || 0;
     const newBalance = balance - price;
     const newPending = pending + price;
-    console.log('[confirmBuy] price:', price, 'balance:', balance, 'pending:', pending, '→ newBalance:', newBalance, 'newPending:', newPending);
     await fetch(SUPA + '/rest/v1/profiles?id=eq.' + user.id, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + JWT },

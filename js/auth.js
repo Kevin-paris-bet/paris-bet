@@ -246,7 +246,13 @@ async function handleRegister() {
       });
     }
 
-    // Succès — email de confirmation envoyé
+    // Succès — mettre à jour le lien vers le bon dashboard
+    const dashboardUrl = authState.selectedRole === 'tipster'
+      ? '/pages/dashboard-tipster.html'
+      : '/pages/dashboard-user.html';
+    const btnDashboard = document.getElementById('btn-goto-dashboard');
+    if (btnDashboard) btnDashboard.href = dashboardUrl;
+
     document.getElementById('form-register').style.display = 'none';
     document.getElementById('register-success').classList.add('show');
 

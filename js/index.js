@@ -43,11 +43,11 @@ async function injectStats() {
     const users = await r2.json();
     set('stat-users', Array.isArray(users) ? users.length + '+' : '0');
 
-    // Total versé aux tipsters (payouts done)
-    const r3 = await fetch(`${SUPA}/rest/v1/payouts?select=amount&status=eq.done&apikey=${ANON}`);
-    const payouts = await r3.json();
-    const total = Array.isArray(payouts)
-      ? payouts.reduce((s, p) => s + parseFloat(p.amount || 0), 0)
+    // Total versé aux tipsters = 90% des achats sur pronos gagnés
+    const r3 = await fetch(`${SUPA}/rest/v1/purchases?select=amount&status=eq.won&apikey=${ANON}`);
+    const wonPurchases = await r3.json();
+    const total = Array.isArray(wonPurchases)
+      ? wonPurchases.reduce((s, p) => s + parseFloat(p.amount || 0), 0) * 0.9
       : 0;
     set('stat-paid', total > 0 ? Math.round(total).toLocaleString('fr-FR') + '€+' : '0€');
 
