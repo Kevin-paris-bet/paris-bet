@@ -738,6 +738,8 @@ async function saveDescription() {
     showToast('Erreur : ' + e.message, 'error');
   }
 }
+
+async function saveEmail() {
   const newEmail = document.getElementById('new-email').value.trim();
   if (!newEmail || !newEmail.includes('@')) {
     showToast('Veuillez saisir un email valide.', 'error'); return;
