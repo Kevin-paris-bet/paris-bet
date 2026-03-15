@@ -47,22 +47,23 @@ module.exports = async (req, res) => {
     const amount  = parseFloat(session.metadata?.amount);
 
     if (userId && amount > 0) {
-      // Récupérer le solde actuel
+      // Récupérer le solde actuel et total_deposits
       const { data: profile } = await supabase
         .from('profiles')
-        .select('balance')
+        .select('balance, total_deposits')
         .eq('id', userId)
         .single();
 
-      const newBalance = (parseFloat(profile?.balance) || 0) + amount;
+      const newBalance       = (parseFloat(profile?.balance) || 0) + amount;
+      const newTotalDeposits = (parseFloat(profile?.total_deposits) || 0) + amount;
 
-      // Mettre à jour le solde
+      // Mettre à jour le solde et total_deposits
       await supabase
         .from('profiles')
-        .update({ balance: newBalance })
+        .update({ balance: newBalance, total_deposits: newTotalDeposits })
         .eq('id', userId);
 
-      console.log(`✓ Solde crédité : ${amount}€ pour ${userId}`);
+      console.log(`✓ Solde crédité : ${amount}€ pour ${userId} (total dépôts: ${newTotalDeposits}€)`);
     }
   }
 
