@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pronosMap = {};
     try {
       const url = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
-      url.searchParams.set('select', 'id,game,sport,match_date,content,tipster_id');
+      url.searchParams.set('select', 'id,game,sport,match_date,content,tipster_id,cote');
       url.searchParams.set('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI');
       const resp = await fetch(url.toString());
       const tousLesPronos = await resp.json();
@@ -101,16 +101,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     userState.realAchats = achats.map(a => {
       const p = pronosMap[a.prono_id] || {};
       return {
-        id:         a.id,
-        game:      p.game || "—",
-        sport:      p.sport || '—',
-        date:       p.match_date || '—',
-        tipster:    (pronosMap[a.prono_id] || {}).tipsterName || '—',
-        price:      parseFloat(a.amount) || 0,
-        status:     a.status || 'pending',
-        content: p.content || '',
-        content_odds:       '' || '',
-        pronoId:    a.prono_id,
+        id:       a.id,
+        game:     p.game || "—",
+        sport:    p.sport || '—',
+        date:     p.match_date || '—',
+        tipster:  (pronosMap[a.prono_id] || {}).tipsterName || '—',
+        price:    parseFloat(a.amount) || 0,
+        status:   a.status || 'pending',
+        content:  p.content || '',
+        cote:     p.cote || null,
+        pronoId:  a.prono_id,
       };
     });
   } else {
@@ -141,7 +141,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         {}
       );
       const profiles = await resp3.json();
-      const profilesMapFull = {};
       (profiles||[]).forEach(p => {
         profilesMapFull[p.id] = {
           name: (p.pseudo || (p.first_name + ' ' + p.last_name)),
@@ -278,6 +277,7 @@ function renderAchatsList() {
           </div>
           <div class="achat-card__right">
             <div class="achat-card__price">${formatEuros(a.price)}</div>
+            ${a.cote ? `<div style="font-size:0.75rem;color:var(--text-muted);text-align:right">📊 Cote : <strong style="color:var(--primary)">${parseFloat(a.cote).toFixed(2).replace('.', ',')}</strong></div>` : ''}
             ${statusBadge[a.status]||''}
             ${isRefunded ? `<span class="achat-card__refund">↩ ${formatEuros(a.price)} remboursé</span>` : ''}
           </div>
