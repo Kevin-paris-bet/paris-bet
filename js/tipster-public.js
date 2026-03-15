@@ -211,7 +211,9 @@ function renderHero() {
       <div class="tipster-avatar">${t.firstName[0]}${t.lastName ? t.lastName[0] : ''}</div>
       <div class="tipster-hero__info">
         <h1 class="tipster-hero__name">${t.firstName}${t.lastName ? ' ' + t.lastName : ''}</h1>
-        <div class="tipster-hero__url">🔗 ${t.url}</div>
+        <div class="tipster-hero__url">
+          <a href="https://${t.url}" target="_blank" style="color:rgba(255,255,255,0.85);text-decoration:none;hover:underline">🔗 ${t.url}</a>
+        </div>
         ${t.description ? `<div style="margin-top:8px;font-size:0.9rem;color:rgba(255,255,255,0.85);max-width:500px;line-height:1.5">${t.description}</div>` : ''}
         <div class="tipster-hero__tags">
           ${(t.sports||[]).map(s => `<span class="tipster-tag">${s}</span>`).join('')}
