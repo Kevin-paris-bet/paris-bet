@@ -86,7 +86,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Charger le vrai profil
   MOCK_TIPSTER.firstName = user.profile.first_name;
   MOCK_TIPSTER.lastName  = user.profile.last_name;
-  MOCK_TIPSTER.email     = user.email;
+  MOCK_TIPSTER.email       = user.email;
+  MOCK_TIPSTER.pseudo      = user.profile.pseudo || '';
+  MOCK_TIPSTER.description = user.profile.description || '';
   MOCK_TIPSTER.balance   = parseFloat(user.profile.balance) || 0;
   MOCK_TIPSTER.pending   = parseFloat(user.profile.pending) || 0;
   MOCK_TIPSTER.ribName   = user.profile.rib_name || '';
@@ -577,6 +579,49 @@ function renderPageCompte(container) {
   container.innerHTML = `
     <div style="max-width:560px;display:flex;flex-direction:column;gap:var(--space-lg)">
 
+      <!-- Modifier le pseudo -->
+      <div class="rib-card">
+        <div class="rib-card__header">
+          <div style="font-size:1.6rem">🏷️</div>
+          <div>
+            <h3>Pseudo</h3>
+            <p>Pseudo actuel : <strong>${MOCK_TIPSTER.pseudo || '—'}</strong></p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Nouveau pseudo</label>
+          <div class="input-wrap">
+            <span class="input-icon">🏷️</span>
+            <input class="input" type="text" id="new-pseudo" placeholder="ex: jerome-bet" oninput="checkPseudoAvailable()" autocomplete="off" />
+          </div>
+          <div id="pseudo-check-tip" style="font-size:0.8rem;margin-top:4px"></div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">3-20 caractères · lettres, chiffres, tirets uniquement</div>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="savePseudo()">
+          Mettre à jour le pseudo
+        </button>
+      </div>
+
+      <!-- Modifier la description -->
+      <div class="rib-card">
+        <div class="rib-card__header">
+          <div style="font-size:1.6rem">📝</div>
+          <div>
+            <h3>Description</h3>
+            <p>Présentez-vous à vos acheteurs</p>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Votre description <span style="color:var(--text-muted);font-weight:400">(max 300 caractères)</span></label>
+          <textarea class="input input-textarea" id="new-description" maxlength="300"
+            placeholder="Ex: Spécialiste Ligue 1 depuis 5 ans, 68% de win rate sur 200+ pronos..."
+            style="min-height:100px">${MOCK_TIPSTER.description || ''}</textarea>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="saveDescription()">
+          Enregistrer la description
+        </button>
+      </div>
+
       <!-- Modifier l'email -->
       <div class="rib-card">
         <div class="rib-card__header">
@@ -630,7 +675,69 @@ function renderPageCompte(container) {
   `;
 }
 
-async function saveEmail() {
+let pseudoTimerTip = null;
+async function checkPseudoAvailable() {
+  const input = document.getElementById('new-pseudo');
+  const check = document.getElementById('pseudo-check-tip');
+  const val   = input.value.trim().toLowerCase();
+  const valid = /^[a-z0-9-]{3,20}$/.test(val);
+  input.classList.toggle('error', val.length > 0 && !valid);
+  input.classList.toggle('valid', false);
+  if (check) check.textContent = '';
+  if (!valid) return;
+  clearTimeout(pseudoTimerTip);
+  if (check) check.innerHTML = '<span style="color:var(--text-muted)">⏳ Vérification...</span>';
+  pseudoTimerTip = setTimeout(async () => {
+    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+    const r = await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id&pseudo=eq.${val}&apikey=${ANON}`);
+    const data = await r.json();
+    const taken = Array.isArray(data) && data.length > 0 && data[0].id !== (await sb.auth.getUser()).data.user?.id;
+    input.classList.toggle('error', taken);
+    input.classList.toggle('valid', !taken);
+    if (check) check.innerHTML = taken
+      ? '<span style="color:var(--error)">✕ Ce pseudo est déjà pris</span>'
+      : '<span style="color:var(--success)">✓ Disponible</span>';
+  }, 500);
+}
+
+async function savePseudo() {
+  const val = document.getElementById('new-pseudo')?.value.trim().toLowerCase();
+  if (!val || !/^[a-z0-9-]{3,20}$/.test(val)) {
+    showToast('Pseudo invalide (3-20 caractères, lettres/chiffres/tirets).', 'error'); return;
+  }
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  // Vérifier unicité
+  const r = await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id&pseudo=eq.${val}&apikey=${ANON}`);
+  const existing = await r.json();
+  const user = await sb.auth.getUser();
+  if (Array.isArray(existing) && existing.length > 0 && existing[0].id !== user.data.user?.id) {
+    showToast('Ce pseudo est déjà pris.', 'error'); return;
+  }
+  try {
+    const { error } = await sb.from('profiles').update({ pseudo: val }).eq('id', user.data.user.id);
+    if (error) throw error;
+    MOCK_TIPSTER.pseudo = val;
+    showToast('✓ Pseudo mis à jour !', 'success');
+    document.getElementById('new-pseudo').value = '';
+    navigateTo('compte');
+  } catch(e) {
+    showToast('Erreur : ' + e.message, 'error');
+  }
+}
+
+async function saveDescription() {
+  const val = document.getElementById('new-description')?.value.trim();
+  if (val.length > 300) { showToast('Maximum 300 caractères.', 'error'); return; }
+  try {
+    const user = await sb.auth.getUser();
+    const { error } = await sb.from('profiles').update({ description: val }).eq('id', user.data.user.id);
+    if (error) throw error;
+    MOCK_TIPSTER.description = val;
+    showToast('✓ Description mise à jour !', 'success');
+  } catch(e) {
+    showToast('Erreur : ' + e.message, 'error');
+  }
+}
   const newEmail = document.getElementById('new-email').value.trim();
   if (!newEmail || !newEmail.includes('@')) {
     showToast('Veuillez saisir un email valide.', 'error'); return;
