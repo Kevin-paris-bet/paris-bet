@@ -89,6 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   MOCK_TIPSTER.email       = user.email;
   MOCK_TIPSTER.pseudo      = user.profile.pseudo || '';
   MOCK_TIPSTER.description = user.profile.description || '';
+  MOCK_TIPSTER.avatarUrl   = user.profile.avatar_url || '';
   MOCK_TIPSTER.balance   = parseFloat(user.profile.balance) || 0;
   MOCK_TIPSTER.pending   = parseFloat(user.profile.pending) || 0;
   MOCK_TIPSTER.ribName   = user.profile.rib_name || '';
@@ -588,6 +589,35 @@ function renderPageCompte(container) {
   container.innerHTML = `
     <div style="max-width:560px;display:flex;flex-direction:column;gap:var(--space-lg)">
 
+      <!-- Photo de profil -->
+      <div class="rib-card">
+        <div class="rib-card__header">
+          <div style="font-size:1.6rem">📸</div>
+          <div>
+            <h3>Photo de profil</h3>
+            <p>Visible sur votre page publique</p>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:var(--space-lg);margin-bottom:var(--space-lg)">
+          <div id="avatar-preview" style="width:80px;height:80px;border-radius:50%;overflow:hidden;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:700;color:white;flex-shrink:0">
+            ${MOCK_TIPSTER.avatarUrl
+              ? `<img src="${MOCK_TIPSTER.avatarUrl}" style="width:100%;height:100%;object-fit:cover" />`
+              : `${(MOCK_TIPSTER.pseudo || MOCK_TIPSTER.firstName)[0].toUpperCase()}`
+            }
+          </div>
+          <div style="flex:1">
+            <label class="btn btn-outline" style="cursor:pointer;display:inline-block">
+              📁 Choisir une photo
+              <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="previewAvatar(this)" />
+            </label>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:6px">JPG, PNG · Max 5MB · Compressée automatiquement</div>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="saveAvatar()">
+          Enregistrer la photo
+        </button>
+      </div>
+
       <!-- Modifier le pseudo -->
       <div class="rib-card">
         <div class="rib-card__header">
@@ -684,7 +714,82 @@ function renderPageCompte(container) {
   `;
 }
 
-let pseudoTimerTip = null;
+function previewAvatar(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const preview = document.getElementById('avatar-preview');
+    if (preview) preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover" />`;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function compressImage(file, maxSizeKB = 200, maxDim = 400) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      let w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) {
+        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+        else       { w = Math.round(w * maxDim / h); h = maxDim; }
+      }
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      canvas.toBlob(blob => {
+        URL.revokeObjectURL(url);
+        resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+      }, 'image/jpeg', 0.8);
+    };
+    img.src = url;
+  });
+}
+
+async function saveAvatar() {
+  const input = document.getElementById('avatar-input');
+  if (!input?.files?.[0]) { showToast('Veuillez choisir une photo.', 'error'); return; }
+
+  const btn = document.querySelector('[onclick="saveAvatar()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Upload en cours...'; }
+
+  try {
+    const user = await sb.auth.getUser();
+    const userId = user.data.user.id;
+
+    // Compression
+    const compressed = await compressImage(input.files[0]);
+
+    // Upload dans Supabase Storage
+    const fileName = `avatar-${userId}.jpg`;
+    const { data, error } = await sb.storage
+      .from('avatars')
+      .upload(fileName, compressed, { upsert: true, contentType: 'image/jpeg' });
+
+    if (error) throw error;
+
+    // Récupérer l'URL publique
+    const { data: urlData } = sb.storage.from('avatars').getPublicUrl(fileName);
+    const avatarUrl = urlData.publicUrl + '?t=' + Date.now(); // cache-bust
+
+    // Sauvegarder dans profiles
+    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+    await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?id=eq.${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+      body: JSON.stringify({ avatar_url: urlData.publicUrl })
+    });
+
+    MOCK_TIPSTER.avatarUrl = urlData.publicUrl;
+    showToast('✓ Photo de profil mise à jour !', 'success');
+    navigateTo('compte');
+  } catch(e) {
+    showToast('Erreur upload : ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Enregistrer la photo'; }
+  }
+}
 async function checkPseudoAvailable() {
   const input = document.getElementById('new-pseudo');
   const check = document.getElementById('pseudo-check-tip');

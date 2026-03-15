@@ -113,7 +113,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       // Charger le profil du tipster
       const urlProf = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles');
-      urlProf.searchParams.set('select', 'id,first_name,last_name,pseudo,description,created_at');
+      urlProf.searchParams.set('select', 'id,first_name,last_name,pseudo,description,avatar_url,created_at');
       urlProf.searchParams.set('id', 'eq.' + resolvedId);
       urlProf.searchParams.set('apikey', ANON);
       const rProf = await fetch(urlProf.toString());
@@ -126,6 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         MOCK_TIPSTER_PUBLIC.firstName = t.pseudo || t.first_name;
         MOCK_TIPSTER_PUBLIC.lastName  = t.pseudo ? '' : t.last_name;
         MOCK_TIPSTER_PUBLIC.description = t.description || '';
+        MOCK_TIPSTER_PUBLIC.avatarUrl = t.avatar_url || '';
         MOCK_TIPSTER_PUBLIC.memberSince = months[createdDate.getMonth()] + ' ' + createdDate.getFullYear();
         // Mettre à jour le titre de l'onglet
         const displayName = t.pseudo || (t.first_name + ' ' + t.last_name);
@@ -211,7 +212,12 @@ function renderHero() {
   // On injecte tout le hero d'un coup
   document.getElementById('tipster-hero-inner').innerHTML = `
     <div class="tipster-hero__avatar-info">
-      <div class="tipster-avatar">${t.firstName[0]}${t.lastName ? t.lastName[0] : ''}</div>
+      <div class="tipster-avatar" style="${t.avatarUrl ? 'padding:0;overflow:hidden' : ''}">
+        ${t.avatarUrl
+          ? `<img src="${t.avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`
+          : `${t.firstName[0]}${t.lastName ? t.lastName[0] : ''}`
+        }
+      </div>
       <div class="tipster-hero__info">
         <h1 class="tipster-hero__name">${t.firstName}${t.lastName ? ' ' + t.lastName : ''}</h1>
         <div class="tipster-hero__url">

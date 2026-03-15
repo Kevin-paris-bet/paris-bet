@@ -134,15 +134,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Charger les profils tipsters
     const tipsterIds = [...new Set((pronos||[]).map(p => p.tipster_id).filter(Boolean))];
     let profilesMap = {};
+    let profilesMapFull = {};
     if (tipsterIds.length > 0) {
       const resp3 = await fetch(
-        'https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles_with_email?select=id,first_name,last_name&apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI',
+        'https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles_with_email?select=id,first_name,last_name,pseudo,avatar_url&apikey=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI',
         {}
       );
       const profiles = await resp3.json();
-      (profiles||[]).forEach(p => profilesMap[p.id] = p.first_name + ' ' + p.last_name);
+      const profilesMapFull = {};
+      (profiles||[]).forEach(p => {
+        profilesMapFull[p.id] = {
+          name: (p.pseudo || (p.first_name + ' ' + p.last_name)),
+          avatarUrl: p.avatar_url || ''
+        };
+      });
+      (profiles||[]).forEach(p => profilesMap[p.id] = p.pseudo || (p.first_name + ' ' + p.last_name));
     }
-    userState.availablePronos = (pronos||[]).map(p => ({...p, tipsterName: profilesMap[p.tipster_id] || '—'}));
+    userState.availablePronos = (pronos||[]).map(p => ({
+      ...p,
+      tipsterName: profilesMapFull[p.tipster_id]?.name || '—',
+      tipsterAvatar: profilesMapFull[p.tipster_id]?.avatarUrl || ''
+    }));
   } catch(e) {
     console.error('Erreur fetch pronos dispo:', e);
     userState.availablePronos = [];
@@ -493,13 +505,20 @@ function renderPageExplorer(container) {
     <div style="display:flex;flex-direction:column;gap:var(--space-md)">
       ${pronos.map(p => {
         const tipsterName = p.tipsterName || '—';
+        const tipsterAvatar = p.tipsterAvatar || '';
+        const avatarHtml = tipsterAvatar
+          ? `<img src="${tipsterAvatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
+          : `<div style="width:32px;height:32px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0">${tipsterName[0]?.toUpperCase()}</div>`;
         const bought = alreadyBought.has(p.id);
         return `
         <div class="achat-card" style="border-left-color:var(--blue)">
           <div class="achat-card__header">
             <div>
               <div class="achat-card__match">${p.game}</div>
-              <div class="achat-card__meta">${p.sport} · ${formatDate(p.match_date)} · par <a href="../pages/tipster-public.html?id=${p.tipster_id}" style="color:var(--blue);font-weight:600">${tipsterName}</a></div>
+              <div class="achat-card__meta" style="display:flex;align-items:center;gap:6px">
+                ${avatarHtml}
+                ${p.sport} · ${formatDate(p.match_date)} · par <a href="../pages/tipster-public.html?id=${p.tipster_id}" style="color:var(--blue);font-weight:600">${tipsterName}</a>
+              </div>
             </div>
             <div class="achat-card__right">
               <div class="achat-card__price">${p.price} €</div>

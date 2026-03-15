@@ -128,14 +128,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       const finished = tp.filter(s => s === 'won' || s === 'lost').length;
       return {
         ...t,
-        name:     t.first_name + ' ' + t.last_name,
-        email:    t.email || '—',
-        pronos:   tp.length,
-        winRate:  finished > 0 ? Math.round(won / finished * 100) : 0,
-        balance:  parseFloat(t.balance) || 0,
-        ribSaved: !!(t.rib_iban),
-        ribOk:    !!(t.rib_iban),
+        name:      t.pseudo || (t.first_name + ' ' + t.last_name),
+        email:     t.email || '—',
+        pronos:    tp.length,
+        winRate:   finished > 0 ? Math.round(won / finished * 100) : 0,
+        balance:   parseFloat(t.balance) || 0,
+        ribSaved:  !!(t.rib_iban),
+        ribOk:     !!(t.rib_iban),
         suspended: false,
+        avatarUrl: t.avatar_url || '',
       };
     });
   } else {
@@ -453,14 +454,20 @@ function renderTipsters(c) {
       </div>
       ${adminState.tipsters.map(t => `
         <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px;${t.suspended?'opacity:0.55':''}">
-          <div>
-            <div class="prono-title">
-              <a href="../pages/tipster-public.html?id=${t.id}" target="_blank" style="color:var(--primary);text-decoration:none;font-weight:700" title="Voir la page publique">
-                ${t.name} 🔗
-              </a>
+          <div style="display:flex;align-items:center;gap:10px">
+            ${t.avatarUrl
+              ? `<img src="${t.avatarUrl}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
+              : `<div style="width:36px;height:36px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;flex-shrink:0">${t.name[0]?.toUpperCase()}</div>`
+            }
+            <div>
+              <div class="prono-title">
+                <a href="../pages/tipster-public.html?id=${t.id}" target="_blank" style="color:var(--primary);text-decoration:none;font-weight:700" title="Voir la page publique">
+                  ${t.name} 🔗
+                </a>
+              </div>
+              <div class="prono-meta">${t.email}</div>
+              ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
             </div>
-            <div class="prono-meta">${t.email}</div>
-            ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
           </div>
           <div style="font-weight:600">${t.pronos}</div>
           <div style="font-weight:700;color:${t.winRate>=60?'var(--success)':'var(--warning)'}">${t.winRate}%</div>
