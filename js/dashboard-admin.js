@@ -461,7 +461,7 @@ function renderTipsters(c) {
             }
             <div>
               <div class="prono-title">
-                <a href="../pages/tipster-public.html?id=${t.id}" target="_blank" style="color:var(--primary);text-decoration:none;font-weight:700" title="Voir la page publique">
+                <a href="${t.pseudo ? 'https://payperwin.co/' + t.pseudo : '../pages/tipster-public.html?id=' + t.id}" target="_blank" style="color:var(--primary);text-decoration:none;font-weight:700" title="Voir la page publique">
                   ${t.name} 🔗
                 </a>
               </div>

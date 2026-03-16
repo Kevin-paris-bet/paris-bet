@@ -133,9 +133,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.title = displayName + ' — PayPerWin';
         // URL affichée : avec pseudo si disponible, sinon avec id
         if (t.pseudo) {
-          MOCK_TIPSTER_PUBLIC.url = 'paris-bet.vercel.app/pages/tipster-public.html?pseudo=' + t.pseudo;
+          MOCK_TIPSTER_PUBLIC.url = 'payperwin.co/' + t.pseudo;
         } else {
-          MOCK_TIPSTER_PUBLIC.url = 'paris-bet.vercel.app/pages/tipster-public.html?id=' + t.id;
+          MOCK_TIPSTER_PUBLIC.url = 'payperwin.co/pages/tipster-public.html?id=' + t.id;
         }
       }
 

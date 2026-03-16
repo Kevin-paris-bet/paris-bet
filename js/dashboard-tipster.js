@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (linkPublic) {
     const pseudo = MOCK_TIPSTER.pseudo;
     linkPublic.href = pseudo
-      ? '/pages/tipster-public.html?pseudo=' + pseudo
+      ? 'https://payperwin.co/' + pseudo
       : '/pages/tipster-public.html?id=' + user.id;
   }
 
