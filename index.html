@@ -259,13 +259,63 @@
       </div>
 
       <div class="sim__box">
+        <div class="sim__controls">
+          <div class="sim__field">
+            <div class="sim__label">
+              <span>Pronos publiés / mois</span>
+              <strong id="val-pronos">20</strong>
+            </div>
+            <input type="range" id="sl-pronos" min="4" max="100" value="20" oninput="updateSim()" />
+            <div class="sim__range-labels"><span>4</span><span>100</span></div>
+          </div>
 
-        <!-- RÉSULTAT EN HAUT -->
-        <div style="text-align:center;padding:var(--space-xl) var(--space-lg);margin-bottom:var(--space-lg);background:var(--primary);border-radius:var(--radius-lg)">
-          <div style="font-size:0.9rem;color:rgba(255,255,255,0.8);margin-bottom:8px">Vous pouvez gagner</div>
-          <div id="res-net" style="font-size:3rem;font-weight:800;color:#fff;line-height:1">—</div>
-          <div style="font-size:0.85rem;color:rgba(255,255,255,0.7);margin-top:6px">par mois</div>
+          <div class="sim__field">
+            <div class="sim__label">
+              <span>Prix moyen par prono</span>
+              <strong id="val-price">8 €</strong>
+            </div>
+            <input type="range" id="sl-price" min="1" max="50" value="8" oninput="updateSim()" />
+            <div class="sim__range-labels"><span>1 €</span><span>50 €</span></div>
+          </div>
+
+          <div class="sim__field">
+            <div class="sim__label">
+              <span>Clients actifs</span>
+              <strong id="val-clients">150</strong>
+            </div>
+            <input type="range" id="sl-clients" min="1" max="1000" step="1" value="150" oninput="updateSim()" />
+            <div class="sim__range-labels"><span>1</span><span>1 000</span></div>
+          </div>
+
+          <div class="sim__field">
+            <div class="sim__label">
+              <span>Win rate</span>
+              <strong id="val-wr">60%</strong>
+            </div>
+            <input type="range" id="sl-wr" min="40" max="100" value="60" oninput="updateSim()" />
+            <div class="sim__range-labels"><span>40%</span><span>100%</span></div>
+          </div>
         </div>
+
+        <div class="sim__results">
+          <div class="sim__result">
+            <span class="sim__result-label">Revenu brut</span>
+            <span class="sim__result-val" id="res-gross">—</span>
+          </div>
+          <div class="sim__result sim__result--accent">
+            <span class="sim__result-label">Commission PayPerWin (10%)</span>
+            <span class="sim__result-val" id="res-comm">—</span>
+          </div>
+          <div class="sim__result sim__result--main">
+            <span class="sim__result-label">Vous pouvez gagner</span>
+            <span class="sim__result-val" id="res-net">—</span>
+          </div>
+          <p class="sim__note">
+            * Commission de <strong>10%</strong> prélevée uniquement sur les paris validés gagnants.
+            Paiement chaque <strong>lundi</strong>.
+          </p>
+        </div>
+      </div>
 
         <!-- CURSEURS -->
         <div class="sim__controls">
