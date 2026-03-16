@@ -88,6 +88,15 @@ function toggleFAQ(index) {
   });
 }
 
+// ── Toggle note simulateur ────────────────────────────────────
+function toggleSimNote() {
+  const note = document.getElementById('sim-note');
+  const icon = document.getElementById('sim-note-icon');
+  const visible = note.style.display !== 'none';
+  note.style.display = visible ? 'none' : 'block';
+  icon.textContent = visible ? '▶' : '▼';
+}
+
 // ── Simulateur ────────────────────────────────────────────────
 function updateSim() {
   const nb      = +document.getElementById('sl-pronos').value;
