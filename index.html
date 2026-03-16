@@ -316,67 +316,6 @@
           </p>
         </div>
       </div>
-
-        <!-- CURSEURS -->
-        <div class="sim__controls">
-          <div class="sim__field">
-            <div class="sim__label">
-              <span>Pronos publiés / mois</span>
-              <strong id="val-pronos">20</strong>
-            </div>
-            <input type="range" id="sl-pronos" min="4" max="100" value="20" oninput="updateSim()" />
-            <div class="sim__range-labels"><span>4</span><span>100</span></div>
-          </div>
-
-          <div class="sim__field">
-            <div class="sim__label">
-              <span>Prix moyen par prono</span>
-              <strong id="val-price">8 €</strong>
-            </div>
-            <input type="range" id="sl-price" min="1" max="50" value="8" oninput="updateSim()" />
-            <div class="sim__range-labels"><span>1 €</span><span>50 €</span></div>
-          </div>
-
-          <div class="sim__field">
-            <div class="sim__label">
-              <span>Clients actifs</span>
-              <strong id="val-clients">150</strong>
-            </div>
-            <input type="range" id="sl-clients" min="1" max="1000" step="1" value="150" oninput="updateSim()" />
-            <div class="sim__range-labels"><span>1</span><span>1 000</span></div>
-          </div>
-
-          <div class="sim__field">
-            <div class="sim__label">
-              <span>Win rate</span>
-              <strong id="val-wr">60%</strong>
-            </div>
-            <input type="range" id="sl-wr" min="40" max="100" value="60" oninput="updateSim()" />
-            <div class="sim__range-labels"><span>40%</span><span>100%</span></div>
-          </div>
-        </div>
-
-        <!-- ACCORDÉON "Comment on calcule ?" -->
-        <div style="margin-top:var(--space-lg);border-top:1px solid var(--border);padding-top:var(--space-md)">
-          <button onclick="toggleSimNote()" style="background:none;border:none;cursor:pointer;font-size:0.85rem;color:var(--text-muted);display:flex;align-items:center;gap:6px;padding:0">
-            <span id="sim-note-icon">▶</span> Comment calculons-nous ce montant ?
-          </button>
-          <div id="sim-note" style="display:none;margin-top:var(--space-md);font-size:0.85rem;color:var(--text-muted);line-height:1.6">
-            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
-              <span>Revenu brut</span>
-              <strong id="res-gross">—</strong>
-            </div>
-            <div style="display:flex;justify-content:space-between;margin-bottom:6px;color:var(--error)">
-              <span>Commission PayPerWin (10%)</span>
-              <strong id="res-comm">—</strong>
-            </div>
-            <div style="font-size:0.78rem;margin-top:var(--space-sm)">
-              * Commission prélevée uniquement sur les paris validés gagnants. Paiement chaque <strong>lundi</strong>.
-            </div>
-          </div>
-        </div>
-
-      </div>
     </div>
   </section>
 
