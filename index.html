@@ -259,6 +259,15 @@
       </div>
 
       <div class="sim__box">
+
+        <!-- RÉSULTAT EN HAUT -->
+        <div class="sim__result sim__result--main" style="text-align:center;padding:var(--space-xl);margin-bottom:var(--space-lg);border-radius:var(--radius-lg)">
+          <div class="sim__result-label" style="font-size:1rem;margin-bottom:8px">Vous pouvez gagner</div>
+          <div class="sim__result-val" id="res-net" style="font-size:2.8rem;font-weight:800">—</div>
+          <div style="font-size:0.85rem;color:var(--text-muted);margin-top:6px">par mois</div>
+        </div>
+
+        <!-- CURSEURS -->
         <div class="sim__controls">
           <div class="sim__field">
             <div class="sim__label">
@@ -297,24 +306,26 @@
           </div>
         </div>
 
-        <div class="sim__results">
-          <div class="sim__result">
-            <span class="sim__result-label">Revenu brut</span>
-            <span class="sim__result-val" id="res-gross">—</span>
+        <!-- ACCORDÉON "Comment on calcule ?" -->
+        <div style="margin-top:var(--space-lg);border-top:1px solid var(--border);padding-top:var(--space-md)">
+          <button onclick="toggleSimNote()" style="background:none;border:none;cursor:pointer;font-size:0.85rem;color:var(--text-muted);display:flex;align-items:center;gap:6px;padding:0">
+            <span id="sim-note-icon">▶</span> Comment calculons-nous ce montant ?
+          </button>
+          <div id="sim-note" style="display:none;margin-top:var(--space-md);font-size:0.85rem;color:var(--text-muted);line-height:1.6">
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+              <span>Revenu brut</span>
+              <strong id="res-gross">—</strong>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:6px;color:var(--error)">
+              <span>Commission PayPerWin (10%)</span>
+              <strong id="res-comm">—</strong>
+            </div>
+            <div style="font-size:0.78rem;margin-top:var(--space-sm)">
+              * Commission prélevée uniquement sur les paris validés gagnants. Paiement chaque <strong>lundi</strong>.
+            </div>
           </div>
-          <div class="sim__result sim__result--accent">
-            <span class="sim__result-label">Commission PayPerWin (10%)</span>
-            <span class="sim__result-val" id="res-comm">—</span>
-          </div>
-          <div class="sim__result sim__result--main">
-            <span class="sim__result-label">Vous pouvez gagner</span>
-            <span class="sim__result-val" id="res-net">—</span>
-          </div>
-          <p class="sim__note">
-            * Commission de <strong>10%</strong> prélevée uniquement sur les paris validés gagnants.
-            Paiement chaque <strong>lundi</strong>.
-          </p>
         </div>
+
       </div>
     </div>
   </section>
