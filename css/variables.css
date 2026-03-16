@@ -139,7 +139,7 @@ input, textarea, select { font-family: var(--font-body); }
   color: var(--text-muted);
   font-size: 1.05rem;
   line-height: 1.7;
-  max-width: 560px;
+  max-width: 720px;
 }
 
 /* ── Boutons ── */
