@@ -10,7 +10,7 @@ const CONFIG = {
 
   // ── Informations du site ──────────────────────────────────
   site: {
-    name:        "Paris-Bet",
+    name:        "PayPerWin",
     tagline:     "La plateforme des tipsters sérieux",
     domain:      "paris-bet.fr",
     email:       "contact@paris-bet.fr",
@@ -85,15 +85,15 @@ const CONFIG = {
   faq: [
     {
       q: "Comment fonctionne le Pay-Per-Win ?",
-      a: "Vous achetez un pronostic avec votre solde. La somme est mise « en attente ». Si le pari est gagné, le tipster est crédité et vous gardez votre accès. Si le pari est perdu ou annulé, vous êtes intégralement remboursé sur votre solde."
+      a: "Vous achetez un pronostic avec votre solde. La somme est mise « en attente ». Si le pari est gagné, le tipster est crédité. Si le pari est perdu ou annulé, vous êtes intégralement remboursé sur votre solde."
     },
     {
       q: "Comment recharger mon solde ?",
-      a: "Depuis votre tableau de bord, cliquez sur « Recharger » et déposez minimum 5€ via carte bancaire (Stripe). Le solde est disponible immédiatement."
+      a: "Depuis votre tableau de bord, cliquez sur « Recharger ». Paiement sécurisé. Le solde est disponible immédiatement."
     },
     {
       q: "Comment devenir tipster ?",
-      a: "Inscrivez-vous, choisissez le rôle « Tipster » et renseignez votre RIB dans vos paramètres. Vous pouvez publier vos premiers pronostics immédiatement."
+      a: "Inscrivez-vous, choisissez le rôle « Tipster ». Une fois votre compte créé, vous pouvez personnaliser votre page et ajouter vos premiers pronostics. Vous pouvez ensuite partager le lien de votre page avec votre audience pour commencer à vendre vos pronostics."
     },
     {
       q: "Quand les tipsters sont-ils payés ?",
@@ -101,7 +101,7 @@ const CONFIG = {
     },
     {
       q: "Qui valide les résultats des paris ?",
-      a: "L'administrateur Paris-Bet valide manuellement chaque résultat (gagné, perdu ou annulé). Cela garantit la fiabilité et protège les utilisateurs contre toute fraude."
+      a: "L'équipe PayPerWin valide manuellement chaque résultat (gagné, perdu ou annulé). Cela garantit la fiabilité et protège les utilisateurs contre toute fraude."
     },
     {
       q: "Un tipster peut-il modifier un pronostic après publication ?",

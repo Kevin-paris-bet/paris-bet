@@ -37,7 +37,7 @@ async function renderNavbar({ transparent = false, activePage = '' } = {}) {
       <div class="container navbar__inner">
 
         <a href="/" class="navbar__logo">
-          Paris<span>-Bet</span>
+          Pay<span>PerWin</span>
         </a>
 
         <ul class="navbar__links">
@@ -96,8 +96,8 @@ function renderFooter() {
         <div class="footer__top">
 
           <div class="footer__brand">
-            <a href="${CONFIG.pages.home}" class="navbar__logo">Paris<span>-Bet</span></a>
-            <p>La plateforme de référence pour les tipsters qui veulent monétiser leur expertise en toute transparence.</p>
+            <a href="${CONFIG.pages.home}" class="navbar__logo">Pay<span>PerWin</span></a>
+            <p>PayPerWin est la plateforme incontournable pour les pronostiqueurs souhaitant monétiser leur audience avec des méthodes innovantes et honnêtes.</p>
             <div class="footer__stripe">
               🔒 Paiements sécurisés par <strong>Stripe</strong>
             </div>

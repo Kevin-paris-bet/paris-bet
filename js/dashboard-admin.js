@@ -5,7 +5,7 @@
  */
 
 // ── Données de démo ───────────────────────────────────────────
-const MOCK_ADMIN = { firstName: 'Admin', lastName: 'Paris-Bet' };
+const MOCK_ADMIN = { firstName: 'Admin', lastName: 'PayPerWin' };
 
 const MOCK_PRONOS_ADMIN = [
   { id:1, tipster:'Alexis Martin', game:'PSG vs Marseille',    sport:'⚽ Ligue 1', date:'15/03/2026', price:5.00,  buyers:47, status:'pending',   revenue:235.00 },
