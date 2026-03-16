@@ -13,7 +13,7 @@ const CONFIG = {
     name:        "PayPerWin",
     tagline:     "La plateforme des tipsters sérieux",
     domain:      "paris-bet.fr",
-    email:       "contact@paris-bet.fr",
+    email:       "contact@payperwin.co",
     year:        new Date().getFullYear(),
   },
 
