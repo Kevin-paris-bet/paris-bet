@@ -1,3 +1,11 @@
+// ── Sidebar mobile ───────────────────────────────────────────
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('show');
+}
+
 /**
  * ============================================================
  *  PARIS-BET — JS DASHBOARD TIPSTER (dashboard-tipster.js)
@@ -169,6 +177,11 @@ function renderTopbar() {
 
 // ── Navigation entre pages ────────────────────────────────────
 function navigateTo(page) {
+  // Fermer la sidebar sur mobile
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (sidebar) sidebar.classList.remove('open');
+  if (overlay) overlay.classList.remove('show');
   state.activePage = page;
 
   // Mettre à jour les liens actifs

@@ -1,3 +1,11 @@
+// ── Sidebar mobile ───────────────────────────────────────────
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  sidebar.classList.toggle('open');
+  overlay.classList.toggle('show');
+}
+
 /**
  * ============================================================
  *  PARIS-BET — JS PANEL ADMIN (dashboard-admin.js)
@@ -171,6 +179,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // ── Navigation ────────────────────────────────────────────────
 function navigateTo(page) {
+  // Fermer la sidebar sur mobile
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (sidebar) sidebar.classList.remove('open');
+  if (overlay) overlay.classList.remove('show');
   adminState.activePage = page;
   document.querySelectorAll('.sidebar__link').forEach(l =>
     l.classList.toggle('active', l.dataset.page === page)
