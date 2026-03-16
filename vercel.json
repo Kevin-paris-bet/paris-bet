@@ -8,5 +8,11 @@
       "memory": 128,
       "maxDuration": 10
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/:pseudo([a-z0-9-]{3,20})",
+      "destination": "/pages/tipster-public.html?pseudo=:pseudo"
+    }
+  ]
 }
