@@ -144,7 +144,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       (profiles||[]).forEach(p => {
         profilesMapFull[p.id] = {
           name: (p.pseudo || (p.first_name + ' ' + p.last_name)),
-          avatarUrl: p.avatar_url || ''
+          avatarUrl: p.avatar_url || '',
+          pseudo: p.pseudo || ''
         };
       });
       (profiles||[]).forEach(p => profilesMap[p.id] = p.pseudo || (p.first_name + ' ' + p.last_name));
@@ -152,7 +153,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     userState.availablePronos = (pronos||[]).map(p => ({
       ...p,
       tipsterName: profilesMapFull[p.tipster_id]?.name || '—',
-      tipsterAvatar: profilesMapFull[p.tipster_id]?.avatarUrl || ''
+      tipsterAvatar: profilesMapFull[p.tipster_id]?.avatarUrl || '',
+      tipsterPseudo: profilesMapFull[p.tipster_id]?.pseudo || ''
     }));
   } catch(e) {
     console.error('Erreur fetch pronos dispo:', e);
@@ -517,7 +519,7 @@ function renderPageExplorer(container) {
               <div class="achat-card__match">${p.game}</div>
               <div class="achat-card__meta" style="display:flex;align-items:center;gap:6px">
                 ${avatarHtml}
-                ${p.sport} · ${formatDate(p.match_date)} · par <a href="../pages/tipster-public.html?id=${p.tipster_id}" style="color:var(--blue);font-weight:600">${tipsterName}</a>
+                ${p.sport} · ${formatDate(p.match_date)} · par <a href="${p.tipsterPseudo ? 'https://payperwin.co/' + p.tipsterPseudo : '../pages/tipster-public.html?id=' + p.tipster_id}" target="_blank" style="color:var(--blue);font-weight:600">${tipsterName}</a>
               </div>
             </div>
             <div class="achat-card__right">
