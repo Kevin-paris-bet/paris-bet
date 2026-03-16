@@ -99,7 +99,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Récupérer l'id ou le pseudo du tipster depuis l'URL
   const urlParams = new URLSearchParams(window.location.search);
   const tipsterId = urlParams.get('id');
-  const tipsterPseudo = urlParams.get('pseudo');
+  // Lire le pseudo depuis ?pseudo= OU depuis le pathname (/jerome-bet)
+  let tipsterPseudo = urlParams.get('pseudo');
+  if (!tipsterPseudo) {
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    // Si le dernier segment n'est pas une page connue, c'est un pseudo
+    const knownPages = ['pages', 'index.html', 'tipster-public.html', 'auth.html', 'dashboard-user.html', 'dashboard-tipster.html', 'dashboard-admin.html'];
+    const lastSegment = pathParts[pathParts.length - 1];
+    if (lastSegment && !knownPages.includes(lastSegment) && /^[a-z0-9-]{3,20}$/.test(lastSegment)) {
+      tipsterPseudo = lastSegment;
+    }
+  }
 
   // Résoudre l'id depuis le pseudo si nécessaire
   let resolvedId = tipsterId;
