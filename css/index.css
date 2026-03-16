@@ -189,7 +189,7 @@
 
 /* ── HOW IT WORKS ── */
 .how { background: var(--bg-soft); }
-.how__header { text-align: center; margin-bottom: var(--space-2xl); }
+.how__header { text-align: center; margin-bottom: var(--space-xl); }
 .how__header .section-desc { margin: var(--space-md) auto 0; }
 
 .how__steps {
@@ -234,7 +234,7 @@
 
 /* ── FEATURES ── */
 .features { background: var(--white); }
-.features__header { text-align: center; margin-bottom: var(--space-2xl); }
+.features__header { text-align: center; margin-bottom: var(--space-xl); }
 .features__header .section-desc { margin: var(--space-md) auto 0; }
 
 .features__grid {
@@ -294,7 +294,7 @@
 
 /* ── SIMULATOR ── */
 .simulator { background: var(--bg-soft); }
-.simulator__header { text-align: center; margin-bottom: var(--space-2xl); }
+.simulator__header { text-align: center; margin-bottom: var(--space-xl); }
 .simulator__header .section-desc { margin: var(--space-md) auto 0; }
 
 .sim__box {
@@ -361,7 +361,7 @@ input[type=range] {
 
 /* ── FAQ ── */
 .faq { background: var(--white); }
-.faq__header { text-align: center; margin-bottom: var(--space-2xl); }
+.faq__header { text-align: center; margin-bottom: var(--space-xl); }
 .faq__list { max-width: 720px; margin: 0 auto; }
 .faq__item { border-bottom: 1px solid var(--border); }
 .faq__q {

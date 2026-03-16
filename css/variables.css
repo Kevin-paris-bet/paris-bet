@@ -111,7 +111,7 @@ input, textarea, select { font-family: var(--font-body); }
 }
 
 .section {
-  padding: var(--space-3xl) 0;
+  padding: 56px 0;
 }
 
 .section-label {
