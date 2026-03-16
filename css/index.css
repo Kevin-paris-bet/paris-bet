@@ -350,8 +350,9 @@ input[type=range] {
 .sim__result-val {
   font-family: var(--font-display);
   font-size: 1.4rem; color: var(--blue);
+  white-space: nowrap;
 }
-.sim__result--main .sim__result-val { color: var(--white); font-size: 1.8rem; }
+.sim__result--main .sim__result-val { color: var(--white); font-size: 1.8rem; white-space: nowrap; }
 .sim__note {
   font-size: 0.75rem; color: var(--text-light);
   line-height: 1.6; margin-top: var(--space-sm);
