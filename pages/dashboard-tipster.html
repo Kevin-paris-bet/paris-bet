@@ -91,11 +91,17 @@
 
     <!-- Topbar -->
     <div class="topbar">
-      <div class="topbar__title" id="topbar-title">Mes pronostics</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="burger-btn" onclick="toggleSidebar()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="topbar__title" id="topbar-title">Mes pronostics</div>
+      </div>
       <div class="topbar__right">
         <div class="topbar__balance" id="topbar-balance">💰 —</div>
       </div>
     </div>
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
     <!-- Contenu de la page (injecté dynamiquement) -->
     <div class="page-content" id="page-content">
