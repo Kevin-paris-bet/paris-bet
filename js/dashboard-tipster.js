@@ -268,7 +268,7 @@ function renderPronoRow(p) {
         <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
         ${lockText}
       </div>
-      <div class="buyers-count"><span>👥</span> ${p.buyers}</div>
+      <div class="buyers-count">${p.buyers}</div>
       <div class="prono-price">${formatEuros(p.price)}</div>
       <div>${statusBadge[p.status] || ''}</div>
       <div style="font-size:0.8rem;color:var(--text-muted)">${formatDate(p.match_date || p.date)}</div>
