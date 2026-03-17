@@ -259,33 +259,35 @@ function renderPronoRow(p) {
   const canDelete = !p.locked && p.buyers === 0;
 
   return `
-    <div class="table-row">
-      <div>
-        <div class="prono-title">${p.game}</div>
-        <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
-        ${p.buyers > 0 || p.status !== 'pending'
-          ? `<div class="prono-lock">🔒 Verrouillé — modification impossible</div>`
-          : `<div class="prono-lock" style="color:var(--warning)">✏️ Modifiable — aucun acheteur pour l'instant</div>`
-        }
+    <div class="table-row prono-card-row">
+      <div class="prono-card-row__top">
+        <div class="prono-card-row__info">
+          <div class="prono-title">${p.game}</div>
+          <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
+          ${p.buyers > 0 || p.status !== 'pending'
+            ? `<div class="prono-lock">🔒 Verrouillé — modification impossible</div>`
+            : `<div class="prono-lock" style="color:var(--warning)">✏️ Modifiable — aucun acheteur pour l'instant</div>`
+          }
+        </div>
+        <div class="prono-card-row__right">
+          <div class="prono-price">${formatEuros(p.price)}</div>
+          ${statusBadge[p.status] || ''}
+        </div>
       </div>
-      <div class="buyers-count">
-        <span>👥</span> ${p.buyers}
-      </div>
-      <div class="prono-price">${formatEuros(p.price)}</div>
-      <div>${statusBadge[p.status] || ''}</div>
-      <div style="font-size:0.8rem;color:var(--text-muted)">${formatDate(p.match_date || p.date)}</div>
-      <div class="table-actions">
-        <button
-          class="btn-icon"
-          title="Voir le pronostic"
-          onclick="viewProno('${p.id}')"
-        >👁</button>
-        <button
-          class="btn-icon danger"
-          title="${canDelete ? 'Supprimer' : 'Impossible : déjà acheté'}"
-          onclick="deleteProno(${p.id})"
-          ${canDelete ? '' : 'disabled'}
-        >🗑</button>
+      <div class="prono-card-row__bottom">
+        <div style="display:flex;align-items:center;gap:var(--space-md);font-size:0.8rem;color:var(--text-muted)">
+          <span>👥 ${p.buyers} acheteur(s)</span>
+          <span>📅 ${formatDate(p.match_date || p.date)}</span>
+        </div>
+        <div class="table-actions">
+          <button class="btn-icon" title="Voir le pronostic" onclick="viewProno('${p.id}')">👁</button>
+          <button
+            class="btn-icon danger"
+            title="${canDelete ? 'Supprimer' : 'Impossible : déjà acheté'}"
+            onclick="deleteProno(${p.id})"
+            ${canDelete ? '' : 'disabled'}
+          >🗑</button>
+        </div>
       </div>
     </div>
   `;
