@@ -223,7 +223,7 @@ function renderPageAchats(container) {
   const totalSpent = achats.reduce((s,a) => s + a.price, 0);
 
   container.innerHTML = `
-    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+    <div class="stats-grid">
       <div class="stat-card stat-card--blue">
         <div class="stat-card__label">🛒 Total acheté</div>
         <div class="stat-card__value">${formatEuros(totalSpent)}</div>

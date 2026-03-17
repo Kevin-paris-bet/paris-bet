@@ -531,7 +531,7 @@ function renderUsers(c) {
   const totalDeposits = adminState.users.reduce((s,u) => s + u.totalDeposits, 0);
 
   c.innerHTML = `
-    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:var(--space-xl)">
+    <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-card__label">👤 Utilisateurs</div>
         <div class="stat-card__value">${adminState.users.length}</div>
@@ -755,7 +755,7 @@ async function renderFinances(container) {
     </div>
 
     <!-- Totaux globaux -->
-    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:var(--space-lg)" id="fin-totals">
+    <div class="stats-grid stats-grid--3" id="fin-totals">
       <div class="stat-card"><div class="stat-card__label">CA Total</div><div class="stat-card__value" id="fin-total-ca">—</div></div>
       <div class="stat-card"><div class="stat-card__label">Mes commissions (10%)</div><div class="stat-card__value" id="fin-total-comm" style="color:var(--success)">—</div></div>
       <div class="stat-card"><div class="stat-card__label">Versé aux tipsters (90%)</div><div class="stat-card__value" id="fin-total-net">—</div></div>
@@ -956,7 +956,7 @@ async function openFicheTipster(id) {
       </div>
 
       <!-- Stats rapides -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-md);margin-bottom:var(--space-lg)">
+      <div class="stats-grid">
         <div class="stat-card"><div class="stat-card__label">Pronos</div><div class="stat-card__value">${(pronos||[]).length}</div></div>
         <div class="stat-card"><div class="stat-card__label">Win Rate</div><div class="stat-card__value" style="color:var(--success)">${wr}%</div></div>
         <div class="stat-card"><div class="stat-card__label">CA Total</div><div class="stat-card__value">${formatEuros(totalCA)}</div></div>
@@ -1043,7 +1043,7 @@ async function openFicheUser(id) {
       </div>
 
       <!-- Stats rapides -->
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-md);margin-bottom:var(--space-lg)">
+      <div class="stats-grid">
         <div class="stat-card"><div class="stat-card__label">Achats</div><div class="stat-card__value">${(purchases||[]).length}</div></div>
         <div class="stat-card"><div class="stat-card__label">Total dépensé</div><div class="stat-card__value">${formatEuros(totalDepense)}</div></div>
         <div class="stat-card"><div class="stat-card__label">Remboursés</div><div class="stat-card__value" style="color:var(--success)">${formatEuros(totalRembourse)}</div></div>

@@ -551,7 +551,7 @@ function renderPageStats(container) {
   const totalBuyers = state.pronos.reduce((sum, p) => sum + p.buyers, 0);
 
   container.innerHTML = `
-    <div class="stats-grid" style="grid-template-columns: repeat(4,1fr)">
+    <div class="stats-grid">
       <div class="stat-card stat-card--blue">
         <div class="stat-card__label">💰 Total gagné</div>
         <div class="stat-card__value">${formatEuros(MOCK_TIPSTER.balance)}</div>
@@ -576,7 +576,7 @@ function renderPageStats(container) {
 
     <div class="section-header"><div><h2>Détail des résultats</h2></div></div>
     <div class="pronos-table" style="padding: var(--space-lg);">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:var(--space-md)">
+      <div class="stats-grid">
         ${[
           { label: 'Gagnés',   count: won,       cls: 'badge-won',       icon: '✓' },
           { label: 'Perdus',   count: lost,       cls: 'badge-lost',      icon: '✕' },
