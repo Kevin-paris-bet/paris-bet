@@ -140,6 +140,15 @@
     box-sizing: border-box !important;
   }
 
-  /* Explorer : réduire espace entre cards */
+  /* Virements : padding symétrique */
+  .virement-row { padding: 12px var(--space-md); }
   .achat-card { margin-bottom: var(--space-sm) !important; }
+}
+
+@media (max-width: 900px) {
+  /* Virement rows : padding horizontal symétrique */
+  .virement-row {
+    padding-left: var(--space-md) !important;
+    padding-right: var(--space-md) !important;
+  }
 }
