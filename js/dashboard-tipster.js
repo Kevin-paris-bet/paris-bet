@@ -430,7 +430,7 @@ function renderPageSolde(container) {
 // ══════════════════════════════════════════════════════════════
 function renderPageRIB(container) {
   container.innerHTML = `
-    <div style="max-width: 560px;">
+    <div class="rib-page-container" style="max-width: 560px;">
       <div class="rib-card">
         <div class="rib-card__header">
           <div style="font-size:1.6rem;">🏦</div>
