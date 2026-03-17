@@ -587,3 +587,35 @@
   border-color: var(--blue);
   box-shadow: 0 2px 8px rgba(26,86,255,0.2);
 }
+
+/* ── Prono card row ── */
+.prono-card-row__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+  margin-bottom: 8px;
+}
+.prono-card-row__info { flex: 1; min-width: 0; }
+.prono-card-row__right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.prono-card-row__bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+@media (min-width: 901px) {
+  .prono-card-row { display: grid !important; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 80px; }
+  .prono-card-row__top { margin-bottom: 0; display: contents; }
+  .prono-card-row__bottom { display: contents; border-top: none; padding-top: 0; }
+  .prono-card-row__info { display: contents; }
+  .prono-card-row__right { display: contents; }
+}
