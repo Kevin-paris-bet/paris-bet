@@ -589,43 +589,27 @@
 }
 
 
-/* ── Table pronos mobile ── */
-@media (max-width: 900px) {
-  .pronos-table .table-row {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 0 !important;
-    padding: 0 !important;
-    grid-template-columns: unset !important;
+/* ── Prono row layout ── */
+.prono-row { display: flex !important; flex-direction: column !important; padding: 0 !important; gap: 0 !important; grid-template-columns: unset !important; }
+.prono-row__title { padding: var(--space-md) var(--space-md) var(--space-sm); border-bottom: 1px solid var(--border); }
+.prono-row__stats { display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid var(--border); }
+.prono-row__stat { padding: var(--space-sm) var(--space-md); display: flex; flex-direction: column; gap: 4px; }
+.prono-row__stat + .prono-row__stat { border-left: 1px solid var(--border); }
+.prono-row__stat-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+.prono-row__footer { display: flex; justify-content: space-between; align-items: center; padding: var(--space-sm) var(--space-md); }
+
+/* Desktop : on réutilise l'ancienne grid */
+@media (min-width: 901px) {
+  .prono-row {
+    display: grid !important;
+    grid-template-columns: 2fr 1fr 1fr 1fr 80px !important;
+    flex-direction: unset !important;
+    padding: var(--space-lg) var(--space-xl) !important;
+    align-items: center;
   }
-  .pronos-table .table-row > *:not(:last-child) {
-    padding: 6px var(--space-md);
-  }
-  .pronos-table .table-row > *:first-child {
-    padding-top: var(--space-md);
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-  }
-  /* Prix à droite du titre */
-  .pronos-table .table-row .prono-price {
-    font-size: 1.1rem;
-  }
-  /* Cacher la date dupliquée sur mobile */
-  .pronos-table .table-row > *:nth-child(5) {
-    display: none !important;
-  }
-  /* Actions en bas */
-  .pronos-table .table-row .table-actions {
-    padding: var(--space-sm) var(--space-md) var(--space-md);
-    border-top: 1px solid var(--border);
-    display: flex;
-    justify-content: flex-end;
-  }
-  /* buyers et badge inline */
-  .pronos-table .table-row .buyers-count {
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    padding-top: 0 !important;
-  }
+  .prono-row__title { padding: 0; border-bottom: none; }
+  .prono-row__stats { display: contents; }
+  .prono-row__stat { padding: 0; border-left: none !important; }
+  .prono-row__stat-label { display: none; }
+  .prono-row__footer { padding: 0; border-top: none; }
 }
