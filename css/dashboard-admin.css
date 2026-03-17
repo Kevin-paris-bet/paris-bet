@@ -49,94 +49,71 @@
   .btn-validate { padding: 4px 8px; font-size: 0.7rem; }
 }
 
-/* ── Mobile admin ── */
-@media (max-width: 900px) {
+/* ── Admin dual-mode (desktop/mobile) ── */
 
-  /* Stats grid : 2 colonnes */
+/* Desktop : cellules normales visibles, grille mobile cachée */
+.admin-grid { display: none; }
+.admin-desktop-cell { display: block; }
+
+.admin-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+
+@media (max-width: 900px) {
+  /* Stats grid 2 colonnes */
   .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
   .stats-grid--3 { grid-template-columns: repeat(2, 1fr) !important; }
   .stat-card__value { font-size: 1.4rem !important; }
+  .stat-card { padding: var(--space-md); }
 
-  /* Section header */
-  .section-header { flex-direction: column; align-items: flex-start; gap: var(--space-sm); }
-
-  /* Tables : cacher header */
+  /* Cacher headers */
   .table-header { display: none !important; }
 
-  /* Rows en card propre */
+  /* Rows en card */
   .pronos-table .table-row {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 0 !important;
-    padding: 0 !important;
+    display: block !important;
     grid-template-columns: unset !important;
+    padding: 0 !important;
     border-bottom: 1px solid var(--border);
   }
 
-  /* Ligne titre : premier enfant */
+  /* Premier enfant : titre */
   .pronos-table .table-row > *:first-child {
-    padding: var(--space-md) var(--space-md) var(--space-sm);
+    padding: 14px 16px 10px;
     border-bottom: 1px solid var(--border);
   }
 
-  /* Tous les autres enfants : label au-dessus, valeur en dessous */
-  .pronos-table .table-row > *:not(:first-child):not(:last-child) {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: flex-start;
-    padding: 6px var(--space-md);
-    font-size: 0.88rem;
+  /* Cacher cellules desktop */
+  .admin-desktop-cell { display: none !important; }
+
+  /* Afficher grille mobile */
+  .admin-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 12px 16px;
     border-bottom: 1px solid var(--border);
-    gap: 2px;
   }
 
   /* Dernier enfant : actions */
   .pronos-table .table-row > *:last-child {
     display: flex !important;
-    flex-wrap: wrap;
-    gap: 6px;
-    padding: var(--space-sm) var(--space-md);
+    gap: 8px;
+    padding: 10px 16px;
     justify-content: flex-end;
   }
 
-  /* Labels pour chaque colonne — Pronos validation */
-  .pronos-table .table-row > *:nth-child(2)::before { content: "Tipster"; font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: block; }
-  .pronos-table .table-row > *:nth-child(3)::before { content: "Acheteurs"; font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: block; }
-  .pronos-table .table-row > *:nth-child(4)::before { content: "Montant"; font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: block; }
-  .pronos-table .table-row > *:nth-child(5)::before { content: "Statut"; font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: block; }
-}
-
-/* Labels spécifiques par table */
-@media (max-width: 900px) {
-
-  /* Pronos validation */
-  .admin-prono-row > *:nth-child(2)::before { content: "Tipster"; }
-  .admin-prono-row > *:nth-child(3)::before { content: "Acheteurs"; }
-  .admin-prono-row > *:nth-child(4)::before { content: "Montant"; }
-  .admin-prono-row > *:nth-child(5)::before { content: "Statut"; }
-
-  /* Tipsters */
-  .admin-tipster-row > *:nth-child(2)::before { content: "Pronos"; }
-  .admin-tipster-row > *:nth-child(3)::before { content: "Win Rate"; }
-  .admin-tipster-row > *:nth-child(4)::before { content: "Solde"; }
-  .admin-tipster-row > *:nth-child(5)::before { content: "RIB"; }
-
-  /* Users */
-  .admin-user-row > *:nth-child(2)::before { content: "Solde dispo"; }
-  .admin-user-row > *:nth-child(3)::before { content: "En attente"; }
-  .admin-user-row > *:nth-child(4)::before { content: "Total dépôts"; }
-  .admin-user-row > *:nth-child(5)::before { content: "Inscrit"; }
-
-  /* Style commun des labels ::before */
-  .admin-prono-row > *:not(:first-child):not(:last-child)::before,
-  .admin-tipster-row > *:not(:first-child):not(:last-child)::before,
-  .admin-user-row > *:not(:first-child):not(:last-child)::before {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    display: block;
-    margin-bottom: 2px;
+  /* Modale bien contenue */
+  #fiche-modal-overlay { padding: 12px !important; }
+  #fiche-modal {
+    padding: var(--space-md) !important;
+    margin: 8px auto !important;
+    width: 100% !important;
   }
+  #fiche-modal .stats-grid { grid-template-columns: 1fr 1fr !important; }
 }
