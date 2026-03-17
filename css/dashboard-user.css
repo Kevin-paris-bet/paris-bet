@@ -103,3 +103,27 @@
   .achat-card__header { padding: var(--space-md); }
   .achat-card__content { padding: var(--space-sm) var(--space-md); }
 }
+
+/* ── Mobile fixes ── */
+@media (max-width: 900px) {
+  /* Topbar balance : pas de wrap */
+  .topbar__balance {
+    white-space: nowrap;
+    font-size: 0.75rem !important;
+    padding: 4px 8px !important;
+  }
+
+  /* Solde : ordre vertical solde → recharge → historique */
+  .solde-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--space-sm) !important;
+  }
+  /* La colonne droite (solde + recharge) passe en premier */
+  .solde-layout > *:last-child { order: -1; }
+
+  /* Explorer : réduire espace entre cards */
+  .achat-card {
+    margin-bottom: var(--space-sm) !important;
+  }
+}
