@@ -136,13 +136,18 @@
   .balance-card { margin-bottom: var(--space-sm) !important; }
 
   /* Virements : alignement symétrique gauche/droite */
-  .pronos-table { padding: 0 var(--space-md) !important; }
-  .virement-row { padding: 12px var(--space-md); }
+  .pronos-table { padding: 0 !important; }
+  .virement-row { padding: 12px 0; }
   .virement-label { 
     max-width: 180px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  /* Rib-card pleine largeur */
+  .rib-card, .balance-card, .pronos-table {
+    width: 100%;
+    box-sizing: border-box;
   }
 
   /* Explorer : réduire espace entre cards */
