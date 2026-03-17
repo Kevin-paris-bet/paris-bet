@@ -64,13 +64,19 @@
   <!-- ── CONTENU ── -->
   <div class="main">
     <div class="topbar">
-      <div class="topbar__title" id="topbar-title">Vue d'ensemble</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="burger-btn" onclick="toggleSidebar()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="topbar__title" id="topbar-title">Vue d'ensemble</div>
+      </div>
       <div class="topbar__right">
-        <div class="topbar__balance" style="background:var(--error-pale);color:var(--error);border-color:rgba(255,61,61,0.2)">
+        <div class="topbar__balance" style="background:var(--error-pale);color:var(--error);border-color:rgba(255,61,61,0.2);white-space:nowrap">
           🔐 Mode Admin
         </div>
       </div>
     </div>
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
     <div class="page-content" id="page-content"></div>
   </div>
 
