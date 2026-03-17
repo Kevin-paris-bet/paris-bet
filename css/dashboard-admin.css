@@ -79,14 +79,15 @@
     border-bottom: 1px solid var(--border);
   }
 
-  /* Tous les autres enfants : ligne avec label */
+  /* Tous les autres enfants : label au-dessus, valeur en dessous */
   .pronos-table .table-row > *:not(:first-child):not(:last-child) {
     display: flex !important;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column !important;
+    align-items: flex-start;
     padding: 6px var(--space-md);
     font-size: 0.88rem;
     border-bottom: 1px solid var(--border);
+    gap: 2px;
   }
 
   /* Dernier enfant : actions */
@@ -99,10 +100,10 @@
   }
 
   /* Labels pour chaque colonne — Pronos validation */
-  .pronos-table .table-row > *:nth-child(2)::before { content: "Tipster : "; font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
-  .pronos-table .table-row > *:nth-child(3)::before { content: "Acheteurs : "; font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
-  .pronos-table .table-row > *:nth-child(4)::before { content: "Montant : "; font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
-  .pronos-table .table-row > *:nth-child(5)::before { content: "Statut : "; font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+  .pronos-table .table-row > *:nth-child(2)::before { content: "Tipster"; font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: block; }
+  .pronos-table .table-row > *:nth-child(3)::before { content: "Acheteurs"; font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: block; }
+  .pronos-table .table-row > *:nth-child(4)::before { content: "Montant"; font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: block; }
+  .pronos-table .table-row > *:nth-child(5)::before { content: "Statut"; font-size: 0.7rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; display: block; }
 }
 
 /* Labels spécifiques par table */
@@ -130,10 +131,12 @@
   .admin-prono-row > *:not(:first-child):not(:last-child)::before,
   .admin-tipster-row > *:not(:first-child):not(:last-child)::before,
   .admin-user-row > *:not(:first-child):not(:last-child)::before {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     color: var(--text-muted);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
+    display: block;
+    margin-bottom: 2px;
   }
 }
