@@ -51,31 +51,89 @@
 
 /* ── Mobile admin ── */
 @media (max-width: 900px) {
-  /* Tables : cacher header, afficher rows en card */
-  .table-header { display: none !important; }
-  .table-row {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 4px !important;
-    padding: var(--space-md) !important;
-    grid-template-columns: unset !important;
-  }
-  .table-row > * { display: block !important; }
-
-  /* Boutons de validation : flex wrap */
-  .table-row .table-actions,
-  .table-row > *:last-child {
-    display: flex !important;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 8px;
-  }
 
   /* Stats grid : 2 colonnes */
   .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
   .stats-grid--3 { grid-template-columns: repeat(2, 1fr) !important; }
+  .stat-card__value { font-size: 1.4rem !important; }
 
   /* Section header */
   .section-header { flex-direction: column; align-items: flex-start; gap: var(--space-sm); }
-  .section-header .btn { width: 100%; text-align: center; }
+
+  /* Tables : cacher header */
+  .table-header { display: none !important; }
+
+  /* Rows en card propre */
+  .pronos-table .table-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    grid-template-columns: unset !important;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Ligne titre : premier enfant */
+  .pronos-table .table-row > *:first-child {
+    padding: var(--space-md) var(--space-md) var(--space-sm);
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Tous les autres enfants : ligne avec label */
+  .pronos-table .table-row > *:not(:first-child):not(:last-child) {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px var(--space-md);
+    font-size: 0.88rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Dernier enfant : actions */
+  .pronos-table .table-row > *:last-child {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: var(--space-sm) var(--space-md);
+    justify-content: flex-end;
+  }
+
+  /* Labels pour chaque colonne — Pronos validation */
+  .pronos-table .table-row > *:nth-child(2)::before { content: "Tipster : "; font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+  .pronos-table .table-row > *:nth-child(3)::before { content: "Acheteurs : "; font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+  .pronos-table .table-row > *:nth-child(4)::before { content: "Montant : "; font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+  .pronos-table .table-row > *:nth-child(5)::before { content: "Statut : "; font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
+}
+
+/* Labels spécifiques par table */
+@media (max-width: 900px) {
+
+  /* Pronos validation */
+  .admin-prono-row > *:nth-child(2)::before { content: "Tipster"; }
+  .admin-prono-row > *:nth-child(3)::before { content: "Acheteurs"; }
+  .admin-prono-row > *:nth-child(4)::before { content: "Montant"; }
+  .admin-prono-row > *:nth-child(5)::before { content: "Statut"; }
+
+  /* Tipsters */
+  .admin-tipster-row > *:nth-child(2)::before { content: "Pronos"; }
+  .admin-tipster-row > *:nth-child(3)::before { content: "Win Rate"; }
+  .admin-tipster-row > *:nth-child(4)::before { content: "Solde"; }
+  .admin-tipster-row > *:nth-child(5)::before { content: "RIB"; }
+
+  /* Users */
+  .admin-user-row > *:nth-child(2)::before { content: "Solde dispo"; }
+  .admin-user-row > *:nth-child(3)::before { content: "En attente"; }
+  .admin-user-row > *:nth-child(4)::before { content: "Total dépôts"; }
+  .admin-user-row > *:nth-child(5)::before { content: "Inscrit"; }
+
+  /* Style commun des labels ::before */
+  .admin-prono-row > *:not(:first-child):not(:last-child)::before,
+  .admin-tipster-row > *:not(:first-child):not(:last-child)::before,
+  .admin-user-row > *:not(:first-child):not(:last-child)::before {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
 }
