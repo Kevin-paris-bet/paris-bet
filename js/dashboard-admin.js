@@ -350,7 +350,7 @@ function renderPronosTable(pronos, compact) {
         ${compact ? '' : '<span>Action</span>'}
       </div>
       ${pronos.map(p => `
-        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr ${compact?'0':'140px'}">
+        <div class="table-row admin-prono-row">
           <div>
             <div class="prono-title">${p.game}</div>
             <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
@@ -466,7 +466,7 @@ function renderTipsters(c) {
         <span>Tipster</span><span>Pronos</span><span>Win Rate</span><span>Solde</span><span>RIB</span><span>Actions</span>
       </div>
       ${adminState.tipsters.map(t => `
-        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px;${t.suspended?'opacity:0.55':''}">
+        <div class="table-row admin-tipster-row" style="${t.suspended?'opacity:0.55':''}">
           <div style="display:flex;align-items:center;gap:10px">
             ${t.avatarUrl
               ? `<img src="${t.avatarUrl}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
@@ -559,7 +559,7 @@ function renderUsers(c) {
         <span>Utilisateur</span><span>Solde dispo</span><span>En attente</span><span>Total dépôts</span><span>Inscrit</span><span></span>
       </div>
       ${adminState.users.map(u => `
-        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 60px">
+        <div class="table-row admin-user-row">
           <div>
             <div class="prono-title">${u.name}</div>
             <div class="prono-meta">${u.email}</div>
