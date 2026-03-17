@@ -652,6 +652,10 @@
   .pronos-table .stats-grid > div > div:nth-child(2) {
     font-size: 1.4rem !important;
   }
+  /* RIB card : marge correcte sur mobile */
+  .rib-card { margin-left: 0; margin-right: 0; width: 100%; box-sizing: border-box; }
+  /* Containers max-width : éviter le débordement */
+  [style*="max-width: 560px"], [style*="max-width:560px"] { max-width: 100% !important; }
   /* RIB : espacement entre les champs */
   .rib-card .form-group { margin-bottom: var(--space-md); }
   /* Cacher l'icône séparée dans input-wrap RIB sur mobile */
