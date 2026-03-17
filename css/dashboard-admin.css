@@ -49,20 +49,8 @@
   .btn-validate { padding: 4px 8px; font-size: 0.7rem; }
 }
 
-/* ── Admin dual-mode (desktop/mobile) ── */
-
-/* Desktop : cellules normales visibles, grille mobile cachée */
-.admin-grid { display: none; }
-.admin-desktop-cell { display: block; }
-
-.admin-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-  margin-bottom: 3px;
-}
+/* ── Admin cards mobile ── */
+.admin-card { display: none; }
 
 @media (max-width: 900px) {
   /* Stats grid 2 colonnes */
@@ -71,49 +59,49 @@
   .stat-card__value { font-size: 1.4rem !important; }
   .stat-card { padding: var(--space-md); }
 
-  /* Cacher headers */
+  /* Cacher headers table */
   .table-header { display: none !important; }
 
-  /* Rows en card */
-  .pronos-table .table-row {
-    display: block !important;
-    grid-template-columns: unset !important;
-    padding: 0 !important;
-    border-bottom: 1px solid var(--border);
-  }
+  /* Masquer les table-row sur mobile */
+  .pronos-table .table-row { display: none !important; }
 
-  /* Premier enfant : titre */
-  .pronos-table .table-row > *:first-child {
+  /* Afficher les admin-card sur mobile */
+  .admin-card {
+    display: block;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-md);
+    overflow: hidden;
+  }
+  .admin-card__title {
     padding: 14px 16px 10px;
     border-bottom: 1px solid var(--border);
   }
-
-  /* Cacher cellules desktop */
-  .admin-desktop-cell { display: none !important; }
-
-  /* Afficher grille mobile */
-  .admin-grid {
-    display: grid !important;
+  .admin-card__grid {
+    display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
     padding: 12px 16px;
     border-bottom: 1px solid var(--border);
   }
-
-  /* Dernier enfant : actions */
-  .pronos-table .table-row > *:last-child {
-    display: flex !important;
+  .admin-card__field {}
+  .admin-card__label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin-bottom: 3px;
+  }
+  .admin-card__actions {
+    display: flex;
     gap: 8px;
     padding: 10px 16px;
-    justify-content: flex-end;
   }
 
-  /* Modale bien contenue */
+  /* Modale */
   #fiche-modal-overlay { padding: 12px !important; }
-  #fiche-modal {
-    padding: var(--space-md) !important;
-    margin: 8px auto !important;
-    width: 100% !important;
-  }
+  #fiche-modal { padding: var(--space-md) !important; margin: 8px auto !important; width: 100% !important; }
   #fiche-modal .stats-grid { grid-template-columns: 1fr 1fr !important; }
 }
