@@ -588,72 +588,55 @@
   box-shadow: 0 2px 8px rgba(26,86,255,0.2);
 }
 
-/* ── Prono row — mobile first ── */
-.prono-row {
-  display: flex !important;
-  flex-direction: column !important;
-  padding: 0 !important;
-  gap: 0 !important;
-  grid-template-columns: unset !important;
-}
-.prono-row__title {
-  padding: var(--space-md);
-  border-bottom: 1px solid var(--border);
-  text-align: center;
-}
-.prono-row__stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  border-bottom: 1px solid var(--border);
-}
-.prono-row__stat {
-  padding: var(--space-sm) var(--space-md);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  align-items: center;
-}
-.prono-row__stat + .prono-row__stat { border-left: 1px solid var(--border); }
-.prono-row__stat-label {
-  font-size: 0.65rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-}
-.prono-row__footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--space-sm) var(--space-md);
-}
+/* ── Prono row mobile ── */
+.prono-lock--editable { color: var(--warning); }
 
-/* Desktop : grid normale */
-@media (min-width: 901px) {
+@media (max-width: 900px) {
+  /* La card prono sur mobile */
   .prono-row {
     display: grid !important;
-    grid-template-columns: 2fr 1fr 1fr 1fr 80px !important;
-    flex-direction: unset !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
+    grid-template-rows: auto auto auto !important;
     padding: 0 !important;
+    gap: 0 !important;
+  }
+
+  /* Ligne 1 : titre sur toute la largeur */
+  .prono-row > *:nth-child(1) {
+    grid-column: 1 / -1;
+    padding: var(--space-md) var(--space-md) var(--space-sm);
+    border-bottom: 1px solid var(--border);
+  }
+  /* Cacher le texte modifiable/verrouillé sur mobile */
+  .prono-row > *:nth-child(1) .prono-lock { display: none; }
+
+  /* Ligne 2 : acheteurs | prix | statut */
+  .prono-row > *:nth-child(2),
+  .prono-row > *:nth-child(3),
+  .prono-row > *:nth-child(4) {
+    padding: var(--space-sm) var(--space-md);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
     align-items: center;
+    gap: 4px;
   }
-  .prono-row__title {
-    padding: var(--space-lg) var(--space-xl);
-    border-bottom: none;
-    text-align: left;
-  }
-  .prono-row__stats {
-    display: contents;
-    border-bottom: none;
-  }
-  .prono-row__stat {
-    padding: var(--space-lg) var(--space-md);
-    border-left: none !important;
-    align-items: flex-start;
-  }
-  .prono-row__stat-label { display: none; }
-  .prono-row__footer {
-    padding: var(--space-lg) var(--space-md);
-    border-top: none;
+  .prono-row > *:nth-child(2)::before { content: "ACHETEURS"; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+  .prono-row > *:nth-child(3)::before { content: "PRIX"; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+  .prono-row > *:nth-child(4)::before { content: "STATUT"; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+  .prono-row > *:nth-child(3) { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+
+  /* Badges sur mobile : forcer une ligne */
+  .prono-row .badge { white-space: nowrap; font-size: 0.72rem; padding: 3px 8px; }
+
+  /* Cacher la date (doublon) */
+  .prono-row > *:nth-child(5) { display: none !important; }
+
+  /* Ligne 3 : boutons sur toute la largeur */
+  .prono-row > *:nth-child(6) {
+    grid-column: 1 / -1;
+    display: flex !important;
+    justify-content: flex-end;
+    padding: var(--space-sm) var(--space-md);
   }
 }
