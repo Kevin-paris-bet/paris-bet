@@ -380,10 +380,9 @@ function renderPageSolde(container) {
             ${[5,10,20,50].map(v=>`<button class="quick-amount-btn" data-val="${v}" onclick="selectAmount(${v})">${v} €</button>`).join('')}
           </div>
           <div class="form-group" style="margin-top:var(--space-md)">
-            <label>Ou saisir un montant</label>
+            <label>💶 Ou saisir un montant</label>
             <div class="input-wrap">
-              <span class="input-icon">💶</span>
-              <input class="input" type="number" id="deposit-amount" placeholder="Ex: 25" min="${min}" step="1"/>
+              <input class="input" type="number" id="deposit-amount" placeholder="Ex: 25" min="${min}" step="1" style="padding-left:var(--space-md)"/>
             </div>
           </div>
           <button class="btn btn-primary" style="width:100%;margin-top:var(--space-sm)" onclick="handleDeposit()">
