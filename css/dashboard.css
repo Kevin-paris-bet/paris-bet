@@ -588,34 +588,44 @@
   box-shadow: 0 2px 8px rgba(26,86,255,0.2);
 }
 
-/* ── Prono card row ── */
-.prono-card-row__top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--space-md);
-  margin-bottom: 8px;
-}
-.prono-card-row__info { flex: 1; min-width: 0; }
-.prono-card-row__right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-  flex-shrink: 0;
-}
-.prono-card-row__bottom {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
-}
 
-@media (min-width: 901px) {
-  .prono-card-row { display: grid !important; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 80px; }
-  .prono-card-row__top { margin-bottom: 0; display: contents; }
-  .prono-card-row__bottom { display: contents; border-top: none; padding-top: 0; }
-  .prono-card-row__info { display: contents; }
-  .prono-card-row__right { display: contents; }
+/* ── Table pronos mobile ── */
+@media (max-width: 900px) {
+  .pronos-table .table-row {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    grid-template-columns: unset !important;
+  }
+  .pronos-table .table-row > *:not(:last-child) {
+    padding: 6px var(--space-md);
+  }
+  .pronos-table .table-row > *:first-child {
+    padding-top: var(--space-md);
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  /* Prix à droite du titre */
+  .pronos-table .table-row .prono-price {
+    font-size: 1.1rem;
+  }
+  /* Cacher la date dupliquée sur mobile */
+  .pronos-table .table-row > *:nth-child(5) {
+    display: none !important;
+  }
+  /* Actions en bas */
+  .pronos-table .table-row .table-actions {
+    padding: var(--space-sm) var(--space-md) var(--space-md);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+  }
+  /* buyers et badge inline */
+  .pronos-table .table-row .buyers-count {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    padding-top: 0 !important;
+  }
 }
