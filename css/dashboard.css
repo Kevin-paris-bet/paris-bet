@@ -605,7 +605,7 @@
   .prono-row > *:nth-child(1) {
     grid-column: 1 / -1;
     padding: var(--space-md) var(--space-md) var(--space-sm);
-    border-bottom: 1px solid var(--border);
+    border-bottom: none;
   }
   /* Cacher le texte modifiable/verrouillé sur mobile */
   .prono-row > *:nth-child(1) .prono-lock { display: none; }
@@ -615,8 +615,7 @@
   .prono-row > *:nth-child(3),
   .prono-row > *:nth-child(4) {
     padding: var(--space-sm) var(--space-md);
-    border-bottom: none;
-    border-top: none;
+    border: none;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -625,7 +624,7 @@
   .prono-row > *:nth-child(2)::before { content: "ACHETEURS"; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
   .prono-row > *:nth-child(3)::before { content: "PRIX"; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
   .prono-row > *:nth-child(4)::before { content: "STATUT"; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
-  .prono-row > *:nth-child(3) { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+  .prono-row > *:nth-child(3) { border-left: none; border-right: none; }
 
   /* Badges sur mobile : forcer une ligne */
   .prono-row .badge { white-space: nowrap; font-size: 0.72rem; padding: 3px 8px; }
