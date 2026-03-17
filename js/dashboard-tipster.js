@@ -447,9 +447,8 @@ function renderPageRIB(container) {
         ` : ''}
 
         <div class="form-group">
-          <label>Titulaire du compte</label>
-          <div class="input-wrap">
-            <span class="input-icon">👤</span>
+          <label>👤 Titulaire du compte</label>
+          <div class="input-wrap rib-input-wrap">
             <input class="input" type="text" id="rib-name"
               placeholder="Prénom NOM"
               value="${MOCK_TIPSTER.ribName || ''}"
@@ -458,9 +457,8 @@ function renderPageRIB(container) {
         </div>
 
         <div class="form-group">
-          <label>IBAN</label>
-          <div class="input-wrap">
-            <span class="input-icon">🏦</span>
+          <label>🏦 IBAN</label>
+          <div class="input-wrap rib-input-wrap">
             <input class="input" type="text" id="rib-iban"
               placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"
               value="${MOCK_TIPSTER.ribIban || ''}"
@@ -470,9 +468,8 @@ function renderPageRIB(container) {
         </div>
 
         <div class="form-group">
-          <label>BIC / SWIFT</label>
-          <div class="input-wrap">
-            <span class="input-icon">🔢</span>
+          <label>🔢 BIC / SWIFT</label>
+          <div class="input-wrap rib-input-wrap">
             <input class="input" type="text" id="rib-bic"
               placeholder="BNPAFRPPXXX"
               value="${MOCK_TIPSTER.ribBic || ''}"
