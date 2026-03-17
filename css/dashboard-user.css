@@ -96,7 +96,10 @@
   .solde-layout { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
-  .achat-card__header { flex-direction: column; }
+  .achat-card__header { flex-direction: column; gap: var(--space-sm); }
   .achat-card__right  { align-items: flex-start; flex-direction: row; flex-wrap: wrap; gap: 8px; }
+  .achat-card__price  { font-size: 1rem; }
   .quick-amounts      { grid-template-columns: repeat(2, 1fr); }
+  .achat-card__header { padding: var(--space-md); }
+  .achat-card__content { padding: var(--space-sm) var(--space-md); }
 }

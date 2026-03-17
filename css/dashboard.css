@@ -505,15 +505,58 @@
 .sidebar-overlay.show { display: block; }
 
 @media (max-width: 900px) {
-  .sidebar { transform: translateX(-100%); }
+  /* Sidebar cachée par défaut */
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: 200;
+  }
   .sidebar.open { transform: translateX(0); }
   .main { margin-left: 0; }
-  .table-header, .table-row { grid-template-columns: 2fr 1fr 1fr 80px; }
-  .table-header > *:nth-child(3),
-  .table-header > *:nth-child(4),
-  .table-row > *:nth-child(3),
-  .table-row > *:nth-child(4) { display: none; }
   .burger-btn { display: flex; }
+
+  /* Topbar */
+  .topbar { padding: 0 var(--space-md); height: 56px; }
+  .topbar__title { font-size: 1rem; }
+  .topbar__balance { font-size: 0.78rem; padding: 5px 10px; }
+
+  /* Page content */
+  .page-content { padding: var(--space-md); }
+
+  /* Stats grid → 2 colonnes */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); margin-bottom: var(--space-md); }
+  .stat-card { padding: var(--space-md); }
+  .stat-card__value { font-size: 1.4rem; }
+
+  /* Tables */
+  .pronos-table { overflow-x: auto; }
+  .table-header { display: none; }
+  .table-row {
+    display: flex !important;
+    flex-direction: column;
+    gap: 6px;
+    padding: var(--space-md) !important;
+    grid-template-columns: unset !important;
+  }
+  .table-row > * { display: block !important; }
+
+  /* Section header */
+  .section-header { flex-direction: column; align-items: flex-start; gap: var(--space-sm); }
+
+  /* Rib card */
+  .rib-card { padding: var(--space-md); }
+}
+
+@media (max-width: 600px) {
+  /* Stats grid → 1 colonne sur très petit */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .page-content { padding: var(--space-sm) var(--space-md); }
+
+  /* Topbar title wrap */
+  .topbar__title { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+  .topbar { gap: 8px; }
+
+  /* Bouton recharger topbar */
+  .topbar__right .btn { font-size: 0.75rem; padding: 6px 10px; }
 }
 @media (max-width: 600px) {
   .stats-grid { grid-template-columns: 1fr 1fr; }

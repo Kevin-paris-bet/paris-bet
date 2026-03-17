@@ -39,3 +39,12 @@
 .btn-validate--lost:hover { background: var(--error); color: var(--white); }
 .btn-validate--cancel { background: var(--warning-pale); color: var(--warning); border: 1px solid var(--warning); }
 .btn-validate--cancel:hover { background: var(--warning); color: var(--white); }
+
+/* ── Responsive mobile ── */
+@media (max-width: 900px) {
+  .action-card { padding: var(--space-sm) var(--space-md); }
+  .action-card__icon { font-size: 1.2rem; }
+}
+@media (max-width: 600px) {
+  .btn-validate { padding: 4px 8px; font-size: 0.7rem; }
+}
