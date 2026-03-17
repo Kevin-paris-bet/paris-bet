@@ -350,18 +350,16 @@ function renderPronosTable(pronos, compact) {
         ${compact ? '' : '<span>Action</span>'}
       </div>
       ${pronos.map(p => `
-        <div class="table-row admin-prono-row">
+        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr ${compact?'0':'140px'}">
           <div>
             <div class="prono-title">${p.game}</div>
             <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
             ${p.content ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:3px;font-style:italic">📋 ${p.content}</div>` : ''}
           </div>
-          <div class="admin-grid">
-            <div class="admin-cell"><div class="admin-label">Tipster</div><div>${p.tipsterName || "—"}</div></div>
-            <div class="admin-cell"><div class="admin-label">Acheteurs</div><div>👥 ${p.buyers}</div></div>
-            <div class="admin-cell"><div class="admin-label">Montant</div><div class="prono-price">${formatEuros(p.revenue)}</div></div>
-            <div class="admin-cell"><div class="admin-label">Statut</div><div>${statusBadge[p.status]||''}</div></div>
-          </div>
+          <div style="font-size:0.85rem;color:var(--text-muted)">${p.tipsterName || "—"}</div>
+          <div class="buyers-count"><span>👥</span>${p.buyers}</div>
+          <div class="prono-price">${formatEuros(p.revenue)}</div>
+          <div>${statusBadge[p.status]||''}</div>
           ${compact ? '' : `
             <div>
               ${p.status === 'pending' ? `
@@ -468,7 +466,7 @@ function renderTipsters(c) {
         <span>Tipster</span><span>Pronos</span><span>Win Rate</span><span>Solde</span><span>RIB</span><span>Actions</span>
       </div>
       ${adminState.tipsters.map(t => `
-        <div class="table-row admin-tipster-row" style="${t.suspended?'opacity:0.55':''}">
+        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px;${t.suspended?'opacity:0.55':''}">
           <div style="display:flex;align-items:center;gap:10px">
             ${t.avatarUrl
               ? `<img src="${t.avatarUrl}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
@@ -484,11 +482,10 @@ function renderTipsters(c) {
               ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
             </div>
           </div>
-          <div class="admin-grid">
-            <div class="admin-cell"><div class="admin-label">Pronos</div><div style="font-weight:600">${t.pronos}</div></div>
-            <div class="admin-cell"><div class="admin-label">Win Rate</div><div style="font-weight:700;color:${t.winRate>=60?'var(--success)':'var(--warning)'}">${t.winRate}%</div></div>
-            <div class="admin-cell"><div class="admin-label">Solde</div><div class="prono-price">${formatEuros(t.balance)}</div></div>
-            <div class="admin-cell"><div class="admin-label">RIB</div><div>
+          <div style="font-weight:600">${t.pronos}</div>
+          <div style="font-weight:700;color:${t.winRate>=60?'var(--success)':'var(--warning)'}">${t.winRate}%</div>
+          <div class="prono-price">${formatEuros(t.balance)}</div>
+          <div>
             ${t.ribSaved
               ? `<span class="badge badge-won" style="font-size:0.7rem">✓ Enregistré</span>`
               : `<span class="badge badge-lost" style="font-size:0.7rem">✕ Manquant</span>`}
@@ -534,7 +531,7 @@ function renderUsers(c) {
   const totalDeposits = adminState.users.reduce((s,u) => s + u.totalDeposits, 0);
 
   c.innerHTML = `
-    <div class="stats-grid">
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:var(--space-xl)">
       <div class="stat-card">
         <div class="stat-card__label">👤 Utilisateurs</div>
         <div class="stat-card__value">${adminState.users.length}</div>
@@ -562,17 +559,15 @@ function renderUsers(c) {
         <span>Utilisateur</span><span>Solde dispo</span><span>En attente</span><span>Total dépôts</span><span>Inscrit</span><span></span>
       </div>
       ${adminState.users.map(u => `
-        <div class="table-row admin-user-row">
+        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 60px">
           <div>
             <div class="prono-title">${u.name}</div>
             <div class="prono-meta">${u.email}</div>
           </div>
-          <div class="admin-grid">
-            <div class="admin-cell"><div class="admin-label">Solde dispo</div><div style="font-weight:700;color:var(--blue)">${formatEuros(u.balance)}</div></div>
-            <div class="admin-cell"><div class="admin-label">En attente</div><div style="font-weight:600;color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</div></div>
-            <div class="admin-cell"><div class="admin-label">Total dépôts</div><div style="font-weight:700;color:var(--success)">${u.totalDeposits > 0 ? formatEuros(u.totalDeposits) : '—'}</div></div>
-            <div class="admin-cell"><div class="admin-label">Inscrit</div><div style="font-size:0.85rem;color:var(--text-muted)">${u.joined}</div></div>
-          </div>
+          <div style="font-weight:700;color:var(--blue)">${formatEuros(u.balance)}</div>
+          <div style="font-weight:600;color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</div>
+          <div style="font-weight:700;color:var(--success)">${u.totalDeposits > 0 ? formatEuros(u.totalDeposits) : '—'}</div>
+          <div style="font-size:0.8rem;color:var(--text-muted)">${u.joined}</div>
           <div><button class="btn-icon" title="Voir la fiche" onclick="openFicheUser('${u.id}')">👁</button></div>
         </div>`).join('')}
     </div>
@@ -760,7 +755,7 @@ async function renderFinances(container) {
     </div>
 
     <!-- Totaux globaux -->
-    <div class="stats-grid stats-grid--3" id="fin-totals">
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:var(--space-lg)" id="fin-totals">
       <div class="stat-card"><div class="stat-card__label">CA Total</div><div class="stat-card__value" id="fin-total-ca">—</div></div>
       <div class="stat-card"><div class="stat-card__label">Mes commissions (10%)</div><div class="stat-card__value" id="fin-total-comm" style="color:var(--success)">—</div></div>
       <div class="stat-card"><div class="stat-card__label">Versé aux tipsters (90%)</div><div class="stat-card__value" id="fin-total-net">—</div></div>
@@ -891,19 +886,17 @@ async function loadFinances() {
         ${tipsters.sort((a,b) => b.ca - a.ca).map(t => {
           const winRate = (t.won + t.lost) > 0 ? Math.round(t.won / (t.won + t.lost) * 100) : 0;
           return `
-          <div class="table-row admin-finance-row">
+          <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr">
             <div>
               <div class="prono-title">${t.name}</div>
               <div class="prono-meta">${t.won}W · ${t.lost}L · ${t.cancelled} annulés</div>
             </div>
-            <div class="admin-grid" style="grid-template-columns:1fr 1fr">
-              <div class="admin-cell"><div class="admin-label">Pronos vendus</div><div style="font-weight:600">${t.pronos}</div></div>
-              <div class="admin-cell"><div class="admin-label">Win Rate</div><div style="color:${winRate >= 60 ? 'var(--success)' : 'var(--text-muted)'};font-weight:600">${winRate}%</div></div>
-              <div class="admin-cell"><div class="admin-label">Acheteurs</div><div>👥 ${t.acheteurs}</div></div>
-              <div class="admin-cell"><div class="admin-label">CA Total</div><div style="font-weight:700;color:var(--primary)">${formatEuros(t.ca)}</div></div>
-              <div class="admin-cell"><div class="admin-label">Commission (10%)</div><div style="font-weight:700;color:var(--success)">${formatEuros(t.commission)}</div></div>
-              <div class="admin-cell"><div class="admin-label">Versé tipster</div><div style="font-weight:600">${formatEuros(t.net)}</div></div>
-            </div>
+            <div style="font-weight:600">${t.pronos}</div>
+            <div style="color:${winRate >= 60 ? 'var(--success)' : 'var(--text-muted)'};font-weight:600">${winRate}%</div>
+            <div>👥 ${t.acheteurs}</div>
+            <div style="font-weight:700;color:var(--primary)">${formatEuros(t.ca)}</div>
+            <div style="font-weight:700;color:var(--success)">${formatEuros(t.commission)}</div>
+            <div style="font-weight:600">${formatEuros(t.net)}</div>
           </div>`;
         }).join('')}
       </div>
@@ -963,7 +956,7 @@ async function openFicheTipster(id) {
       </div>
 
       <!-- Stats rapides -->
-      <div class="stats-grid">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-md);margin-bottom:var(--space-lg)">
         <div class="stat-card"><div class="stat-card__label">Pronos</div><div class="stat-card__value">${(pronos||[]).length}</div></div>
         <div class="stat-card"><div class="stat-card__label">Win Rate</div><div class="stat-card__value" style="color:var(--success)">${wr}%</div></div>
         <div class="stat-card"><div class="stat-card__label">CA Total</div><div class="stat-card__value">${formatEuros(totalCA)}</div></div>
@@ -1050,7 +1043,7 @@ async function openFicheUser(id) {
       </div>
 
       <!-- Stats rapides -->
-      <div class="stats-grid">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-md);margin-bottom:var(--space-lg)">
         <div class="stat-card"><div class="stat-card__label">Achats</div><div class="stat-card__value">${(purchases||[]).length}</div></div>
         <div class="stat-card"><div class="stat-card__label">Total dépensé</div><div class="stat-card__value">${formatEuros(totalDepense)}</div></div>
         <div class="stat-card"><div class="stat-card__label">Remboursés</div><div class="stat-card__value" style="color:var(--success)">${formatEuros(totalRembourse)}</div></div>
