@@ -615,7 +615,8 @@
   .prono-row > *:nth-child(3),
   .prono-row > *:nth-child(4) {
     padding: var(--space-sm) var(--space-md);
-    border-bottom: 1px solid var(--border);
+    border-bottom: none;
+    border-top: none;
     display: flex;
     flex-direction: column;
     align-items: center;
