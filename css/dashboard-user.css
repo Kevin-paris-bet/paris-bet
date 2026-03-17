@@ -106,16 +106,6 @@
 
 /* ── Mobile fixes ── */
 @media (max-width: 900px) {
-  /* Topbar : bouton recharger pas collé au bord */
-  .topbar__right {
-    gap: 6px;
-    padding-right: 4px;
-  }
-  .topbar__right .btn {
-    font-size: 0.75rem !important;
-    padding: 6px 10px !important;
-  }
-
   /* Topbar balance : pas de wrap */
   .topbar__balance {
     white-space: nowrap;
@@ -123,49 +113,33 @@
     padding: 4px 8px !important;
   }
 
-  /* Solde : ordre vertical solde → recharge → historique */
+  /* Solde : tout en colonne, pleine largeur */
   .solde-layout {
     display: flex !important;
     flex-direction: column !important;
     gap: var(--space-sm) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  /* Tous les enfants directs pleine largeur */
+  .solde-layout > * {
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
   /* La colonne droite (solde + recharge) passe en premier */
   .solde-layout > *:last-child { order: -1; }
 
-  /* Marge rose : réduire entre balance-card et rib-card */
-  .balance-card { margin-bottom: var(--space-sm) !important; }
-
-  /* Virements : alignement symétrique gauche/droite */
-  .pronos-table { padding: 0 !important; }
-  .virement-row { padding: 12px 0; }
-  .virement-label { 
-    max-width: 180px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  /* Balance et rib-card : pas de débordement */
+  .balance-card {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-bottom: var(--space-sm) !important;
   }
-  /* Rib-card pleine largeur */
-  .rib-card, .balance-card, .pronos-table {
-    width: 100%;
-    box-sizing: border-box;
+  .rib-card {
+    width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   /* Explorer : réduire espace entre cards */
   .achat-card { margin-bottom: var(--space-sm) !important; }
-}
-
-@media (max-width: 600px) {
-  /* Emoji argent inline avec "Ou saisir un montant" */
-  .form-group label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .form-group .input-icon {
-    display: none;
-  }
-  /* Supprimer input-wrap padding gauche si pas d'icône */
-  .form-group .input-wrap .input {
-    padding-left: var(--space-md) !important;
-  }
 }
