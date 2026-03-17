@@ -640,3 +640,18 @@
     padding: var(--space-sm) var(--space-md);
   }
 }
+/* ── Stats résultats mobile ── */
+@media (max-width: 900px) {
+  .pronos-table .stats-grid > div {
+    padding: var(--space-md) var(--space-sm) !important;
+  }
+  .pronos-table .stats-grid > div > div:first-child {
+    font-size: 1.2rem !important;
+    margin-bottom: 4px !important;
+  }
+  .pronos-table .stats-grid > div > div:nth-child(2) {
+    font-size: 1.4rem !important;
+  }
+  /* Cacher l'icône séparée dans input-wrap RIB sur mobile */
+  .rib-input-wrap .input-icon { display: none; }
+}
