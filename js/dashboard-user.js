@@ -339,7 +339,7 @@ function renderPageSolde(container) {
       <!-- Historique -->
       <div>
         <div class="section-header"><div><h2>Historique des transactions</h2></div></div>
-        <div class="pronos-table" style="padding:0 var(--space-lg)">
+        <div class="pronos-table">
           ${allTransactions.length === 0
             ? `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted);font-size:0.88rem">Aucune transaction pour l'instant.</div>`
             : allTransactions.map(t => {
