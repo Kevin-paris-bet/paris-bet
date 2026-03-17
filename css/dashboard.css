@@ -163,6 +163,9 @@
   gap: var(--space-md);
   margin-bottom: var(--space-xl);
 }
+.stats-grid--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
 .stat-card {
   background: var(--white);
   border: 1px solid var(--border);
@@ -524,6 +527,7 @@
 
   /* Stats grid → 2 colonnes */
   .stats-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); margin-bottom: var(--space-md); }
+  .stats-grid--3 { grid-template-columns: repeat(2, 1fr); }
   .stat-card { padding: var(--space-md); }
   .stat-card__value { font-size: 1.4rem; }
 
