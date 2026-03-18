@@ -196,6 +196,7 @@ function navigateTo(page) {
     rib:    'Mes informations bancaires',
     stats:  'Mes statistiques',
     compte: 'Mon compte',
+    'explorer-tipsters': 'Explorer les tipsters',
   };
   document.getElementById('topbar-title').textContent = titles[page] || 'Dashboard';
 
@@ -203,11 +204,12 @@ function navigateTo(page) {
   const content = document.getElementById('page-content');
   content.innerHTML = '';
 
-  if (page === 'pronos') renderPagePronos(content);
-  if (page === 'solde')  renderPageSolde(content);
-  if (page === 'rib')    renderPageRIB(content);
-  if (page === 'stats')  renderPageStats(content);
-  if (page === 'compte') renderPageCompte(content);
+  if (page === 'pronos')            renderPagePronos(content);
+  if (page === 'solde')             renderPageSolde(content);
+  if (page === 'rib')               renderPageRIB(content);
+  if (page === 'stats')             renderPageStats(content);
+  if (page === 'compte')            renderPageCompte(content);
+  if (page === 'explorer-tipsters') renderPageExplorerTipsters(content);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -939,4 +941,110 @@ function showToast(message, type = 'info') {
   });
   document.body.appendChild(toast);
   setTimeout(() => toast?.remove(), 3500);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE — EXPLORER LES TIPSTERS
+// ══════════════════════════════════════════════════════════════
+async function renderPageExplorerTipsters(container) {
+  container.innerHTML = `
+    <div class="section-header">
+      <div><h2>Explorer les tipsters</h2><p>Classés par win rate</p></div>
+    </div>
+    <div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>`;
+
+  try {
+    const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+
+    const resp = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,pseudo,avatar_url&role=eq.tipster&apikey=${ANON}`);
+    const tipsters = await resp.json();
+
+    const resp2 = await fetch(`${SUPA}/rest/v1/pronos?select=tipster_id,status,buyers&apikey=${ANON}`);
+    const pronos = await resp2.json();
+
+    const stats = {};
+    for (const t of tipsters) {
+      const myPronos = pronos.filter(p => p.tipster_id === t.id);
+      const won  = myPronos.filter(p => p.status === 'won').length;
+      const lost = myPronos.filter(p => p.status === 'lost').length;
+      const total = myPronos.length;
+      const totalAcheteurs = myPronos.reduce((s,p) => s + (parseInt(p.buyers)||0), 0);
+      const winRate = (won + lost) > 0 ? Math.round(won / (won + lost) * 100) : null;
+      stats[t.id] = { won, lost, total, totalAcheteurs, winRate };
+    }
+
+    tipsters.sort((a, b) => {
+      const wa = stats[a.id].winRate;
+      const wb = stats[b.id].winRate;
+      if (wa === null && wb === null) return 0;
+      if (wa === null) return 1;
+      if (wb === null) return -1;
+      return wb - wa;
+    });
+
+    let filterVal = '';
+
+    function renderList() {
+      const filtered = tipsters.filter(t =>
+        (t.pseudo || '').toLowerCase().includes(filterVal.toLowerCase())
+      );
+      const listEl = document.getElementById('tipsters-list');
+      if (!filtered.length) {
+        listEl.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun tipster trouvé.</div>`;
+        return;
+      }
+      listEl.innerHTML = filtered.map((t, i) => {
+        const s = stats[t.id];
+        const pseudo = t.pseudo || (t.first_name + ' ' + t.last_name);
+        const avatarHtml = t.avatar_url
+          ? `<img src="${t.avatar_url}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
+          : `<div style="width:44px;height:44px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;flex-shrink:0">${pseudo[0]?.toUpperCase()}</div>`;
+        const winRateHtml = s.winRate !== null
+          ? `<span style="font-weight:800;font-size:1rem;color:${s.winRate>=60?'var(--success)':'var(--warning)'}">${s.winRate}%</span>`
+          : `<span style="color:var(--text-muted);font-size:0.85rem">—</span>`;
+        const rankColor = i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : 'var(--text-muted)';
+        return `
+        <a href="${t.pseudo ? 'https://payperwin.co/' + t.pseudo : '#'}" target="_blank" style="text-decoration:none">
+          <div class="tipster-explorer-card">
+            <div style="display:flex;align-items:center;gap:12px;min-width:0">
+              <div style="font-size:0.85rem;font-weight:700;color:${rankColor};min-width:20px;text-align:center">${i+1}</div>
+              ${avatarHtml}
+              <div style="font-weight:700;font-size:0.95rem;color:var(--text-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@${pseudo}</div>
+            </div>
+            <div class="tipster-explorer-stats">
+              <div class="tipster-explorer-stat">
+                <div class="tipster-explorer-stat__label">Pronos</div>
+                <div class="tipster-explorer-stat__value">${s.total}</div>
+              </div>
+              <div class="tipster-explorer-stat">
+                <div class="tipster-explorer-stat__label">Acheteurs</div>
+                <div class="tipster-explorer-stat__value">${s.totalAcheteurs}</div>
+              </div>
+              <div class="tipster-explorer-stat">
+                <div class="tipster-explorer-stat__label">Win Rate</div>
+                <div class="tipster-explorer-stat__value">${winRateHtml}</div>
+              </div>
+            </div>
+          </div>
+        </a>`;
+      }).join('');
+    }
+
+    container.innerHTML = `
+      <div class="section-header">
+        <div><h2>Explorer les tipsters</h2><p>${tipsters.length} tipsters inscrits</p></div>
+      </div>
+      <div class="tipster-search-wrap">
+        <span class="input-icon">🔍</span>
+        <input class="input" id="tipster-search" type="text" placeholder="Rechercher par pseudo..." oninput="document.tipsterFilter(this.value)" />
+      </div>
+      <div id="tipsters-list"></div>`;
+
+    document.tipsterFilter = (val) => { filterVal = val; renderList(); };
+    renderList();
+
+  } catch(e) {
+    container.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur : ${e.message}</div>`;
+  }
 }
