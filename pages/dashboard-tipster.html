@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PayPerWin — Dashboard Tipster</title>
+  <title>Paris-Bet — Dashboard Tipster</title>
 
   <link rel="stylesheet" href="../css/variables.css" />
   <link rel="stylesheet" href="../css/components.css" />
@@ -19,7 +19,7 @@
   <aside class="sidebar">
 
     <a href="../index.html" class="sidebar__logo">
-      Pay<span>PerWin</span>
+      Paris<span>-Bet</span>
     </a>
 
     <!-- Utilisateur connecté -->
@@ -53,28 +53,16 @@
         Statistiques
       </button>
 
-      <button class="sidebar__link" data-page="explorer-tipsters" onclick="navigateTo('explorer-tipsters')">
-        <span class="sidebar__link-icon">🏆</span>
+      <button class="sidebar__link" data-page="explorer" onclick="navigateTo('explorer')">
+        <span class="sidebar__link-icon">🔍</span>
         Explorer les tipsters
       </button>
-
-      <div class="sidebar__section-label">Ma page</div>
-
-      <a class="sidebar__link" id="link-public-page" href="#" target="_blank" style="text-decoration:none">
-        <span class="sidebar__link-icon">🔗</span>
-        Ma page publique
-      </a>
 
       <div class="sidebar__section-label">Paramètres</div>
 
       <button class="sidebar__link" data-page="rib" onclick="navigateTo('rib')">
         <span class="sidebar__link-icon">🏦</span>
         Informations bancaires
-      </button>
-
-      <button class="sidebar__link" data-page="compte" onclick="navigateTo('compte')">
-        <span class="sidebar__link-icon">👤</span>
-        Mon compte
       </button>
 
     </nav>
@@ -96,17 +84,11 @@
 
     <!-- Topbar -->
     <div class="topbar">
-      <div style="display:flex;align-items:center;gap:12px">
-        <button class="burger-btn" onclick="toggleSidebar()" aria-label="Menu">
-          <span></span><span></span><span></span>
-        </button>
-        <div class="topbar__title" id="topbar-title">Mes pronostics</div>
-      </div>
+      <div class="topbar__title" id="topbar-title">Mes pronostics</div>
       <div class="topbar__right">
         <div class="topbar__balance" id="topbar-balance">💰 —</div>
       </div>
     </div>
-    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
 
     <!-- Contenu de la page (injecté dynamiquement) -->
     <div class="page-content" id="page-content">
@@ -173,22 +155,16 @@
             />
           </div>
         </div>
-        <div class="form-group">
-          <label for="new-cote">Cote <span style="color:var(--text-muted);font-weight:400">(optionnel)</span></label>
-          <div class="input-wrap">
-            <span class="input-icon">📊</span>
-            <input class="input" type="text" id="new-cote"
-              placeholder="Ex: 1,76"
-              pattern="[0-9]+([,\.][0-9]{1,2})?"
-            />
-          </div>
-        </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label for="new-date">Date du match *</label>
           <input class="input" type="date" id="new-date" />
+        </div>
+        <div class="form-group">
+          <label for="new-time">Heure (optionnel)</label>
+          <input class="input" type="time" id="new-time" />
         </div>
       </div>
 
