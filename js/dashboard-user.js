@@ -686,21 +686,17 @@ async function renderPageExplorerTipsters(container) {
     const ANON_KEY = CONFIG.supabase.anonKey;
 
     // Récupérer tous les tipsters
-    const url = new URL(`${SUPABASE_URL}/rest/v1/profiles`);
-    url.searchParams.set('select', 'id,first_name,last_name,pseudo,avatar_url,description');
-    url.searchParams.set('role', 'eq.tipster');
-    const resp = await fetch(url.toString(), {
-      headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY }
-    });
+    const resp = await fetch(
+      `${SUPABASE_URL}/rest/v1/profiles?select=id,first_name,last_name,pseudo,avatar_url&role=eq.tipster`,
+      { headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY } }
+    );
     const tipsters = await resp.json();
 
     // Récupérer tous les pronos terminés
-    const url2 = new URL(`${SUPABASE_URL}/rest/v1/pronos`);
-    url2.searchParams.set('select', 'tipster_id,status,buyers');
-    url2.searchParams.set('status', 'in.(won,lost,cancelled)');
-    const resp2 = await fetch(url2.toString(), {
-      headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY }
-    });
+    const resp2 = await fetch(
+      `${SUPABASE_URL}/rest/v1/pronos?select=tipster_id,status,buyers&status=in.(won,lost,cancelled,pending)`,
+      { headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY } }
+    );
     const pronos = await resp2.json();
 
     // Calculer les stats par tipster
