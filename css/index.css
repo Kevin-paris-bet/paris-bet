@@ -444,4 +444,7 @@ input[type=range] {
   .hero__actions { flex-direction: column; }
   .hero__trust { gap: var(--space-md); }
   .cta-banner { padding: 32px 0; }
+  /* Réduire le padding-top du hero de 75% */
+  .hero { padding-top: calc(var(--nav-height) * 0.25); }
+  .hero__inner { padding-top: var(--space-sm); }
 }
