@@ -94,6 +94,15 @@ const pubState = {
 document.addEventListener('DOMContentLoaded', async () => {
   await renderNavbar({ transparent: false });
 
+  // Sur la page publique tipster : mettre "Retour à mon espace" en premier dans le menu mobile
+  const mobileActions = document.querySelector('.navbar__mobile-actions');
+  const mobileMenu = document.getElementById('mobileMenu');
+  if (mobileActions && mobileMenu) {
+    const btn = mobileActions.querySelector('.btn-primary');
+    if (btn) btn.textContent = 'Retour à mon espace →';
+    mobileMenu.insertBefore(mobileActions, mobileMenu.firstChild);
+  }
+
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
 
   // Récupérer l'id ou le pseudo du tipster depuis l'URL
