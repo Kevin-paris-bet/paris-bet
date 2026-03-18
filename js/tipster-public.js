@@ -94,6 +94,22 @@ const pubState = {
 document.addEventListener('DOMContentLoaded', async () => {
   await renderNavbar({ transparent: false });
 
+  // Modifier la navbar pour la page publique tipster :
+  // - Logo → bouton retour (gauche)
+  // - Burger → logo PayPerWin (droite)
+  const logoEl = document.querySelector('.navbar__logo');
+  const burgerEl = document.querySelector('.navbar__burger');
+  const backUrl = document.referrer.includes('dashboard-user') || document.referrer.includes('payperwin.co')
+    ? document.referrer
+    : '/pages/dashboard-user.html';
+
+  if (logoEl) {
+    logoEl.outerHTML = `<a href="${backUrl}" class="navbar__logo" style="font-size:0.9rem;display:flex;align-items:center;gap:6px;font-weight:600;color:var(--text-dark);text-decoration:none">← Retour</a>`;
+  }
+  if (burgerEl) {
+    burgerEl.outerHTML = `<a href="/" style="font-family:var(--font-display);font-weight:800;font-size:1.1rem;color:var(--text-dark);text-decoration:none">Pay<span style="color:var(--blue)">PerWin</span></a>`;
+  }
+
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
 
   // Récupérer l'id ou le pseudo du tipster depuis l'URL

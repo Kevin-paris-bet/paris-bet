@@ -746,7 +746,7 @@ async function renderPageExplorerTipsters(container) {
         const rankColor = i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : 'var(--text-muted)';
 
         return `
-        <a href="${t.pseudo ? 'https://payperwin.co/' + t.pseudo : '#'}" target="_blank" style="text-decoration:none">
+        <a href="${t.pseudo ? 'https://payperwin.co/' + t.pseudo : '#'}" style="text-decoration:none">
           <div class="tipster-explorer-card">
             <div style="display:flex;align-items:center;gap:12px;min-width:0">
               <div style="font-size:0.85rem;font-weight:700;color:${rankColor};min-width:20px;text-align:center">${i+1}</div>
