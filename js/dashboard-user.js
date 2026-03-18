@@ -774,13 +774,11 @@ async function renderPageExplorerTipsters(container) {
 
     container.innerHTML = `
       <div class="section-header">
-        <div><h2>Explorer les tipsters</h2><p>${tipsters.length} tipster(s) inscrit(s)</p></div>
+        <div><h2>Explorer les tipsters</h2><p>${tipsters.length} tipsters inscrits</p></div>
       </div>
-      <div style="margin-bottom:var(--space-lg)">
-        <div class="input-wrap">
-          <span class="input-icon">🔍</span>
-          <input class="input" id="tipster-search" type="text" placeholder="Rechercher par pseudo..." oninput="document.tipsterFilter(this.value)" />
-        </div>
+      <div class="tipster-search-wrap">
+        <span class="input-icon">🔍</span>
+        <input class="input" id="tipster-search" type="text" placeholder="Rechercher par pseudo..." oninput="document.tipsterFilter(this.value)" />
       </div>
       <div id="tipsters-list"></div>`;
 
