@@ -1,11 +1,3 @@
-// ── Sidebar mobile ───────────────────────────────────────────
-function toggleSidebar() {
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.getElementById('sidebar-overlay');
-  sidebar.classList.toggle('open');
-  overlay.classList.toggle('show');
-}
-
 /**
  * ============================================================
  *  PARIS-BET — JS DASHBOARD TIPSTER (dashboard-tipster.js)
@@ -94,10 +86,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Charger le vrai profil
   MOCK_TIPSTER.firstName = user.profile.first_name;
   MOCK_TIPSTER.lastName  = user.profile.last_name;
-  MOCK_TIPSTER.email       = user.email;
-  MOCK_TIPSTER.pseudo      = user.profile.pseudo || '';
-  MOCK_TIPSTER.description = user.profile.description || '';
-  MOCK_TIPSTER.avatarUrl   = user.profile.avatar_url || '';
   MOCK_TIPSTER.balance   = parseFloat(user.profile.balance) || 0;
   MOCK_TIPSTER.pending   = parseFloat(user.profile.pending) || 0;
   MOCK_TIPSTER.ribName   = user.profile.rib_name || '';
@@ -112,15 +100,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const sidebarAvatar = document.getElementById('sidebar-avatar');
   if (sidebarName)   sidebarName.textContent  = fullName;
   if (sidebarAvatar) sidebarAvatar.textContent = initials;
-
-  // Lien vers la page publique
-  const linkPublic = document.getElementById('link-public-page');
-  if (linkPublic) {
-    const pseudo = MOCK_TIPSTER.pseudo;
-    linkPublic.href = pseudo
-      ? 'https://payperwin.co/' + pseudo
-      : '/pages/tipster-public.html?id=' + user.id;
-  }
 
   // Charger les vrais pronos via fetch direct
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
@@ -177,11 +156,6 @@ function renderTopbar() {
 
 // ── Navigation entre pages ────────────────────────────────────
 function navigateTo(page) {
-  // Fermer la sidebar sur mobile
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.getElementById('sidebar-overlay');
-  if (sidebar) sidebar.classList.remove('open');
-  if (overlay) overlay.classList.remove('show');
   state.activePage = page;
 
   // Mettre à jour les liens actifs
@@ -191,12 +165,11 @@ function navigateTo(page) {
 
   // Mettre à jour le titre
   const titles = {
-    pronos: 'Mes pronostics',
-    solde:  'Solde & Virements',
-    rib:    'Mes informations bancaires',
-    stats:  'Mes statistiques',
-    compte: 'Mon compte',
-    'explorer-tipsters': 'Explorer les tipsters',
+    pronos:   'Mes pronostics',
+    solde:    'Solde & Virements',
+    rib:      'Mes informations bancaires',
+    stats:    'Mes statistiques',
+    explorer: 'Explorer les tipsters',
   };
   document.getElementById('topbar-title').textContent = titles[page] || 'Dashboard';
 
@@ -204,12 +177,11 @@ function navigateTo(page) {
   const content = document.getElementById('page-content');
   content.innerHTML = '';
 
-  if (page === 'pronos')            renderPagePronos(content);
-  if (page === 'solde')             renderPageSolde(content);
-  if (page === 'rib')               renderPageRIB(content);
-  if (page === 'stats')             renderPageStats(content);
-  if (page === 'compte')            renderPageCompte(content);
-  if (page === 'explorer-tipsters') renderPageExplorerTipsters(content);
+  if (page === 'pronos')   renderPagePronos(content);
+  if (page === 'solde')    renderPageSolde(content);
+  if (page === 'rib')      renderPageRIB(content);
+  if (page === 'stats')    renderPageStats(content);
+  if (page === 'explorer') renderPageExplorer(content);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -259,24 +231,35 @@ function renderPronoRow(p) {
   };
 
   const canDelete = !p.locked && p.buyers === 0;
-  const lockText = p.buyers > 0 || p.status !== 'pending'
-    ? `<div class="prono-lock">🔒 Verrouillé</div>`
-    : `<div class="prono-lock prono-lock--editable">✏️ Modifiable</div>`;
 
   return `
-    <div class="table-row prono-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px">
+    <div class="table-row">
       <div>
         <div class="prono-title">${p.game}</div>
-        <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
-        ${lockText}
+        <div class="prono-meta">${p.sport} · ${p.match_date || p.date || ""}</div>
+        ${p.buyers > 0 || p.status !== 'pending'
+          ? `<div class="prono-lock">🔒 Verrouillé — modification impossible</div>`
+          : `<div class="prono-lock" style="color:var(--warning)">✏️ Brouillon — non encore acheté</div>`
+        }
       </div>
-      <div class="buyers-count">${p.buyers}</div>
+      <div class="buyers-count">
+        <span>👥</span> ${p.buyers}
+      </div>
       <div class="prono-price">${formatEuros(p.price)}</div>
       <div>${statusBadge[p.status] || ''}</div>
-      <div style="font-size:0.8rem;color:var(--text-muted)">${formatDate(p.match_date || p.date)}</div>
+      <div style="font-size:0.8rem;color:var(--text-muted)">${(p.match_date || p.date || "").split('·')[0].trim()}</div>
       <div class="table-actions">
-        <button class="btn-icon" title="Voir le pronostic" onclick="viewProno('${p.id}')">👁</button>
-        <button class="btn-icon danger" title="${canDelete ? 'Supprimer' : 'Impossible : déjà acheté'}" onclick="deleteProno('${p.id}')" ${canDelete ? '' : 'disabled'}>🗑</button>
+        <button
+          class="btn-icon"
+          title="Voir le pronostic"
+          onclick="viewProno('${p.id}')"
+        >👁</button>
+        <button
+          class="btn-icon danger"
+          title="${canDelete ? 'Supprimer' : 'Impossible : déjà acheté'}"
+          onclick="deleteProno(${p.id})"
+          ${canDelete ? '' : 'disabled'}
+        >🗑</button>
       </div>
     </div>
   `;
@@ -290,7 +273,7 @@ function openModal() {
 function closeModal() {
   document.getElementById('modal-overlay').classList.remove('open');
   // Reset form
-  ['new-match','new-sport','new-date','new-price','new-cote','new-content'].forEach(id => {
+  ['new-match','new-sport','new-date','new-time','new-price','new-content'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -300,19 +283,15 @@ async function submitProno() {
   const game    = document.getElementById('new-match').value.trim();
   const sport   = document.getElementById('new-sport').value.trim();
   const date    = document.getElementById('new-date').value;
+  const time    = document.getElementById('new-time').value;
   const price   = parseFloat(document.getElementById('new-price').value);
-  const coteRaw = document.getElementById('new-cote').value.trim().replace(',', '.');
-  const cote    = coteRaw ? parseFloat(coteRaw) : null;
   const content = document.getElementById('new-content').value.trim();
 
   if (!game || !sport || !date || !price || !content) {
-    showToast('Veuillez remplir tous les champs obligatoires.', 'error'); return;
+    showToast('Veuillez remplir tous les champs.', 'error'); return;
   }
   if (price < 1) {
     showToast('Le prix minimum est 1 €.', 'error'); return;
-  }
-  if (coteRaw && (isNaN(cote) || cote < 1)) {
-    showToast('La cote doit être un nombre supérieur à 1 (ex: 1,76).', 'error'); return;
   }
 
   const btn = document.getElementById('btn-submit-prono');
@@ -325,9 +304,8 @@ async function submitProno() {
       tipster_id: user.id,
       game,
       sport,
-      match_date: date,
+      match_date: `${date}${time ? ' · ' + time : ''}`,
       price,
-      cote:    cote,
       buyers:  0,
       status:  CONFIG.betStatus.PENDING,
       content,
@@ -379,15 +357,8 @@ async function deleteProno(id) {
 // ══════════════════════════════════════════════════════════════
 function renderPageSolde(container) {
   const t = MOCK_TIPSTER;
+  const nextMonday = CONFIG.finance.payoutDay;
   const minPayout  = CONFIG.finance.minTipsterPayout;
-
-  // Calcul dynamique du prochain lundi
-  const today = new Date();
-  const day = today.getDay(); // 0=dim, 1=lun, ..., 6=sam
-  const daysUntilMonday = day === 1 ? 7 : (8 - day) % 7 || 7;
-  const nextMonday = new Date(today);
-  nextMonday.setDate(today.getDate() + daysUntilMonday);
-  const nextMondayStr = nextMonday.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' });
 
   container.innerHTML = `
     <!-- Carte solde principal -->
@@ -395,7 +366,7 @@ function renderPageSolde(container) {
       <div class="balance-card__label">Solde disponible</div>
       <div class="balance-card__amount">${formatEuros(t.balance)}</div>
       <div class="balance-card__sub">
-        Prochain virement le <strong>lundi ${nextMondayStr}</strong>
+        Prochain virement le <strong>${nextMonday}</strong>
         ${t.balance >= minPayout
           ? `· ✓ Seuil de ${minPayout}€ atteint`
           : `· ⚠️ Minimum ${minPayout}€ requis (manque ${formatEuros(minPayout - t.balance)})`
@@ -432,7 +403,7 @@ function renderPageSolde(container) {
 // ══════════════════════════════════════════════════════════════
 function renderPageRIB(container) {
   container.innerHTML = `
-    <div class="rib-page-container" style="max-width: 560px;">
+    <div style="max-width: 560px;">
       <div class="rib-card">
         <div class="rib-card__header">
           <div style="font-size:1.6rem;">🏦</div>
@@ -449,8 +420,9 @@ function renderPageRIB(container) {
         ` : ''}
 
         <div class="form-group">
-          <label>👤 Titulaire du compte</label>
-          <div class="input-wrap rib-input-wrap">
+          <label>Titulaire du compte</label>
+          <div class="input-wrap">
+            <span class="input-icon">👤</span>
             <input class="input" type="text" id="rib-name"
               placeholder="Prénom NOM"
               value="${MOCK_TIPSTER.ribName || ''}"
@@ -459,8 +431,9 @@ function renderPageRIB(container) {
         </div>
 
         <div class="form-group">
-          <label>🏦 IBAN</label>
-          <div class="input-wrap rib-input-wrap">
+          <label>IBAN</label>
+          <div class="input-wrap">
+            <span class="input-icon">🏦</span>
             <input class="input" type="text" id="rib-iban"
               placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"
               value="${MOCK_TIPSTER.ribIban || ''}"
@@ -470,8 +443,9 @@ function renderPageRIB(container) {
         </div>
 
         <div class="form-group">
-          <label>🔢 BIC / SWIFT</label>
-          <div class="input-wrap rib-input-wrap">
+          <label>BIC / SWIFT</label>
+          <div class="input-wrap">
+            <span class="input-icon">🔢</span>
             <input class="input" type="text" id="rib-bic"
               placeholder="BNPAFRPPXXX"
               value="${MOCK_TIPSTER.ribBic || ''}"
@@ -539,7 +513,7 @@ function renderPageStats(container) {
   const totalBuyers = state.pronos.reduce((sum, p) => sum + p.buyers, 0);
 
   container.innerHTML = `
-    <div class="stats-grid">
+    <div class="stats-grid" style="grid-template-columns: repeat(4,1fr)">
       <div class="stat-card stat-card--blue">
         <div class="stat-card__label">💰 Total gagné</div>
         <div class="stat-card__value">${formatEuros(MOCK_TIPSTER.balance)}</div>
@@ -564,7 +538,7 @@ function renderPageStats(container) {
 
     <div class="section-header"><div><h2>Détail des résultats</h2></div></div>
     <div class="pronos-table" style="padding: var(--space-lg);">
-      <div class="stats-grid">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:var(--space-md)">
         ${[
           { label: 'Gagnés',   count: won,       cls: 'badge-won',       icon: '✓' },
           { label: 'Perdus',   count: lost,       cls: 'badge-lost',      icon: '✕' },
@@ -582,336 +556,146 @@ function renderPageStats(container) {
   `;
 }
 
-// ── Utilitaires ───────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════
-//  PAGE — MON COMPTE
+//  PAGE — EXPLORER LES TIPSTERS
 // ══════════════════════════════════════════════════════════════
-function renderPageCompte(container) {
+async function renderPageExplorer(container) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+
   container.innerHTML = `
-    <div style="max-width:560px;display:flex;flex-direction:column;gap:var(--space-lg)">
-
-      <!-- Photo de profil -->
-      <div class="rib-card">
-        <div class="rib-card__header">
-          <div style="font-size:1.6rem">📸</div>
-          <div>
-            <h3>Photo de profil</h3>
-            <p>Visible sur votre page publique</p>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;gap:var(--space-lg);margin-bottom:var(--space-lg)">
-          <div id="avatar-preview" style="width:80px;height:80px;border-radius:50%;overflow:hidden;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:700;color:white;flex-shrink:0">
-            ${MOCK_TIPSTER.avatarUrl
-              ? `<img src="${MOCK_TIPSTER.avatarUrl}" style="width:100%;height:100%;object-fit:cover" />`
-              : `${(MOCK_TIPSTER.pseudo || MOCK_TIPSTER.firstName)[0].toUpperCase()}`
-            }
-          </div>
-          <div style="flex:1">
-            <label class="btn btn-outline" style="cursor:pointer;display:inline-block">
-              📁 Choisir une photo
-              <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="previewAvatar(this)" />
-            </label>
-            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:6px">JPG, PNG · Max 5MB · Compressée automatiquement</div>
-          </div>
-        </div>
-        <button class="btn btn-primary" style="width:100%" onclick="saveAvatar()">
-          Enregistrer la photo
-        </button>
+    <div class="section-header">
+      <div>
+        <h2>Explorer les tipsters</h2>
+        <p>Découvrez les autres tipsters de la plateforme et leurs performances</p>
       </div>
-
-      <!-- Modifier la description -->
-      <div class="rib-card">
-        <div class="rib-card__header">
-          <div style="font-size:1.6rem">📝</div>
-          <div>
-            <h3>Description</h3>
-            <p>Présentez-vous à vos acheteurs</p>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Votre description <span style="color:var(--text-muted);font-weight:400">(max 300 caractères)</span></label>
-          <textarea class="input input-textarea" id="new-description" maxlength="300"
-            placeholder="Ex: Spécialiste Ligue 1 depuis 5 ans, 68% de win rate sur 200+ pronos..."
-            style="min-height:100px">${MOCK_TIPSTER.description || ''}</textarea>
-        </div>
-        <button class="btn btn-primary" style="width:100%" onclick="saveDescription()">
-          Enregistrer la description
-        </button>
+    </div>
+    <div id="explorer-grid" style="
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: var(--space-lg);
+    ">
+      <div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted);font-size:0.88rem;grid-column:1/-1">
+        ⏳ Chargement des tipsters…
       </div>
-
-      <!-- Modifier le pseudo -->
-      <div class="rib-card">
-        <div class="rib-card__header">
-          <div style="font-size:1.6rem">🏷️</div>
-          <div>
-            <h3>Pseudo</h3>
-            <p>Pseudo actuel : <strong>${MOCK_TIPSTER.pseudo || '—'}</strong></p>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Nouveau pseudo</label>
-          <div class="input-wrap">
-            <span class="input-icon">🏷️</span>
-            <input class="input" type="text" id="new-pseudo" placeholder="ex: jerome-bet" oninput="checkPseudoAvailable()" autocomplete="off" />
-          </div>
-          <div id="pseudo-check-tip" style="font-size:0.8rem;margin-top:4px"></div>
-          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">3-20 caractères · lettres, chiffres, tirets uniquement</div>
-        </div>
-        <button class="btn btn-primary" style="width:100%" onclick="savePseudo()">
-          Mettre à jour le pseudo
-        </button>
-      </div>
-
-      <!-- Modifier l'email -->
-      <div class="rib-card">
-        <div class="rib-card__header">
-          <div style="font-size:1.6rem">✉️</div>
-          <div>
-            <h3>Adresse email</h3>
-            <p>Email actuel : <strong>${MOCK_TIPSTER.email || '—'}</strong></p>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Nouvel email</label>
-          <div class="input-wrap">
-            <span class="input-icon">✉️</span>
-            <input class="input" type="email" id="new-email" placeholder="nouveau@email.com" />
-          </div>
-        </div>
-        <button class="btn btn-primary" style="width:100%" onclick="saveEmail()">
-          Mettre à jour l'email
-        </button>
-      </div>
-
-      <!-- Modifier le mot de passe -->
-      <div class="rib-card">
-        <div class="rib-card__header">
-          <div style="font-size:1.6rem">🔒</div>
-          <div>
-            <h3>Mot de passe</h3>
-            <p>Choisissez un mot de passe sécurisé</p>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Nouveau mot de passe</label>
-          <div class="input-wrap">
-            <span class="input-icon">🔒</span>
-            <input class="input" type="password" id="new-password" placeholder="Minimum 8 caractères" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Confirmer le mot de passe</label>
-          <div class="input-wrap">
-            <span class="input-icon">🔒</span>
-            <input class="input" type="password" id="confirm-password" placeholder="Répétez le mot de passe" />
-          </div>
-        </div>
-        <button class="btn btn-primary" style="width:100%" onclick="savePassword()">
-          Mettre à jour le mot de passe
-        </button>
-      </div>
-
     </div>
   `;
-}
-
-function previewAvatar(input) {
-  if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    const preview = document.getElementById('avatar-preview');
-    if (preview) preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover" />`;
-  };
-  reader.readAsDataURL(file);
-}
-
-async function compressImage(file, maxSizeKB = 200, maxDim = 400) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let w = img.width, h = img.height;
-      if (w > maxDim || h > maxDim) {
-        if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
-        else       { w = Math.round(w * maxDim / h); h = maxDim; }
-      }
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      canvas.toBlob(blob => {
-        URL.revokeObjectURL(url);
-        resolve(new File([blob], file.name, { type: 'image/jpeg' }));
-      }, 'image/jpeg', 0.8);
-    };
-    img.src = url;
-  });
-}
-
-async function saveAvatar() {
-  const input = document.getElementById('avatar-input');
-  if (!input?.files?.[0]) { showToast('Veuillez choisir une photo.', 'error'); return; }
-
-  const btn = document.querySelector('[onclick="saveAvatar()"]');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Upload en cours...'; }
 
   try {
-    const { data: { session } } = await sb.auth.getSession();
-    const userId = session?.user?.id;
-    const JWT = session?.access_token;
-    if (!userId || !JWT) throw new Error('Non connecté');
+    // Charger tous les profils tipsters
+    const urlT = new URL(SUPA + '/rest/v1/profiles');
+    urlT.searchParams.set('select', 'id,first_name,last_name,created_at');
+    urlT.searchParams.set('role', 'eq.tipster');
+    urlT.searchParams.set('apikey', ANON);
+    const rT = await fetch(urlT.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
+    const tipsters = await rT.json();
 
-    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-    const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
-
-    // Compression
-    const compressed = await compressImage(input.files[0]);
-    const fileName = `avatar-${userId}.jpg`;
-
-    // Upload via fetch direct avec JWT utilisateur
-    const uploadResp = await fetch(`${SUPA}/storage/v1/object/avatars/${fileName}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + JWT,
-        'apikey': ANON,
-        'Content-Type': 'image/jpeg',
-        'x-upsert': 'true'
-      },
-      body: compressed
-    });
-
-    if (!uploadResp.ok) {
-      const err = await uploadResp.json().catch(() => ({}));
-      throw new Error(err.message || 'Erreur upload');
+    if (!Array.isArray(tipsters) || tipsters.length === 0) {
+      document.getElementById('explorer-grid').innerHTML = `
+        <div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted);font-size:0.88rem;grid-column:1/-1">
+          Aucun autre tipster inscrit pour l'instant.
+        </div>
+      `;
+      return;
     }
 
-    // URL publique
-    const avatarUrl = `${SUPA}/storage/v1/object/public/avatars/${fileName}`;
-    const avatarUrlCacheBust = avatarUrl + '?t=' + Date.now();
+    // Charger tous les pronos pour calculer les stats
+    const urlP = new URL(SUPA + '/rest/v1/pronos');
+    urlP.searchParams.set('select', 'tipster_id,status,buyers');
+    urlP.searchParams.set('apikey', ANON);
+    const rP = await fetch(urlP.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
+    const allPronos = await rP.json();
 
-    // Sauvegarder dans profiles
-    await fetch(`${SUPA}/rest/v1/profiles?id=eq.${userId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + JWT },
-      body: JSON.stringify({ avatar_url: avatarUrl })
-    });
+    // Regrouper les pronos par tipster
+    const pronosByTipster = {};
+    if (Array.isArray(allPronos)) {
+      allPronos.forEach(p => {
+        if (!pronosByTipster[p.tipster_id]) pronosByTipster[p.tipster_id] = [];
+        pronosByTipster[p.tipster_id].push(p);
+      });
+    }
 
-    MOCK_TIPSTER.avatarUrl = avatarUrlCacheBust;
-    showToast('✓ Photo de profil mise à jour !', 'success');
-    navigateTo('compte');
+    // Construire les cards
+    const grid = document.getElementById('explorer-grid');
+    grid.innerHTML = tipsters.map(t => {
+      const pronos   = pronosByTipster[t.id] || [];
+      const won      = pronos.filter(p => p.status === 'won').length;
+      const finished = pronos.filter(p => p.status === 'won' || p.status === 'lost').length;
+      const winRate  = finished > 0 ? Math.round(won / finished * 100) : null;
+      const buyers   = pronos.reduce((s, p) => s + (p.buyers || 0), 0);
+      const initials = (t.first_name[0] + t.last_name[0]).toUpperCase();
+
+      const months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+      const d = new Date(t.created_at);
+      const since = months[d.getMonth()] + ' ' + d.getFullYear();
+
+      return `
+        <div class="pronos-table" style="padding: var(--space-lg); display:flex; flex-direction:column; gap: var(--space-md);">
+
+          <!-- Avatar + nom -->
+          <div style="display:flex; align-items:center; gap: var(--space-md);">
+            <div style="
+              width: 44px; height: 44px; border-radius: 50%;
+              background: var(--blue-xpale); border: 1px solid rgba(26,86,219,0.2);
+              display:flex; align-items:center; justify-content:center;
+              font-family: var(--font-display); font-weight: 700;
+              font-size: 0.95rem; color: var(--blue); flex-shrink:0;
+            ">${initials}</div>
+            <div>
+              <div style="font-weight:600; font-size:0.95rem; color:var(--text-dark)">
+                ${t.first_name} ${t.last_name}
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-muted)">Membre depuis ${since}</div>
+            </div>
+          </div>
+
+          <!-- Stats -->
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:var(--space-sm); text-align:center;">
+            <div style="background:var(--bg-soft); border-radius:var(--radius-md); padding: var(--space-sm) 0;">
+              <div style="font-family:var(--font-display); font-size:1.1rem; font-weight:700; color:var(--text-dark)">
+                ${winRate !== null ? winRate + '%' : '—'}
+              </div>
+              <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px">Win Rate</div>
+            </div>
+            <div style="background:var(--bg-soft); border-radius:var(--radius-md); padding: var(--space-sm) 0;">
+              <div style="font-family:var(--font-display); font-size:1.1rem; font-weight:700; color:var(--text-dark)">
+                ${pronos.length}
+              </div>
+              <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px">Pronos</div>
+            </div>
+            <div style="background:var(--bg-soft); border-radius:var(--radius-md); padding: var(--space-sm) 0;">
+              <div style="font-family:var(--font-display); font-size:1.1rem; font-weight:700; color:var(--text-dark)">
+                ${buyers}
+              </div>
+              <div style="font-size:0.7rem; color:var(--text-muted); margin-top:2px">Acheteurs</div>
+            </div>
+          </div>
+
+          <!-- Bouton page publique -->
+          <a
+            href="tipster-public.html?id=${t.id}"
+            target="_blank"
+            class="btn btn-outline"
+            style="width:100%; text-align:center; font-size:0.83rem;"
+          >
+            Voir la page publique →
+          </a>
+
+        </div>
+      `;
+    }).join('');
+
   } catch(e) {
-    showToast('Erreur upload : ' + e.message, 'error');
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'Enregistrer la photo'; }
-  }
-}
-async function checkPseudoAvailable() {
-  const input = document.getElementById('new-pseudo');
-  const check = document.getElementById('pseudo-check-tip');
-  const val   = input.value.trim().toLowerCase();
-  const valid = /^[a-z0-9-]{3,20}$/.test(val);
-  input.classList.toggle('error', val.length > 0 && !valid);
-  input.classList.toggle('valid', false);
-  if (check) check.textContent = '';
-  if (!valid) return;
-  clearTimeout(pseudoTimerTip);
-  if (check) check.innerHTML = '<span style="color:var(--text-muted)">⏳ Vérification...</span>';
-  pseudoTimerTip = setTimeout(async () => {
-    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-    const r = await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id&pseudo=eq.${val}&apikey=${ANON}`);
-    const data = await r.json();
-    const taken = Array.isArray(data) && data.length > 0 && data[0].id !== (await sb.auth.getUser()).data.user?.id;
-    input.classList.toggle('error', taken);
-    input.classList.toggle('valid', !taken);
-    if (check) check.innerHTML = taken
-      ? '<span style="color:var(--error)">✕ Ce pseudo est déjà pris</span>'
-      : '<span style="color:var(--success)">✓ Disponible</span>';
-  }, 500);
-}
-
-async function savePseudo() {
-  const val = document.getElementById('new-pseudo')?.value.trim().toLowerCase();
-  if (!val || !/^[a-z0-9-]{3,20}$/.test(val)) {
-    showToast('Pseudo invalide (3-20 caractères, lettres/chiffres/tirets).', 'error'); return;
-  }
-  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-  // Vérifier unicité
-  const r = await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id&pseudo=eq.${val}&apikey=${ANON}`);
-  const existing = await r.json();
-  const user = await sb.auth.getUser();
-  if (Array.isArray(existing) && existing.length > 0 && existing[0].id !== user.data.user?.id) {
-    showToast('Ce pseudo est déjà pris.', 'error'); return;
-  }
-  try {
-    const { error } = await sb.from('profiles').update({ pseudo: val }).eq('id', user.data.user.id);
-    if (error) throw error;
-    MOCK_TIPSTER.pseudo = val;
-    showToast('✓ Pseudo mis à jour !', 'success');
-    document.getElementById('new-pseudo').value = '';
-    navigateTo('compte');
-  } catch(e) {
-    showToast('Erreur : ' + e.message, 'error');
+    console.error('Erreur chargement tipsters:', e);
+    document.getElementById('explorer-grid').innerHTML = `
+      <div style="text-align:center;padding:var(--space-2xl);color:var(--error);font-size:0.88rem;grid-column:1/-1">
+        Erreur lors du chargement.
+      </div>
+    `;
   }
 }
 
-async function saveDescription() {
-  const val = document.getElementById('new-description')?.value.trim();
-  if (val.length > 300) { showToast('Maximum 300 caractères.', 'error'); return; }
-  try {
-    const user = await sb.auth.getUser();
-    const { error } = await sb.from('profiles').update({ description: val }).eq('id', user.data.user.id);
-    if (error) throw error;
-    MOCK_TIPSTER.description = val;
-    showToast('✓ Description mise à jour !', 'success');
-  } catch(e) {
-    showToast('Erreur : ' + e.message, 'error');
-  }
-}
-
-async function saveEmail() {
-  const newEmail = document.getElementById('new-email').value.trim();
-  if (!newEmail || !newEmail.includes('@')) {
-    showToast('Veuillez saisir un email valide.', 'error'); return;
-  }
-  try {
-    const { error } = await sb.auth.updateUser({ email: newEmail });
-    if (error) throw error;
-    MOCK_TIPSTER.email = newEmail;
-    showToast('✓ Email mis à jour. Vérifiez votre boîte mail pour confirmer.', 'success');
-    document.getElementById('new-email').value = '';
-    navigateTo('compte');
-  } catch(e) {
-    showToast('Erreur : ' + e.message, 'error');
-  }
-}
-
-async function savePassword() {
-  const newPassword    = document.getElementById('new-password').value;
-  const confirmPassword = document.getElementById('confirm-password').value;
-  if (!newPassword || newPassword.length < 8) {
-    showToast('Le mot de passe doit faire au moins 8 caractères.', 'error'); return;
-  }
-  if (newPassword !== confirmPassword) {
-    showToast('Les mots de passe ne correspondent pas.', 'error'); return;
-  }
-  try {
-    const { error } = await sb.auth.updateUser({ password: newPassword });
-    if (error) throw error;
-    showToast('✓ Mot de passe mis à jour avec succès.', 'success');
-    document.getElementById('new-password').value = '';
-    document.getElementById('confirm-password').value = '';
-  } catch(e) {
-    showToast('Erreur : ' + e.message, 'error');
-  }
-}
-
-function formatDate(str) {
-  if (!str) return "—";
-  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (match) return `${match[3]}/${match[2]}/${match[1].slice(2)}`;
-  return str;
-}
-
+// ── Utilitaires ───────────────────────────────────────────────
 function formatEuros(n) {
   return Math.round(n * 100) / 100 === Math.round(n)
     ? Math.round(n).toLocaleString('fr-FR') + ' €'
@@ -941,110 +725,4 @@ function showToast(message, type = 'info') {
   });
   document.body.appendChild(toast);
   setTimeout(() => toast?.remove(), 3500);
-}
-
-// ══════════════════════════════════════════════════════════════
-//  PAGE — EXPLORER LES TIPSTERS
-// ══════════════════════════════════════════════════════════════
-async function renderPageExplorerTipsters(container) {
-  container.innerHTML = `
-    <div class="section-header">
-      <div><h2>Explorer les tipsters</h2><p>Classés par win rate</p></div>
-    </div>
-    <div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>`;
-
-  try {
-    const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
-    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-
-    const resp = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,pseudo,avatar_url&role=eq.tipster&apikey=${ANON}`);
-    const tipsters = await resp.json();
-
-    const resp2 = await fetch(`${SUPA}/rest/v1/pronos?select=tipster_id,status,buyers&apikey=${ANON}`);
-    const pronos = await resp2.json();
-
-    const stats = {};
-    for (const t of tipsters) {
-      const myPronos = pronos.filter(p => p.tipster_id === t.id);
-      const won  = myPronos.filter(p => p.status === 'won').length;
-      const lost = myPronos.filter(p => p.status === 'lost').length;
-      const total = myPronos.length;
-      const totalAcheteurs = myPronos.reduce((s,p) => s + (parseInt(p.buyers)||0), 0);
-      const winRate = (won + lost) > 0 ? Math.round(won / (won + lost) * 100) : null;
-      stats[t.id] = { won, lost, total, totalAcheteurs, winRate };
-    }
-
-    tipsters.sort((a, b) => {
-      const wa = stats[a.id].winRate;
-      const wb = stats[b.id].winRate;
-      if (wa === null && wb === null) return 0;
-      if (wa === null) return 1;
-      if (wb === null) return -1;
-      return wb - wa;
-    });
-
-    let filterVal = '';
-
-    function renderList() {
-      const filtered = tipsters.filter(t =>
-        (t.pseudo || '').toLowerCase().includes(filterVal.toLowerCase())
-      );
-      const listEl = document.getElementById('tipsters-list');
-      if (!filtered.length) {
-        listEl.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun tipster trouvé.</div>`;
-        return;
-      }
-      listEl.innerHTML = filtered.map((t, i) => {
-        const s = stats[t.id];
-        const pseudo = t.pseudo || (t.first_name + ' ' + t.last_name);
-        const avatarHtml = t.avatar_url
-          ? `<img src="${t.avatar_url}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
-          : `<div style="width:44px;height:44px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;flex-shrink:0">${pseudo[0]?.toUpperCase()}</div>`;
-        const winRateHtml = s.winRate !== null
-          ? `<span style="font-weight:800;font-size:1rem;color:${s.winRate>=60?'var(--success)':'var(--warning)'}">${s.winRate}%</span>`
-          : `<span style="color:var(--text-muted);font-size:0.85rem">—</span>`;
-        const rankColor = i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : 'var(--text-muted)';
-        return `
-        <a href="${t.pseudo ? 'https://payperwin.co/' + t.pseudo : '#'}" target="_blank" style="text-decoration:none">
-          <div class="tipster-explorer-card">
-            <div style="display:flex;align-items:center;gap:12px;min-width:0">
-              <div style="font-size:0.85rem;font-weight:700;color:${rankColor};min-width:20px;text-align:center">${i+1}</div>
-              ${avatarHtml}
-              <div style="font-weight:700;font-size:0.95rem;color:var(--text-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@${pseudo}</div>
-            </div>
-            <div class="tipster-explorer-stats">
-              <div class="tipster-explorer-stat">
-                <div class="tipster-explorer-stat__label">Pronos</div>
-                <div class="tipster-explorer-stat__value">${s.total}</div>
-              </div>
-              <div class="tipster-explorer-stat">
-                <div class="tipster-explorer-stat__label">Acheteurs</div>
-                <div class="tipster-explorer-stat__value">${s.totalAcheteurs}</div>
-              </div>
-              <div class="tipster-explorer-stat">
-                <div class="tipster-explorer-stat__label">Win Rate</div>
-                <div class="tipster-explorer-stat__value">${winRateHtml}</div>
-              </div>
-            </div>
-          </div>
-        </a>`;
-      }).join('');
-    }
-
-    container.innerHTML = `
-      <div class="section-header">
-        <div><h2>Explorer les tipsters</h2><p>${tipsters.length} tipsters inscrits</p></div>
-      </div>
-      <div class="tipster-search-wrap">
-        <span class="input-icon">🔍</span>
-        <input class="input" id="tipster-search" type="text" placeholder="Rechercher par pseudo..." oninput="document.tipsterFilter(this.value)" />
-      </div>
-      <div id="tipsters-list"></div>`;
-
-    document.tipsterFilter = (val) => { filterVal = val; renderList(); };
-    renderList();
-
-  } catch(e) {
-    container.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur : ${e.message}</div>`;
-  }
 }
