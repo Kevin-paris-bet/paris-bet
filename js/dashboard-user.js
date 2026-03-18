@@ -682,20 +682,18 @@ async function renderPageExplorerTipsters(container) {
     <div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>`;
 
   try {
-    const SUPABASE_URL = 'https://haezbgglpghjrgdpmcrj.supabase.co';
-    const ANON_KEY = CONFIG.supabase.anonKey;
+    const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
 
     // Récupérer tous les tipsters
     const resp = await fetch(
-      `${SUPABASE_URL}/rest/v1/profiles?select=id,first_name,last_name,pseudo,avatar_url&role=eq.tipster`,
-      { headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY } }
+      `${SUPA}/rest/v1/profiles?select=id,first_name,last_name,pseudo,avatar_url&role=eq.tipster&apikey=${ANON}`
     );
     const tipsters = await resp.json();
 
-    // Récupérer tous les pronos terminés
+    // Récupérer tous les pronos
     const resp2 = await fetch(
-      `${SUPABASE_URL}/rest/v1/pronos?select=tipster_id,status,buyers&status=in.(won,lost,cancelled,pending)`,
-      { headers: { 'apikey': ANON_KEY, 'Authorization': 'Bearer ' + ANON_KEY } }
+      `${SUPA}/rest/v1/pronos?select=tipster_id,status,buyers&apikey=${ANON}`
     );
     const pronos = await resp2.json();
 
@@ -790,6 +788,7 @@ async function renderPageExplorerTipsters(container) {
     renderList();
 
   } catch(e) {
-    container.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur de chargement.</div>`;
+    container.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur : ${e.message}</div>`;
+    console.error('renderPageExplorerTipsters:', e);
   }
 }
