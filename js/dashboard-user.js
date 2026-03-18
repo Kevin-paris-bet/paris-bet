@@ -665,7 +665,7 @@ function showToast(msg, type='info') {
   const c = {error:['var(--error-pale)','var(--error)','✕'],success:['var(--success-pale)','var(--success)','✓'],info:['var(--blue-pale)','var(--blue)','ℹ']}[type]||['var(--blue-pale)','var(--blue)','ℹ'];
   const t = document.createElement('div'); t.className='toast';
   t.innerHTML = `<span>${c[2]}</span> ${msg}`;
-  Object.assign(t.style,{position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%)',background:c[0],border:`1px solid ${c[1]}`,borderRadius:'var(--radius-md)',padding:'12px 20px',fontSize:'0.87rem',fontFamily:'var(--font-body)',color:'var(--text-dark)',zIndex:'9999',animation:'fadeUp 0.3s ease both',boxShadow:'var(--shadow-md)',whiteSpace:'nowrap',maxWidth:'calc(100vw - 32px)',textAlign:'center',boxSizing:'border-box'});
+  Object.assign(t.style,{position:'fixed',bottom:'24px',left:'16px',right:'16px',textAlign:'center',background:c[0],border:`1px solid ${c[1]}`,borderRadius:'var(--radius-md)',padding:'12px 20px',fontSize:'0.87rem',fontFamily:'var(--font-body)',color:'var(--text-dark)',zIndex:'9999',animation:'fadeUp 0.3s ease both',boxShadow:'var(--shadow-md)'});
   document.body.appendChild(t);
   setTimeout(()=>t?.remove(), 3500);
 }
