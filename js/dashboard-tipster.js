@@ -274,7 +274,7 @@ function renderPronoRow(p) {
       <div style="font-size:0.8rem;color:var(--text-muted)">${formatDate(p.match_date || p.date)}</div>
       <div class="table-actions">
         <button class="btn-icon" title="Voir le pronostic" onclick="viewProno('${p.id}')">👁</button>
-        <button class="btn-icon danger" title="${canDelete ? 'Supprimer' : 'Impossible : déjà acheté'}" onclick="deleteProno(${p.id})" ${canDelete ? '' : 'disabled'}>🗑</button>
+        <button class="btn-icon danger" title="${canDelete ? 'Supprimer' : 'Impossible : déjà acheté'}" onclick="deleteProno('${p.id}')" ${canDelete ? '' : 'disabled'}>🗑</button>
       </div>
     </div>
   `;
