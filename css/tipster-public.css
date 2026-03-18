@@ -413,3 +413,26 @@
   line-height: 1.9; padding-left: var(--space-md);
   margin: 0;
 }
+
+/* ── Responsive mobile ── */
+@media (max-width: 900px) {
+  /* Sidebar au-dessus des pronos */
+  .tipster-body__inner {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "sidebar"
+      "pronos";
+    gap: var(--space-md);
+  }
+  .tipster-sidebar { grid-area: sidebar; }
+  .pronos-col      { grid-area: pronos; }
+
+  /* Padding réduit */
+  .tipster-body { padding: var(--space-lg) 0; }
+
+  /* Prono cards : marge correcte */
+  .prono-card { margin-left: 0; margin-right: 0; }
+
+  /* Solde bloc pleine largeur */
+  .buy-panel { width: 100%; box-sizing: border-box; }
+}

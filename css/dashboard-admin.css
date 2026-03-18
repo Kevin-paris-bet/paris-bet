@@ -39,3 +39,69 @@
 .btn-validate--lost:hover { background: var(--error); color: var(--white); }
 .btn-validate--cancel { background: var(--warning-pale); color: var(--warning); border: 1px solid var(--warning); }
 .btn-validate--cancel:hover { background: var(--warning); color: var(--white); }
+
+/* ── Responsive mobile ── */
+@media (max-width: 900px) {
+  .action-card { padding: var(--space-sm) var(--space-md); }
+  .action-card__icon { font-size: 1.2rem; }
+}
+@media (max-width: 600px) {
+  .btn-validate { padding: 4px 8px; font-size: 0.7rem; }
+}
+
+/* ── Admin cards mobile ── */
+.admin-card { display: none; }
+
+@media (max-width: 900px) {
+  /* Stats grid 2 colonnes */
+  .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+  .stats-grid--3 { grid-template-columns: repeat(2, 1fr) !important; }
+  .stat-card__value { font-size: 1.4rem !important; }
+  .stat-card { padding: var(--space-md); }
+
+  /* Cacher headers table */
+  .table-header { display: none !important; }
+
+  /* Masquer les table-row sur mobile */
+  .pronos-table .table-row { display: none !important; }
+
+  /* Afficher les admin-card sur mobile */
+  .admin-card {
+    display: block;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-md);
+    overflow: hidden;
+  }
+  .admin-card__title {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .admin-card__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .admin-card__field {}
+  .admin-card__label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin-bottom: 3px;
+  }
+  .admin-card__actions {
+    display: flex;
+    gap: 8px;
+    padding: 10px 16px;
+  }
+
+  /* Modale */
+  #fiche-modal-overlay { padding: 12px !important; }
+  #fiche-modal { padding: var(--space-md) !important; margin: 8px auto !important; width: 100% !important; }
+  #fiche-modal .stats-grid { grid-template-columns: 1fr 1fr !important; }
+}

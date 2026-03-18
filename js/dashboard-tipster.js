@@ -257,35 +257,24 @@ function renderPronoRow(p) {
   };
 
   const canDelete = !p.locked && p.buyers === 0;
+  const lockText = p.buyers > 0 || p.status !== 'pending'
+    ? `<div class="prono-lock">🔒 Verrouillé</div>`
+    : `<div class="prono-lock prono-lock--editable">✏️ Modifiable</div>`;
 
   return `
-    <div class="table-row">
+    <div class="table-row prono-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px">
       <div>
         <div class="prono-title">${p.game}</div>
         <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
-        ${p.buyers > 0 || p.status !== 'pending'
-          ? `<div class="prono-lock">🔒 Verrouillé — modification impossible</div>`
-          : `<div class="prono-lock" style="color:var(--warning)">✏️ Modifiable — aucun acheteur pour l'instant</div>`
-        }
+        ${lockText}
       </div>
-      <div class="buyers-count">
-        <span>👥</span> ${p.buyers}
-      </div>
+      <div class="buyers-count">${p.buyers}</div>
       <div class="prono-price">${formatEuros(p.price)}</div>
       <div>${statusBadge[p.status] || ''}</div>
       <div style="font-size:0.8rem;color:var(--text-muted)">${formatDate(p.match_date || p.date)}</div>
       <div class="table-actions">
-        <button
-          class="btn-icon"
-          title="Voir le pronostic"
-          onclick="viewProno('${p.id}')"
-        >👁</button>
-        <button
-          class="btn-icon danger"
-          title="${canDelete ? 'Supprimer' : 'Impossible : déjà acheté'}"
-          onclick="deleteProno(${p.id})"
-          ${canDelete ? '' : 'disabled'}
-        >🗑</button>
+        <button class="btn-icon" title="Voir le pronostic" onclick="viewProno('${p.id}')">👁</button>
+        <button class="btn-icon danger" title="${canDelete ? 'Supprimer' : 'Impossible : déjà acheté'}" onclick="deleteProno(${p.id})" ${canDelete ? '' : 'disabled'}>🗑</button>
       </div>
     </div>
   `;
@@ -441,7 +430,7 @@ function renderPageSolde(container) {
 // ══════════════════════════════════════════════════════════════
 function renderPageRIB(container) {
   container.innerHTML = `
-    <div style="max-width: 560px;">
+    <div class="rib-page-container" style="max-width: 560px;">
       <div class="rib-card">
         <div class="rib-card__header">
           <div style="font-size:1.6rem;">🏦</div>
@@ -458,9 +447,8 @@ function renderPageRIB(container) {
         ` : ''}
 
         <div class="form-group">
-          <label>Titulaire du compte</label>
-          <div class="input-wrap">
-            <span class="input-icon">👤</span>
+          <label>👤 Titulaire du compte</label>
+          <div class="input-wrap rib-input-wrap">
             <input class="input" type="text" id="rib-name"
               placeholder="Prénom NOM"
               value="${MOCK_TIPSTER.ribName || ''}"
@@ -469,9 +457,8 @@ function renderPageRIB(container) {
         </div>
 
         <div class="form-group">
-          <label>IBAN</label>
-          <div class="input-wrap">
-            <span class="input-icon">🏦</span>
+          <label>🏦 IBAN</label>
+          <div class="input-wrap rib-input-wrap">
             <input class="input" type="text" id="rib-iban"
               placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"
               value="${MOCK_TIPSTER.ribIban || ''}"
@@ -481,9 +468,8 @@ function renderPageRIB(container) {
         </div>
 
         <div class="form-group">
-          <label>BIC / SWIFT</label>
-          <div class="input-wrap">
-            <span class="input-icon">🔢</span>
+          <label>🔢 BIC / SWIFT</label>
+          <div class="input-wrap rib-input-wrap">
             <input class="input" type="text" id="rib-bic"
               placeholder="BNPAFRPPXXX"
               value="${MOCK_TIPSTER.ribBic || ''}"
@@ -551,7 +537,7 @@ function renderPageStats(container) {
   const totalBuyers = state.pronos.reduce((sum, p) => sum + p.buyers, 0);
 
   container.innerHTML = `
-    <div class="stats-grid" style="grid-template-columns: repeat(4,1fr)">
+    <div class="stats-grid">
       <div class="stat-card stat-card--blue">
         <div class="stat-card__label">💰 Total gagné</div>
         <div class="stat-card__value">${formatEuros(MOCK_TIPSTER.balance)}</div>
@@ -576,7 +562,7 @@ function renderPageStats(container) {
 
     <div class="section-header"><div><h2>Détail des résultats</h2></div></div>
     <div class="pronos-table" style="padding: var(--space-lg);">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:var(--space-md)">
+      <div class="stats-grid">
         ${[
           { label: 'Gagnés',   count: won,       cls: 'badge-won',       icon: '✓' },
           { label: 'Perdus',   count: lost,       cls: 'badge-lost',      icon: '✕' },

@@ -163,6 +163,9 @@
   gap: var(--space-md);
   margin-bottom: var(--space-xl);
 }
+.stats-grid--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
 .stat-card {
   background: var(--white);
   border: 1px solid var(--border);
@@ -385,7 +388,7 @@
 /* Tableau historique virements */
 .virement-row {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 0;
+  padding: 14px var(--space-lg);
   border-bottom: 1px solid var(--border);
 }
 .virement-row:last-child { border-bottom: none; }
@@ -505,15 +508,59 @@
 .sidebar-overlay.show { display: block; }
 
 @media (max-width: 900px) {
-  .sidebar { transform: translateX(-100%); }
+  /* Sidebar cachée par défaut */
+  .sidebar {
+    transform: translateX(-100%);
+    z-index: 200;
+  }
   .sidebar.open { transform: translateX(0); }
-  .main { margin-left: 0; }
-  .table-header, .table-row { grid-template-columns: 2fr 1fr 1fr 80px; }
-  .table-header > *:nth-child(3),
-  .table-header > *:nth-child(4),
-  .table-row > *:nth-child(3),
-  .table-row > *:nth-child(4) { display: none; }
+  .main { margin-left: 0; width: 100%; overflow-x: hidden; }
   .burger-btn { display: flex; }
+
+  /* Topbar */
+  .topbar { padding: 0 var(--space-md); height: 56px; }
+  .topbar__title { font-size: 1rem; }
+  .topbar__balance { font-size: 0.78rem; padding: 5px 10px; }
+
+  /* Page content */
+  .page-content { padding: var(--space-md); }
+
+  /* Stats grid → 2 colonnes */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); gap: var(--space-sm); margin-bottom: var(--space-md); }
+  .stats-grid--3 { grid-template-columns: repeat(2, 1fr); }
+  .stat-card { padding: var(--space-md); }
+  .stat-card__value { font-size: 1.4rem; }
+
+  /* Tables */
+  .pronos-table { overflow-x: auto; }
+  .table-header { display: none; }
+  .table-row:not(.prono-row) {
+    display: flex !important;
+    flex-direction: column;
+    gap: 6px;
+    padding: var(--space-md) !important;
+    grid-template-columns: unset !important;
+  }
+  .table-row:not(.prono-row) > * { display: block !important; }
+
+  /* Section header */
+  .section-header { flex-direction: column; align-items: flex-start; gap: var(--space-sm); }
+
+  /* Rib card */
+  .rib-card { padding: var(--space-md); }
+}
+
+@media (max-width: 600px) {
+  /* Stats grid → 1 colonne sur très petit */
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .page-content { padding: var(--space-sm) var(--space-md); }
+
+  /* Topbar title wrap */
+  .topbar__title { font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
+  .topbar { gap: 8px; }
+
+  /* Bouton recharger topbar */
+  .topbar__right .btn { font-size: 0.75rem; padding: 6px 10px; }
 }
 @media (max-width: 600px) {
   .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -539,4 +586,78 @@
   background: var(--blue); color: var(--white);
   border-color: var(--blue);
   box-shadow: 0 2px 8px rgba(26,86,255,0.2);
+}
+
+/* ── Prono row mobile ── */
+.prono-lock--editable { color: var(--warning); }
+
+@media (max-width: 900px) {
+  /* La card prono sur mobile */
+  .prono-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr 1fr !important;
+    grid-template-rows: auto auto auto !important;
+    padding: 0 !important;
+    gap: 0 !important;
+  }
+
+  /* Ligne 1 : titre sur toute la largeur */
+  .prono-row > *:nth-child(1) {
+    grid-column: 1 / -1;
+    padding: var(--space-md) var(--space-md) var(--space-sm);
+    border-bottom: none;
+  }
+  /* Cacher le texte modifiable/verrouillé sur mobile */
+  .prono-row > *:nth-child(1) .prono-lock { display: none; }
+
+  /* Ligne 2 : acheteurs | prix | statut */
+  .prono-row > *:nth-child(2),
+  .prono-row > *:nth-child(3),
+  .prono-row > *:nth-child(4) {
+    padding: var(--space-sm) var(--space-md);
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .prono-row > *:nth-child(2)::before { content: "ACHETEURS"; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+  .prono-row > *:nth-child(3)::before { content: "PRIX"; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+  .prono-row > *:nth-child(4)::before { content: "STATUT"; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+  .prono-row > *:nth-child(3) { border-left: none; border-right: none; }
+
+  /* Badges sur mobile : forcer une ligne */
+  .prono-row .badge { white-space: nowrap; font-size: 0.72rem; padding: 3px 8px; }
+
+  /* Cacher la date (doublon) */
+  .prono-row > *:nth-child(5) { display: none !important; }
+
+  /* Ligne 3 : boutons sur toute la largeur */
+  .prono-row > *:nth-child(6) {
+    grid-column: 1 / -1;
+    display: flex !important;
+    justify-content: flex-end;
+    padding: var(--space-sm) var(--space-md);
+  }
+}
+/* ── Stats résultats mobile ── */
+@media (max-width: 900px) {
+  .pronos-table .stats-grid > div {
+    padding: var(--space-md) var(--space-sm) !important;
+  }
+  .pronos-table .stats-grid > div > div:first-child {
+    font-size: 1.2rem !important;
+    margin-bottom: 4px !important;
+  }
+  .pronos-table .stats-grid > div > div:nth-child(2) {
+    font-size: 1.4rem !important;
+  }
+  /* RIB card : marge correcte sur mobile */
+  .rib-card { margin-left: 0; margin-right: 0; width: 100%; box-sizing: border-box; }
+  /* Container RIB uniquement */
+  .rib-page-container { max-width: 100% !important; }
+  /* RIB : espacement entre les champs */
+  .rib-card .form-group { margin-bottom: var(--space-md); }
+  /* Cacher l'icône séparée dans input-wrap RIB sur mobile */
+  .rib-input-wrap .input-icon { display: none; }
 }

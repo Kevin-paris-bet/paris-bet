@@ -96,7 +96,59 @@
   .solde-layout { grid-template-columns: 1fr; }
 }
 @media (max-width: 600px) {
-  .achat-card__header { flex-direction: column; }
+  .achat-card__header { flex-direction: column; gap: var(--space-sm); }
   .achat-card__right  { align-items: flex-start; flex-direction: row; flex-wrap: wrap; gap: 8px; }
+  .achat-card__price  { font-size: 1rem; }
   .quick-amounts      { grid-template-columns: repeat(2, 1fr); }
+  .achat-card__header { padding: var(--space-md); }
+  .achat-card__content { padding: var(--space-sm) var(--space-md); }
+}
+
+/* ── Mobile fixes ── */
+@media (max-width: 900px) {
+  /* Topbar balance : pas de wrap */
+  .topbar__balance {
+    white-space: nowrap;
+    font-size: 0.75rem !important;
+    padding: 4px 8px !important;
+  }
+
+  /* Solde : tout en colonne, pleine largeur */
+  .solde-layout {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: var(--space-sm) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  /* Tous les enfants directs pleine largeur */
+  .solde-layout > * {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  /* La colonne droite (solde + recharge) passe en premier */
+  .solde-layout > *:last-child { order: -1; }
+
+  /* Balance et rib-card : pas de débordement */
+  .balance-card {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    margin-bottom: var(--space-sm) !important;
+  }
+  .rib-card {
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Virements : padding symétrique */
+  .virement-row { padding: 12px var(--space-md); }
+  .achat-card { margin-bottom: var(--space-sm) !important; }
+}
+
+@media (max-width: 900px) {
+  /* Virement rows : padding horizontal symétrique */
+  .virement-row {
+    padding-left: var(--space-md) !important;
+    padding-right: var(--space-md) !important;
+  }
 }

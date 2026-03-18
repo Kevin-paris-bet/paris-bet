@@ -223,7 +223,7 @@ function renderPageAchats(container) {
   const totalSpent = achats.reduce((s,a) => s + a.price, 0);
 
   container.innerHTML = `
-    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr)">
+    <div class="stats-grid">
       <div class="stat-card stat-card--blue">
         <div class="stat-card__label">🛒 Total acheté</div>
         <div class="stat-card__value">${formatEuros(totalSpent)}</div>
@@ -339,7 +339,7 @@ function renderPageSolde(container) {
       <!-- Historique -->
       <div>
         <div class="section-header"><div><h2>Historique des transactions</h2></div></div>
-        <div class="pronos-table" style="padding:0 var(--space-lg)">
+        <div class="pronos-table">
           ${allTransactions.length === 0
             ? `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted);font-size:0.88rem">Aucune transaction pour l'instant.</div>`
             : allTransactions.map(t => {
@@ -380,10 +380,9 @@ function renderPageSolde(container) {
             ${[5,10,20,50].map(v=>`<button class="quick-amount-btn" data-val="${v}" onclick="selectAmount(${v})">${v} €</button>`).join('')}
           </div>
           <div class="form-group" style="margin-top:var(--space-md)">
-            <label>Ou saisir un montant</label>
+            <label>💶 Ou saisir un montant</label>
             <div class="input-wrap">
-              <span class="input-icon">💶</span>
-              <input class="input" type="number" id="deposit-amount" placeholder="Ex: 25" min="${min}" step="1"/>
+              <input class="input" type="number" id="deposit-amount" placeholder="Ex: 25" min="${min}" step="1" style="padding-left:var(--space-md)"/>
             </div>
           </div>
           <button class="btn btn-primary" style="width:100%;margin-top:var(--space-sm)" onclick="handleDeposit()">
@@ -666,7 +665,7 @@ function showToast(msg, type='info') {
   const c = {error:['var(--error-pale)','var(--error)','✕'],success:['var(--success-pale)','var(--success)','✓'],info:['var(--blue-pale)','var(--blue)','ℹ']}[type]||['var(--blue-pale)','var(--blue)','ℹ'];
   const t = document.createElement('div'); t.className='toast';
   t.innerHTML = `<span>${c[2]}</span> ${msg}`;
-  Object.assign(t.style,{position:'fixed',bottom:'24px',left:'50%',transform:'translateX(-50%)',background:c[0],border:`1px solid ${c[1]}`,borderRadius:'var(--radius-md)',padding:'12px 24px',fontSize:'0.87rem',fontFamily:'var(--font-body)',color:'var(--text-dark)',zIndex:'9999',animation:'fadeUp 0.3s ease both',boxShadow:'var(--shadow-md)',whiteSpace:'nowrap',maxWidth:'90vw'});
+  Object.assign(t.style,{position:'fixed',bottom:'24px',left:'16px',right:'16px',textAlign:'center',background:c[0],border:`1px solid ${c[1]}`,borderRadius:'var(--radius-md)',padding:'12px 20px',fontSize:'0.87rem',fontFamily:'var(--font-body)',color:'var(--text-dark)',zIndex:'9999',animation:'fadeUp 0.3s ease both',boxShadow:'var(--shadow-md)'});
   document.body.appendChild(t);
   setTimeout(()=>t?.remove(), 3500);
 }
