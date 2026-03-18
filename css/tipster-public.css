@@ -435,4 +435,32 @@
 
   /* Solde bloc pleine largeur */
   .buy-panel { width: 100%; box-sizing: border-box; }
+
+  /* 1. Marges "À propos du tipster" divisées par 2 */
+  .tipster-info-card {
+    padding: var(--space-sm) var(--space-md);
+  }
+  .tipster-info-card h3 { margin-bottom: var(--space-sm); }
+
+  /* 2. Marges ppw-card divisées par 2 */
+  .ppw-card {
+    padding: var(--space-sm) var(--space-md);
+  }
+  .ppw-card__title { margin-bottom: 4px; }
+
+  /* 3. Filtres sur une seule ligne — police et padding réduits */
+  .pronos-filters { flex-wrap: nowrap; gap: 6px; }
+  .filter-btn {
+    padding: 5px 10px;
+    font-size: 0.74rem;
+    white-space: nowrap;
+  }
+
+  /* 4. Bloc mon solde : padding divisé par 2 */
+  .user-balance-card__top {
+    padding: var(--space-sm) var(--space-md);
+  }
+  .user-balance-card__body {
+    padding: var(--space-sm) var(--space-md);
+  }
 }
