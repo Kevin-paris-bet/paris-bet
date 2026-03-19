@@ -909,137 +909,119 @@ async function savePassword() {
 //  PAGE — EXPLORER LES TIPSTERS
 // ══════════════════════════════════════════════════════════════
 async function renderPageExplorer(container) {
-  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
-
   container.innerHTML = `
     <div class="section-header">
-      <div>
-        <h2>Explorer les tipsters</h2>
-        <p>Découvrez tous les tipsters de la plateforme et leurs performances</p>
-      </div>
+      <div><h2>Explorer les tipsters</h2><p>Classés par win rate</p></div>
     </div>
-    <div id="explorer-grid" style="
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: var(--space-lg);
-    ">
-      <div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted);font-size:0.88rem;grid-column:1/-1">
-        ⏳ Chargement des tipsters…
-      </div>
-    </div>
-  `;
+    <div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>`;
 
   try {
-    const urlT = new URL(SUPA + '/rest/v1/profiles');
-    urlT.searchParams.set('select', 'id,first_name,last_name,created_at,pseudo,avatar_url,description');
-    urlT.searchParams.set('role', 'eq.tipster');
-    urlT.searchParams.set('apikey', ANON);
-    const rT = await fetch(urlT.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
-    const tipsters = await rT.json();
+    const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
 
-    if (!Array.isArray(tipsters) || tipsters.length === 0) {
-      document.getElementById('explorer-grid').innerHTML = `
-        <div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted);font-size:0.88rem;grid-column:1/-1">
-          Aucun tipster inscrit pour l'instant.
-        </div>
-      `;
-      return;
+    // Récupérer tous les tipsters
+    const resp = await fetch(
+      `${SUPA}/rest/v1/profiles?select=id,first_name,last_name,pseudo,avatar_url&role=eq.tipster&apikey=${ANON}`
+    );
+    const tipsters = await resp.json();
+
+    // Récupérer tous les pronos
+    const resp2 = await fetch(
+      `${SUPA}/rest/v1/pronos?select=tipster_id,status,buyers&apikey=${ANON}`
+    );
+    const pronos = await resp2.json();
+
+    // Calculer les stats par tipster
+    const stats = {};
+    for (const t of tipsters) {
+      const myPronos = pronos.filter(p => p.tipster_id === t.id);
+      const won  = myPronos.filter(p => p.status === 'won').length;
+      const lost = myPronos.filter(p => p.status === 'lost').length;
+      const total = myPronos.length;
+      const totalAcheteurs = myPronos.reduce((s,p) => s + (parseInt(p.buyers)||0), 0);
+      const winRate = (won + lost) > 0 ? Math.round(won / (won + lost) * 100) : null;
+      stats[t.id] = { won, lost, total, totalAcheteurs, winRate };
     }
 
-    // Charger tous les pronos pour calculer les stats
-    const urlP = new URL(SUPA + '/rest/v1/pronos');
-    urlP.searchParams.set('select', 'tipster_id,status,buyers');
-    urlP.searchParams.set('apikey', ANON);
-    const rP = await fetch(urlP.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
-    const allPronos = await rP.json();
+    // Trier par win rate décroissant (null en dernier)
+    tipsters.sort((a, b) => {
+      const wa = stats[a.id].winRate;
+      const wb = stats[b.id].winRate;
+      if (wa === null && wb === null) return 0;
+      if (wa === null) return 1;
+      if (wb === null) return -1;
+      return wb - wa;
+    });
 
-    const pronosByTipster = {};
-    if (Array.isArray(allPronos)) {
-      allPronos.forEach(p => {
-        if (!pronosByTipster[p.tipster_id]) pronosByTipster[p.tipster_id] = [];
-        pronosByTipster[p.tipster_id].push(p);
+    // État pour le filtre
+    let filterVal = '';
+
+    function renderList() {
+      const filtered = tipsters.filter(t => {
+        const pseudo = (t.pseudo || '').toLowerCase();
+        return pseudo.includes(filterVal.toLowerCase());
       });
+
+      const listEl = document.getElementById('tipsters-list');
+      if (!filtered.length) {
+        listEl.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun tipster trouvé.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = filtered.map((t, i) => {
+        const s = stats[t.id];
+        const pseudo = t.pseudo || (t.first_name + ' ' + t.last_name);
+        const avatarHtml = t.avatar_url
+          ? `<img src="${t.avatar_url}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
+          : `<div style="width:44px;height:44px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;flex-shrink:0">${pseudo[0]?.toUpperCase()}</div>`;
+        const winRateHtml = s.winRate !== null
+          ? `<span style="font-weight:800;font-size:1rem;color:${s.winRate>=60?'var(--success)':'var(--warning)'};">${s.winRate}%</span>`
+          : `<span style="color:var(--text-muted);font-size:0.85rem">—</span>`;
+        const rankColor = i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : 'var(--text-muted)';
+
+        return `
+        <a href="${t.pseudo ? 'tipster-public.html?pseudo=' + t.pseudo : 'tipster-public.html?id=' + t.id}" target="_blank" style="text-decoration:none">
+          <div class="tipster-explorer-card">
+            <div style="display:flex;align-items:center;gap:12px;min-width:0">
+              <div style="font-size:0.85rem;font-weight:700;color:${rankColor};min-width:20px;text-align:center">${i+1}</div>
+              ${avatarHtml}
+              <div style="font-weight:700;font-size:0.95rem;color:var(--text-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@${pseudo}</div>
+            </div>
+            <div class="tipster-explorer-stats">
+              <div class="tipster-explorer-stat">
+                <div class="tipster-explorer-stat__label">Pronos</div>
+                <div class="tipster-explorer-stat__value">${s.total}</div>
+              </div>
+              <div class="tipster-explorer-stat">
+                <div class="tipster-explorer-stat__label">Acheteurs</div>
+                <div class="tipster-explorer-stat__value">${s.totalAcheteurs}</div>
+              </div>
+              <div class="tipster-explorer-stat">
+                <div class="tipster-explorer-stat__label">Win Rate</div>
+                <div class="tipster-explorer-stat__value">${winRateHtml}</div>
+              </div>
+            </div>
+          </div>
+        </a>`;
+      }).join('');
     }
 
-    const months = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    container.innerHTML = `
+      <div class="section-header">
+        <div><h2>Explorer les tipsters</h2><p>${tipsters.length} tipsters inscrits</p></div>
+      </div>
+      <div class="tipster-search-wrap">
+        <span class="input-icon">🔍</span>
+        <input class="input" id="tipster-search" type="text" placeholder="Rechercher par pseudo..." oninput="document.tipsterFilter(this.value)" />
+      </div>
+      <div id="tipsters-list"></div>`;
 
-    const grid = document.getElementById('explorer-grid');
-    grid.innerHTML = tipsters.map(t => {
-      const pronos   = pronosByTipster[t.id] || [];
-      const won      = pronos.filter(p => p.status === 'won').length;
-      const finished = pronos.filter(p => p.status === 'won' || p.status === 'lost').length;
-      const winRate  = finished > 0 ? Math.round(won / finished * 100) : null;
-      const buyers   = pronos.reduce((s, p) => s + (p.buyers || 0), 0);
-      const initials = (t.first_name[0] + t.last_name[0]).toUpperCase();
-      const d = new Date(t.created_at);
-      const since = months[d.getMonth()] + ' ' + d.getFullYear();
-      const publicUrl = t.pseudo
-        ? 'tipster-public.html?pseudo=' + t.pseudo
-        : 'tipster-public.html?id=' + t.id;
-
-      const avatarHtml = t.avatar_url
-        ? `<img src="${t.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />`
-        : `<span style="font-family:var(--font-display);font-weight:700;font-size:1rem;color:var(--blue)">${initials}</span>`;
-
-      return `
-        <div class="pronos-table" style="padding:var(--space-lg);display:flex;flex-direction:column;gap:var(--space-md);">
-
-          <div style="display:flex;align-items:center;gap:var(--space-md);">
-            <div style="width:48px;height:48px;border-radius:50%;background:var(--blue-xpale);border:1px solid rgba(26,86,219,0.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden;">
-              ${avatarHtml}
-            </div>
-            <div style="min-width:0;">
-              <div style="font-weight:600;font-size:0.95rem;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                ${t.first_name} ${t.last_name}${t.pseudo ? ` <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400">@${t.pseudo}</span>` : ''}
-              </div>
-              <div style="font-size:0.75rem;color:var(--text-muted);">Membre depuis ${since}</div>
-            </div>
-          </div>
-
-          ${t.description ? `
-            <div style="font-size:0.8rem;color:var(--text-muted);line-height:1.5;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">
-              ${t.description}
-            </div>
-          ` : ''}
-
-          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-sm);text-align:center;">
-            <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:var(--space-sm) 0;">
-              <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:${winRate !== null && winRate >= 50 ? 'var(--success)' : 'var(--text-dark)'};">
-                ${winRate !== null ? winRate + '%' : '—'}
-              </div>
-              <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">Win Rate</div>
-            </div>
-            <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:var(--space-sm) 0;">
-              <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--text-dark);">
-                ${pronos.length}
-              </div>
-              <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">Pronos</div>
-            </div>
-            <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:var(--space-sm) 0;">
-              <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--text-dark);">
-                ${buyers}
-              </div>
-              <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">Acheteurs</div>
-            </div>
-          </div>
-
-          <a href="${publicUrl}" target="_blank" class="btn btn-outline"
-            style="width:100%;text-align:center;font-size:0.83rem;text-decoration:none;display:block;">
-            Voir la page publique →
-          </a>
-
-        </div>
-      `;
-    }).join('');
+    document.tipsterFilter = (val) => { filterVal = val; renderList(); };
+    renderList();
 
   } catch(e) {
-    console.error('Erreur chargement tipsters:', e);
-    document.getElementById('explorer-grid').innerHTML = `
-      <div style="text-align:center;padding:var(--space-2xl);color:var(--error);font-size:0.88rem;grid-column:1/-1">
-        Erreur lors du chargement.
-      </div>
-    `;
+    container.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur : ${e.message}</div>`;
+    console.error('renderPageExplorer:', e);
   }
 }
 
