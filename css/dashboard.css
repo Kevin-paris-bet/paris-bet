@@ -323,7 +323,7 @@
 }
 .modal__close:hover { border-color: var(--error); color: var(--error); }
 
-.modal__body { padding: var(--space-xl); }
+.modal__body { padding: var(--space-xl) var(--space-xl) var(--space-md); }
 
 .modal__warning {
   background: var(--warning-pale);
@@ -337,7 +337,7 @@
 }
 
 .modal__footer {
-  padding: var(--space-md) var(--space-xl) var(--space-xl);
+  padding: var(--space-sm) var(--space-xl) var(--space-xl);
   display: flex;
   gap: var(--space-md);
   justify-content: flex-end;
