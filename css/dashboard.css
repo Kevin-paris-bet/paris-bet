@@ -347,14 +347,18 @@
   min-width: 0;
   justify-content: center;
   text-align: center;
+  height: 46px;
+  line-height: 1;
+  box-sizing: border-box;
 }
 @media (max-width: 500px) {
   .modal__footer {
     flex-direction: column-reverse;
-    padding: var(--space-md) var(--space-md) var(--space-lg);
+    padding: var(--space-md) var(--space-lg) var(--space-lg);
   }
   .modal__footer .btn {
-    width: 100%;
+    width: 80%;
+    align-self: center;
   }
 }
 
