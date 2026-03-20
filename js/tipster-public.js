@@ -369,11 +369,24 @@ function renderPronoCard(p) {
        </div>`;
 
   // Bouton d'action
-  const canBuy = !p.purchased && p.status === CONFIG.betStatus.PENDING;
+  const expired = (function() {
+    if (!p.date || !p.date.includes(' · ')) return false; // pas d'heure = pas de blocage
+    try {
+      const parts = p.date.split(' · ');
+      const datePart = parts[0].trim();
+      const timePart = parts[1].trim();
+      const [year, month, day] = datePart.split('-').map(Number);
+      const [hours, minutes] = timePart.split(':').map(Number);
+      return new Date(year, month - 1, day, hours, minutes, 0) < new Date();
+    } catch(e) { return false; }
+  })();
+  const canBuy = !p.purchased && p.status === CONFIG.betStatus.PENDING && !expired;
   const actionBtn = p.purchased
     ? `<span style="font-size:0.8rem;color:var(--success);font-weight:600">✓ Acheté</span>`
     : p.status !== CONFIG.betStatus.PENDING
     ? `<span style="font-size:0.8rem;color:var(--text-muted)">Terminé</span>`
+    : expired
+    ? `<span style="font-size:0.78rem;color:var(--text-muted);font-weight:600">⏱ Match commencé</span>`
     : `<button class="btn-buy" onclick="openBuyModal('${p.id}')">
         Acheter — ${formatEuros(p.price)}
        </button>`;
