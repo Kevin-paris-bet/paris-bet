@@ -290,7 +290,7 @@ function openModal() {
 function closeModal() {
   document.getElementById('modal-overlay').classList.remove('open');
   // Reset form
-  ['new-match','new-sport','new-date','new-price','new-cote','new-content'].forEach(id => {
+  ['new-match','new-sport','new-date','new-time','new-price','new-cote','new-content'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -300,6 +300,7 @@ async function submitProno() {
   const game    = document.getElementById('new-match').value.trim();
   const sport   = document.getElementById('new-sport').value.trim();
   const date    = document.getElementById('new-date').value;
+  const time    = document.getElementById('new-time')?.value || '';
   const price   = parseFloat(document.getElementById('new-price').value);
   const coteRaw = document.getElementById('new-cote').value.trim().replace(',', '.');
   const cote    = coteRaw ? parseFloat(coteRaw) : null;
@@ -325,7 +326,7 @@ async function submitProno() {
       tipster_id: user.id,
       game,
       sport,
-      match_date: date,
+      match_date: time ? date + ' · ' + time : date,
       price,
       cote:    cote,
       buyers:  0,
