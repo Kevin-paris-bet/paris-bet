@@ -733,6 +733,9 @@
   box-sizing: border-box;
 }
 
+/* ── Modal form : marge label → input ───────────────────────── */
+.modal__body .form-group label { margin-bottom: 10px; }
+
 /* ── Toggle Dark Mode (sidebar) ─────────────────────────────── */
 .theme-toggle {
   display: flex;
