@@ -525,6 +525,7 @@ function renderPageExplorer(container) {
           ? `<img src="${tipsterAvatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
           : `<div style="width:32px;height:32px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0">${tipsterName[0]?.toUpperCase()}</div>`;
         const bought = alreadyBought.has(p.id);
+        const expired = isMatchExpired(p.match_date);
         return `
         <div class="achat-card" style="border-left-color:var(--blue)">
           <div class="achat-card__header">
@@ -540,7 +541,9 @@ function renderPageExplorer(container) {
               ${p.cote ? `<div style="font-size:0.75rem;color:var(--text-muted);text-align:right">📊 Cote : <strong style="color:var(--primary)">${parseFloat(p.cote).toFixed(2).replace('.', ',')}</strong></div>` : ''}
               ${bought
                 ? `<span class="badge badge-won">✓ Acheté</span>`
-                : `<button class="btn btn-primary" style="font-size:0.85rem;padding:8px 16px" onclick="buyProno('${p.id}', ${p.price}, '${p.game.replace(/'/g,"\'")}')">Acheter</button>`
+                : expired
+                ? `<span style="font-size:0.78rem;color:var(--text-muted);font-weight:600">⏱ Match commencé</span>`
+                : `<button class="btn btn-primary" style="font-size:0.85rem;padding:8px 16px" onclick="buyProno('${p.id}', ${p.price}, '${p.game.replace(/'/g,"\\'")}')">Acheter</button>`
               }
             </div>
           </div>
@@ -650,6 +653,25 @@ function renderTopbar() {
 }
 
 // ── Utilitaires ───────────────────────────────────────────────
+function isMatchExpired(match_date) {
+  if (!match_date) return false;
+  try {
+    // Formats possibles :
+    // "2025-03-15"          → date seule, pas d'heure → on ne bloque pas (pas d'heure = pas de limite)
+    // "2025-03-15 · 20:30"  → date + heure → on bloque après cette heure
+    if (!match_date.includes(' · ')) return false; // pas d'heure renseignée → pas de blocage
+    const parts = match_date.split(' · ');
+    const datePart = parts[0].trim(); // "2025-03-15"
+    const timePart = parts[1].trim(); // "20:30"
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hours, minutes] = timePart.split(':').map(Number);
+    const matchTime = new Date(year, month - 1, day, hours, minutes, 0);
+    return matchTime < new Date();
+  } catch(e) {
+    return false;
+  }
+}
+
 function formatDate(str) {
   if (!str) return '—';
   const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);

@@ -47,6 +47,7 @@ async function renderNavbar({ transparent = false, activePage = '' } = {}) {
         </ul>
 
         <div class="navbar__actions">
+          <button id="navbar-theme-btn" onclick="toggleTheme()" style="background:none;border:1.5px solid var(--border);border-radius:var(--radius-md);padding:8px 12px;cursor:pointer;font-size:1rem;color:var(--text-muted);transition:all var(--transition)" title="Changer de thème">🌙</button>
           ${isLoggedIn
             ? `<a href="/${userDashboard}" class="btn btn-primary btn--sm">Mon espace →</a>`
             : `<a href="/pages/auth.html#login"    class="btn btn-outline btn--sm">Connexion</a>
@@ -65,6 +66,7 @@ async function renderNavbar({ transparent = false, activePage = '' } = {}) {
           <a href="${l.href}" class="navbar__mobile-link" onclick="toggleMobileMenu()">${l.label}</a>
         `).join('')}
         <div class="navbar__mobile-actions">
+          <button id="navbar-theme-btn" onclick="toggleTheme()" style="background:none;border:1.5px solid var(--border);border-radius:var(--radius-md);padding:8px 12px;cursor:pointer;font-size:1rem;color:var(--text-muted);transition:all var(--transition)" title="Changer de thème">🌙</button>
           ${isLoggedIn
             ? `<a href="/${userDashboard}" class="btn btn-primary">Mon espace →</a>`
             : `<a href="/pages/auth.html#login"    class="btn btn-outline">Connexion</a>

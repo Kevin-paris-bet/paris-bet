@@ -277,3 +277,47 @@ input, textarea, select { font-family: var(--font-body); }
   .container { padding: 0 var(--space-md); }
   .section   { padding: 40px 0; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   DARK MODE — [data-theme="dark"]
+   Appliqué sur <html> via JS, persisté dans localStorage
+══════════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  --blue:           #4d7fff;
+  --blue-dark:      #6b93ff;
+  --blue-light:     #7aaaff;
+  --blue-pale:      #1a2a4a;
+  --blue-xpale:     #111d35;
+  --white:          #1e2535;
+
+  --text-dark:      #e8eeff;
+  --text-body:      #b0bcda;
+  --text-muted:     #6b7fa3;
+  --text-light:     #4a5a7a;
+
+  --bg:             #0f1623;
+  --bg-soft:        #161e2e;
+  --bg-card:        #1e2535;
+
+  --border:         #2a3550;
+  --border-focus:   rgba(77, 127, 255, 0.5);
+
+  --success:        #00e676;
+  --success-pale:   #0a2a1a;
+  --error:          #ff6b6b;
+  --error-pale:     #2a1010;
+  --warning:        #ffca28;
+  --warning-pale:   #2a2010;
+  --pending:        #8090b0;
+  --pending-pale:   #1a2030;
+
+  --shadow-sm:      0 1px 3px rgba(0,0,0,0.3);
+  --shadow-md:      0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg:      0 8px 32px rgba(0,0,0,0.5);
+  --shadow-blue:    0 8px 32px rgba(77,127,255,0.25);
+}
+
+[data-theme="dark"] body {
+  background: var(--bg);
+  color: var(--text-body);
+}

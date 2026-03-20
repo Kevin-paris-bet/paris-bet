@@ -57,3 +57,42 @@ async function logout() {
   await sb.auth.signOut();
   window.location.href = '/pages/auth.html';
 }
+
+/**
+ * ── Dark Mode ─────────────────────────────────────────────────
+ * Chargé sur toutes les pages (supabase.js est universel).
+ * Applique le thème dès le chargement pour éviter le flash.
+ */
+(function() {
+  const saved = localStorage.getItem('ppw-theme');
+  if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+})();
+
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (isDark) {
+    document.documentElement.removeAttribute('data-theme');
+    localStorage.setItem('ppw-theme', 'light');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    localStorage.setItem('ppw-theme', 'dark');
+  }
+  syncThemeUI();
+}
+
+function syncThemeUI() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  // Sidebar dashboards
+  const track = document.getElementById('theme-track');
+  const icon  = document.getElementById('theme-icon');
+  const label = document.getElementById('theme-label');
+  if (track)  track.classList.toggle('on', isDark);
+  if (icon)   icon.textContent  = isDark ? '☀️' : '🌙';
+  if (label)  label.textContent = isDark ? 'Mode clair' : 'Mode sombre';
+  // Navbar (pages publiques)
+  const navBtn = document.getElementById('navbar-theme-btn');
+  if (navBtn) navBtn.textContent = isDark ? '☀️' : '🌙';
+}
+
+// Sync UI au chargement
+document.addEventListener('DOMContentLoaded', syncThemeUI);
