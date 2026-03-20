@@ -154,42 +154,42 @@
       </div>
 
       <div class="form-group">
-        <label for="new-match">Match / Événement *</label>
+        <label for="new-match">⚽ Match / Événement *</label>
         <div class="input-wrap">
-          <span class="input-icon">⚽</span>
           <input class="input" type="text" id="new-match"
             placeholder="Ex: PSG vs Marseille"
+            style="padding-left: var(--space-md)"
           />
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
-          <label for="new-sport">Sport / Compétition *</label>
+          <label for="new-sport">🏆 Sport / Compétition *</label>
           <div class="input-wrap">
-            <span class="input-icon">🏆</span>
             <input class="input" type="text" id="new-sport"
               placeholder="Ex: ⚽ Ligue 1"
+              style="padding-left: var(--space-md)"
             />
           </div>
         </div>
         <div class="form-group">
-          <label for="new-price">Prix (€) *</label>
+          <label for="new-price">💶 Prix (€) *</label>
           <div class="input-wrap">
-            <span class="input-icon">💶</span>
             <input class="input" type="number" id="new-price"
               placeholder="Ex: 5"
               min="1" step="0.5"
+              style="padding-left: var(--space-md)"
             />
           </div>
         </div>
         <div class="form-group">
-          <label for="new-cote">Cote <span style="color:var(--text-muted);font-weight:400">(optionnel)</span></label>
+          <label for="new-cote">📊 Cote <span style="color:var(--text-muted);font-weight:400">(optionnel)</span></label>
           <div class="input-wrap">
-            <span class="input-icon">📊</span>
             <input class="input" type="text" id="new-cote"
               placeholder="Ex: 1,76"
               pattern="[0-9]+([,\.][0-9]{1,2})?"
+              style="padding-left: var(--space-md)"
             />
           </div>
         </div>
@@ -197,13 +197,17 @@
 
       <div class="form-row">
         <div class="form-group">
-          <label for="new-date">Date du match *</label>
+          <label for="new-date">📅 Date du match *</label>
           <input class="input" type="date" id="new-date" />
+        </div>
+        <div class="form-group">
+          <label for="new-time">🕐 Heure <span style="color:var(--text-muted);font-weight:400">(optionnel)</span></label>
+          <input class="input" type="time" id="new-time" />
         </div>
       </div>
 
       <div class="form-group">
-        <label for="new-content">Votre pronostic *</label>
+        <label for="new-content">📝 Votre pronostic *</label>
         <textarea class="input input-textarea" id="new-content"
           placeholder="Décrivez votre pronostic en détail. C'est ce que verront vos acheteurs après paiement."
         ></textarea>
