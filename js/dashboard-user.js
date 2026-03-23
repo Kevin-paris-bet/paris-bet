@@ -378,7 +378,7 @@ function renderPageSolde(container) {
             <div><h3>Recharger mon solde</h3><p>Min. ${min} € · Stripe sécurisé</p></div>
           </div>
           <div class="quick-amounts">
-            ${[5,10,20,50].map(v=>`<button class="quick-amount-btn" data-val="${v}" onclick="selectAmount(${v})">${v} €</button>`).join('')}
+            ${[10,20,50,100].map(v=>`<button class="quick-amount-btn" data-val="${v}" onclick="selectAmount(${v})">${v} €</button>`).join('')}
           </div>
           <div class="form-group" style="margin-top:var(--space-md)">
             <label>💶 Ou saisir un montant</label>
