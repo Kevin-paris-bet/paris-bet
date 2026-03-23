@@ -20,7 +20,7 @@ const CONFIG = {
   // ── Règles financières ────────────────────────────────────
   finance: {
     commissionRate:      0.10,   // 10% prélevés sur chaque pari gagné
-    minDeposit:          5,      // Dépôt minimum utilisateur (€)
+    minDeposit:          10,     // Dépôt minimum utilisateur (€)
     minTipsterPayout:    30,     // Solde minimum pour virement tipster (€)
     payoutDay:           "lundi",// Jour des virements hebdomadaires
   },
