@@ -84,6 +84,7 @@
   color: var(--text-dark); cursor: pointer;
   transition: all var(--transition);
   text-align: center;
+  white-space: nowrap;
 }
 .quick-amount-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-xpale); }
 .quick-amount-btn.active {
