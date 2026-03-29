@@ -124,9 +124,9 @@ function renderFooter() {
           <div class="footer__col">
             <h4>Légal</h4>
             <ul>
-              <li><a href="#">Conditions d'utilisation</a></li>
-              <li><a href="#">Politique de confidentialité</a></li>
-              <li><a href="#">Mentions légales</a></li>
+              <li><a href="${CONFIG.pages.cgu || '/pages/cgu.html'}">Conditions d'utilisation</a></li>
+              <li><a href="${CONFIG.pages.confidentialite || '/pages/confidentialite.html'}">Politique de confidentialité</a></li>
+              <li><a href="${CONFIG.pages.mentionsLegales || '/pages/mentions-legales.html'}">Mentions légales</a></li>
               <li><a href="mailto:${CONFIG.site.email}">${CONFIG.site.email}</a></li>
             </ul>
           </div>
