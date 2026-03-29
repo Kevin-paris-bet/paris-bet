@@ -541,9 +541,7 @@ function renderPageExplorer(container) {
               ${p.cote ? `<div style="font-size:0.75rem;color:var(--text-muted);text-align:right">📊 Cote : <strong style="color:var(--primary)">${parseFloat(p.cote).toFixed(2).replace('.', ',')}</strong></div>` : ''}
               ${bought
                 ? `<span class="badge badge-won">✓ Acheté</span>`
-                : expired
-                ? `<span style="font-size:0.78rem;color:var(--text-muted);font-weight:600">⏱ Match commencé</span>`
-                : `<button class="btn btn-primary" style="font-size:0.85rem;padding:8px 16px" onclick="buyProno('${p.id}', ${p.price}, '${p.game.replace(/'/g,"\\'")}')">Acheter</button>`
+                : `<button class="btn btn-primary" style="font-size:0.85rem;padding:8px 16px" onclick="buyProno('${p.id}', ${p.price}, '${p.game.replace(/'/g,"\'")}')">Acheter</button>`
               }
             </div>
           </div>
@@ -654,22 +652,13 @@ function renderTopbar() {
 
 // ── Utilitaires ───────────────────────────────────────────────
 function isMatchExpired(match_date) {
-  if (!match_date) return false;
+  if (!match_date || !match_date.includes(' · ')) return false;
   try {
-    // Formats possibles :
-    // "2025-03-15"          → date seule, pas d'heure → on ne bloque pas (pas d'heure = pas de limite)
-    // "2025-03-15 · 20:30"  → date + heure → on bloque après cette heure
-    if (!match_date.includes(' · ')) return false; // pas d'heure renseignée → pas de blocage
     const parts = match_date.split(' · ');
-    const datePart = parts[0].trim(); // "2025-03-15"
-    const timePart = parts[1].trim(); // "20:30"
-    const [year, month, day] = datePart.split('-').map(Number);
-    const [hours, minutes] = timePart.split(':').map(Number);
-    const matchTime = new Date(year, month - 1, day, hours, minutes, 0);
-    return matchTime < new Date();
-  } catch(e) {
-    return false;
-  }
+    const [year, month, day] = parts[0].trim().split('-').map(Number);
+    const [hours, minutes] = parts[1].trim().split(':').map(Number);
+    return new Date(year, month - 1, day, hours, minutes, 0) < new Date();
+  } catch(e) { return false; }
 }
 
 function formatDate(str) {
@@ -811,4 +800,192 @@ async function renderPageExplorerTipsters(container) {
     container.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur : ${e.message}</div>`;
     console.error('renderPageExplorerTipsters:', e);
   }
+}
+
+async function renderExplorerTipsters(container, publicUrlBase) {
+  container.innerHTML = `
+    <div class="section-header">
+      <div><h2>Explorer les tipsters</h2><p>Chargement...</p></div>
+    </div>
+    <div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>`;
+
+  try {
+    const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+
+    const [rT, rP] = await Promise.all([
+      fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,pseudo,avatar_url&role=eq.tipster&apikey=${ANON}`),
+      fetch(`${SUPA}/rest/v1/pronos?select=tipster_id,status,buyers,cote&apikey=${ANON}`)
+    ]);
+    const tipsters = await rT.json();
+    const pronos   = await rP.json();
+
+    const stats = {};
+    for (const t of tipsters) {
+      const my    = pronos.filter(p => p.tipster_id === t.id);
+      const won   = my.filter(p => p.status === 'won').length;
+      const lost  = my.filter(p => p.status === 'lost').length;
+      const total = my.length;
+      const totalAcheteurs = my.reduce((s,p) => s + (parseInt(p.buyers)||0), 0);
+      const finished = won + lost;
+      const winRate  = finished > 0 ? Math.round(won / finished * 100) : null;
+
+      const withCote = my.filter(p => (p.status==='won'||p.status==='lost') && p.cote && parseFloat(p.cote) > 1);
+      const avgCote  = withCote.length > 0
+        ? Math.round(withCote.reduce((s,p) => s + parseFloat(p.cote), 0) / withCote.length * 100) / 100
+        : null;
+
+      const score = winRate !== null ? winRate * (avgCote !== null ? avgCote : 1) * Math.log10(finished + 1) : null;
+      stats[t.id] = { won, lost, total, totalAcheteurs, winRate, avgCote, score };
+    }
+
+    let sortCol  = 'score';
+    let sortDir  = -1;
+    let filterVal = '';
+
+    function sortedFiltered() {
+      return tipsters
+        .filter(t => (t.pseudo||'').toLowerCase().includes(filterVal.toLowerCase()))
+        .sort((a, b) => {
+          const sa = stats[a.id][sortCol];
+          const sb = stats[b.id][sortCol];
+          if (sa === null && sb === null) return 0;
+          if (sa === null) return 1;
+          if (sb === null) return -1;
+          return (sb - sa) * sortDir * -1;
+        });
+    }
+
+    function setSortCol(col) {
+      if (sortCol === col) { sortDir *= -1; } else { sortCol = col; sortDir = -1; }
+      renderList();
+    }
+
+    function arrowHtml(col) {
+      if (sortCol !== col) return `<span style="color:var(--text-muted);font-size:0.7rem;margin-left:3px">⇅</span>`;
+      return sortDir === -1
+        ? `<span style="font-size:0.7rem;margin-left:3px">↓</span>`
+        : `<span style="font-size:0.7rem;margin-left:3px">↑</span>`;
+    }
+
+    function renderList() {
+      ['total','totalAcheteurs','winRate','avgCote','score'].forEach(col => {
+        const el = document.getElementById('sort-btn-' + col);
+        if (el) {
+          el.style.borderColor = sortCol === col ? 'var(--blue)' : '';
+          el.style.color = sortCol === col ? 'var(--blue)' : '';
+        }
+        const arr = document.getElementById('sort-arr-' + col);
+        if (arr) arr.innerHTML = arrowHtml(col);
+      });
+
+      const listEl = document.getElementById('tipsters-list');
+      const list = sortedFiltered();
+      if (!list.length) {
+        listEl.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun tipster trouvé.</div>`;
+        return;
+      }
+
+      listEl.innerHTML = list.map((t, i) => {
+        const s = stats[t.id];
+        const pseudo = t.pseudo || (t.first_name + ' ' + t.last_name);
+        const avatarHtml = t.avatar_url
+          ? `<img src="${t.avatar_url}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
+          : `<div style="width:44px;height:44px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;flex-shrink:0">${pseudo[0]?.toUpperCase()}</div>`;
+        const winRateHtml = s.winRate !== null
+          ? `<span style="font-weight:800;font-size:1rem;color:${s.winRate>=60?'var(--success)':'var(--warning)'};">${s.winRate}%</span>`
+          : `<span style="color:var(--text-muted);font-size:0.85rem">—</span>`;
+        const coteHtml = s.avgCote !== null
+          ? `<span style="font-weight:800;font-size:1rem;color:var(--blue)">${s.avgCote.toFixed(2).replace('.',',')}</span>`
+          : `<span style="color:var(--text-muted);font-size:0.85rem">—</span>`;
+        const rankColor = i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : 'var(--text-muted)';
+        const href = t.pseudo
+          ? publicUrlBase + t.pseudo
+          : publicUrlBase.replace(/\/[^\/]*$/, '/tipster-public.html?id=' + t.id);
+
+        return `
+        <a href="${href}" target="_blank" style="text-decoration:none">
+          <div class="tipster-explorer-card">
+            <div style="display:flex;align-items:center;gap:12px;min-width:0">
+              <div style="font-size:0.85rem;font-weight:700;color:${rankColor};min-width:20px;text-align:center">${i+1}</div>
+              ${avatarHtml}
+              <div style="font-weight:700;font-size:0.95rem;color:var(--text-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@${pseudo}</div>
+            </div>
+            <div class="tipster-explorer-stats">
+              <div class="tipster-explorer-stat">
+                <div class="tipster-explorer-stat__label">Pronos</div>
+                <div class="tipster-explorer-stat__value">${s.total}</div>
+              </div>
+              <div class="tipster-explorer-stat">
+                <div class="tipster-explorer-stat__label">Acheteurs</div>
+                <div class="tipster-explorer-stat__value">${s.totalAcheteurs}</div>
+              </div>
+              <div class="tipster-explorer-stat">
+                <div class="tipster-explorer-stat__label">Win Rate</div>
+                <div class="tipster-explorer-stat__value">${winRateHtml}</div>
+              </div>
+              <div class="tipster-explorer-stat">
+                <div class="tipster-explorer-stat__label">Cote moy.</div>
+                <div class="tipster-explorer-stat__value">${coteHtml}</div>
+              </div>
+            </div>
+          </div>
+        </a>`;
+      }).join('');
+    }
+
+    const sortBtns = ['total','totalAcheteurs','winRate','avgCote','score'].map(col => {
+      const labels = {total:'Pronos',totalAcheteurs:'Acheteurs',winRate:'Win Rate',avgCote:'Cote moy.',score:'🏆 Score'};
+      return `<button id="sort-btn-${col}" class="btn btn-outline" style="font-size:0.78rem;padding:6px 12px" onclick="document.setSortCol('${col}')">
+        ${labels[col]} <span id="sort-arr-${col}"></span>
+      </button>`;
+    }).join('');
+
+    const scoreInfoBtn = `
+      <div style="position:relative;display:inline-block">
+        <button onclick="document.toggleScoreInfo()" style="width:20px;height:20px;border-radius:50%;border:1.5px solid var(--blue);background:none;color:var(--blue);font-size:0.72rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">i</button>
+        <div id="score-info-popover" style="display:none;position:absolute;top:28px;left:50%;transform:translateX(-50%);width:260px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md);font-size:0.8rem;color:var(--text-body);line-height:1.6;box-shadow:var(--shadow-md);z-index:100">
+          <strong style="color:var(--text-dark);display:block;margin-bottom:6px">🏆 Comment fonctionne le Score ?</strong>
+          Le Score récompense les tipsters qui gagnent souvent, sur des cotes élevées, et sur la durée.<br><br>
+          Un tipster avec 1 seul prono gagné n'aura jamais un bon score, même s'il est à 100%.
+        </div>
+      </div>`;
+
+    container.innerHTML = `
+      <div class="section-header">
+        <div><h2>Explorer les tipsters</h2><p>${tipsters.length} tipsters inscrits</p></div>
+      </div>
+      <div class="tipster-search-wrap">
+        <span class="input-icon">🔍</span>
+        <input class="input" id="tipster-search" type="text" placeholder="Rechercher par pseudo..." oninput="document.tipsterFilter(this.value)" />
+      </div>
+      <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md);flex-wrap:wrap;align-items:center;">
+        ${sortBtns}
+        ${scoreInfoBtn}
+      </div>
+      <div id="tipsters-list"></div>`;
+
+    document.toggleScoreInfo = () => {
+      const p = document.getElementById('score-info-popover');
+      if (p) p.style.display = p.style.display === 'none' ? 'block' : 'none';
+    };
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#score-info-popover') && !e.target.closest('[onclick*="toggleScoreInfo"]')) {
+        const p = document.getElementById('score-info-popover');
+        if (p) p.style.display = 'none';
+      }
+    }, { once: false });
+
+    document.tipsterFilter = (val) => { filterVal = val; renderList(); };
+    document.setSortCol = setSortCol;
+    renderList();
+
+  } catch(e) {
+    container.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur : ${e.message}</div>`;
+    console.error('renderExplorerTipsters:', e);
+  }
+}
+
+async function renderPageExplorerTipsters(container) {
+  await renderExplorerTipsters(container, 'https://payperwin.co/');
 }

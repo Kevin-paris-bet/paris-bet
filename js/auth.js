@@ -15,15 +15,16 @@ const authState = {
 document.addEventListener('DOMContentLoaded', () => {
 
   // Lire le hash de l'URL pour ouvrir le bon onglet
-  // Ex: auth.html#register ou auth.html#login
   const hash = window.location.hash.replace('#', '').split('?')[0];
   if (hash === 'register') switchTab('register');
   else switchTab('login');
 
   // Lire le rôle dans l'URL si fourni
-  // Ex: auth.html#register?role=tipster
   const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
   if (params.get('role') === 'tipster') selectRole('tipster');
+
+  // Stats colonne gauche
+  injectAuthStats();
 
 });
 
@@ -155,28 +156,25 @@ async function handleLogin() {
   const pw    = document.getElementById('login-pw').value;
   const btn   = document.getElementById('btn-login');
 
-  // Validation basique
   if (!email || !pw) { showToast('Veuillez remplir tous les champs.', 'error'); return; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Adresse email invalide.', 'error'); return; }
 
-  // État loading
   setLoading(btn, true);
 
   try {
     const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
     if (error) throw new Error(error.message);
 
-    // Récupérer le profil pour rediriger selon le rôle
-    const { data: profile } = await sb
-      .from('profiles')
-      .select('role')
-      .eq('id', data.user.id)
-      .single();
+    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+    const r = await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=role&id=eq.${data.user.id}&apikey=${ANON}`, {
+      headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
+    });
+    const profiles = await r.json();
+    const role = (Array.isArray(profiles) && profiles[0]?.role) || 'user';
 
-    const role = profile?.role || 'user';
-    if (role === 'admin')   window.location.href = '/pages/dashboard-admin.html';
+    if (role === 'admin')        window.location.href = '/pages/dashboard-admin.html';
     else if (role === 'tipster') window.location.href = '/pages/dashboard-tipster.html';
-    else                    window.location.href = '/pages/dashboard-user.html';
+    else                         window.location.href = '/pages/dashboard-user.html';
 
   } catch (err) {
     const msg = err.message.includes('Invalid login')
@@ -295,8 +293,6 @@ async function injectAuthStats() {
     set('auth-stat-paid', '—');
   }
 }
-
-document.addEventListener('DOMContentLoaded', () => { injectAuthStats(); });
 
 // ── Helpers ───────────────────────────────────────────────────
 function setLoading(btn, loading) {
