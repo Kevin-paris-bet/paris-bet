@@ -835,6 +835,18 @@ async function renderExplorerTipsters(container, publicUrlBase) {
       </button>`;
     }).join('');
 
+    const scoreInfoBtn = `
+      <div style="position:relative;display:inline-block">
+        <button onclick="document.toggleScoreInfo()" style="width:20px;height:20px;border-radius:50%;border:1.5px solid var(--blue);background:none;color:var(--blue);font-size:0.72rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">i</button>
+        <div id="score-info-popover" style="display:none;position:absolute;bottom:28px;left:50%;transform:translateX(-50%);width:260px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md);font-size:0.8rem;color:var(--text-body);line-height:1.6;box-shadow:var(--shadow-md);z-index:100">
+          <strong style="color:var(--text-dark);display:block;margin-bottom:6px">🏆 Comment fonctionne le Score ?</strong>
+          Le Score récompense les tipsters qui gagnent souvent, sur des cotes élevées, et sur la durée.<br><br>
+          <strong>Formule :</strong> Win Rate × Cote moyenne × log(pronos)<br><br>
+          Un tipster avec 1 seul prono gagné n'aura jamais un bon score, même s'il est à 100%.
+          <div style="position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);width:10px;height:10px;background:var(--white);border-right:1px solid var(--border);border-bottom:1px solid var(--border);transform:translateX(-50%) rotate(45deg)"></div>
+        </div>
+      </div>`;
+
     container.innerHTML = `
       <div class="section-header">
         <div><h2>Explorer les tipsters</h2><p>${tipsters.length} tipsters inscrits</p></div>
@@ -843,10 +855,23 @@ async function renderExplorerTipsters(container, publicUrlBase) {
         <span class="input-icon">🔍</span>
         <input class="input" id="tipster-search" type="text" placeholder="Rechercher par pseudo..." oninput="document.tipsterFilter(this.value)" />
       </div>
-      <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md);flex-wrap:wrap;">
+      <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md);flex-wrap:wrap;align-items:center;">
         ${sortBtns}
+        ${scoreInfoBtn}
       </div>
       <div id="tipsters-list"></div>`;
+
+    document.toggleScoreInfo = () => {
+      const p = document.getElementById('score-info-popover');
+      if (p) p.style.display = p.style.display === 'none' ? 'block' : 'none';
+    };
+    // Fermer en cliquant ailleurs
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#score-info-popover') && !e.target.closest('[onclick*="toggleScoreInfo"]')) {
+        const p = document.getElementById('score-info-popover');
+        if (p) p.style.display = 'none';
+      }
+    }, { once: false });
 
     document.tipsterFilter = (val) => { filterVal = val; renderList(); };
     document.setSortCol = setSortCol;
