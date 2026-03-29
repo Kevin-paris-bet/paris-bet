@@ -6,9 +6,10 @@
 
 /* ── HERO ── */
 .hero {
-  min-height: 100vh;
+  min-height: auto;
   display: flex; align-items: center;
   padding-top: var(--nav-height);
+  padding-bottom: 40px;
   position: relative;
   overflow: hidden;
   background: var(--white);
