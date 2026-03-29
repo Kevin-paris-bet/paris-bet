@@ -199,6 +199,7 @@ function navigateTo(page) {
     virements: 'Virements',
     finances:  'Finances & Commissions',
     explorer:  'Explorer les tipsters',
+    feedback:  'Feedback & Changelog',
   };
   document.getElementById('topbar-title').textContent = titles[page] || 'Admin';
   const content = document.getElementById('page-content');
@@ -210,6 +211,7 @@ function navigateTo(page) {
   if (page === 'virements') renderVirements(content);
   if (page === 'finances')  renderFinances(content);
   if (page === 'explorer')  renderExplorerTipsters(content, 'https://payperwin.co/');
+  if (page === 'feedback')   renderPageFeedbackAdmin(content);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1351,5 +1353,268 @@ async function renderExplorerTipsters(container, publicUrlBase) {
   } catch(e) {
     container.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur : ${e.message}</div>`;
     console.error('renderExplorerTipsters:', e);
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE — FEEDBACK & CHANGELOG (ADMIN)
+// ══════════════════════════════════════════════════════════════
+async function renderPageFeedbackAdmin(container) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+
+  container.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>`;
+
+  const [rFB, rCL] = await Promise.all([
+    fetch(`${SUPA}/rest/v1/feedback?select=*&order=created_at.desc&apikey=${ANON}`, { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } }),
+    fetch(`${SUPA}/rest/v1/changelog?select=*&order=created_at.desc&apikey=${ANON}`, { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } })
+  ]);
+  const feedbacks  = await rFB.json().catch(() => []);
+  const changelog  = await rCL.json().catch(() => []);
+
+  const statutColors = { nouveau:'var(--blue)', 'en cours':'var(--warning)', résolu:'var(--success)' };
+  const catIcons = { suggestion:'💡', bug:'🐛', autre:'💬' };
+
+  function formatDate(str) {
+    return new Date(str).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+  }
+
+  const feedbackRows = Array.isArray(feedbacks) && feedbacks.length > 0
+    ? feedbacks.map(f => `
+      <div style="display:grid;grid-template-columns:80px 80px 120px 120px 1fr 120px;gap:var(--space-md);align-items:center;padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);font-size:0.85rem">
+        <div style="color:var(--text-muted);font-size:0.75rem">${formatDate(f.created_at)}</div>
+        <div>
+          <span style="font-size:0.72rem;padding:2px 8px;border-radius:var(--radius-full);background:var(--bg-soft);color:var(--text-muted)">${f.role || '—'}</span>
+        </div>
+        <div style="font-weight:600;color:var(--text-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.pseudo || '—'}</div>
+        <div style="color:var(--text-muted);font-size:0.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.email || '—'}</div>
+        <div>
+          <div style="font-weight:600;color:var(--text-dark)">${catIcons[f.categorie] || '💬'} ${f.titre}</div>
+          <div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px;line-height:1.5">${f.description}</div>
+        </div>
+        <div>
+          <select style="font-size:0.78rem;padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:${statutColors[f.statut]||'var(--blue)'};cursor:pointer" onchange="updateFeedbackStatut('${f.id}', this.value)">
+            <option value="nouveau" ${f.statut==='nouveau'?'selected':''}>🔵 Nouveau</option>
+            <option value="en cours" ${f.statut==='en cours'?'selected':''}>🟡 En cours</option>
+            <option value="résolu" ${f.statut==='résolu'?'selected':''}>🟢 Résolu</option>
+          </select>
+        </div>
+      </div>`).join('')
+    : `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun feedback reçu pour l'instant.</div>`;
+
+  const changelogRows = Array.isArray(changelog) && changelog.length > 0
+    ? changelog.map(e => `
+      <div style="display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);font-size:0.85rem">
+        <div style="color:var(--text-muted);font-size:0.75rem;min-width:80px">${formatDate(e.created_at)}</div>
+        <span style="font-size:0.72rem;padding:2px 8px;border-radius:var(--radius-full);background:var(--blue-pale);color:var(--blue);white-space:nowrap">${e.type}</span>
+        <div style="flex:1"><strong>${e.titre}</strong> — <span style="color:var(--text-muted)">${e.description}</span></div>
+        <button onclick="deleteChangelog('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--error);font-size:1rem;padding:4px">🗑</button>
+      </div>`).join('')
+    : `<div style="text-align:center;padding:var(--space-xl);color:var(--text-muted)">Aucune entrée changelog.</div>`;
+
+  container.innerHTML = `
+    <!-- Feedbacks reçus -->
+    <div class="section-header" style="margin-bottom:var(--space-md)">
+      <div><h2>💬 Feedbacks reçus</h2><p>${Array.isArray(feedbacks) ? feedbacks.length : 0} feedback(s)</p></div>
+      <button class="btn btn-outline" onclick="exportFeedbackCSV()">⬇ Exporter CSV</button>
+    </div>
+    <div class="pronos-table" style="padding:0;margin-bottom:var(--space-2xl);overflow-x:auto">
+      <div style="display:grid;grid-template-columns:80px 80px 120px 120px 1fr 120px;gap:var(--space-md);padding:var(--space-sm) var(--space-lg);background:var(--bg-soft);border-bottom:1px solid var(--border);font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted)">
+        <span>Date</span><span>Rôle</span><span>Pseudo</span><span>Email</span><span>Feedback</span><span>Statut</span>
+      </div>
+      ${feedbackRows}
+    </div>
+
+    <!-- Changelog -->
+    <div class="section-header" style="margin-bottom:var(--space-md)">
+      <div><h2>📣 Changelog</h2><p>Annonces visibles par tous</p></div>
+    </div>
+
+    <!-- Formulaire nouveau changelog -->
+    <div class="pronos-table" style="padding:var(--space-lg);margin-bottom:var(--space-lg)">
+      <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-dark);margin-bottom:var(--space-md)">+ Publier une nouveauté</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);margin-bottom:var(--space-md)">
+        <div class="form-group">
+          <label>Type</label>
+          <select class="input" id="cl-type" style="cursor:pointer">
+            <option>Nouveau</option>
+            <option>Amélioration</option>
+            <option>Correction bug</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Titre</label>
+          <input class="input" type="text" id="cl-titre" placeholder="Ex: Nouveau classement des tipsters" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea class="input" id="cl-description" placeholder="Décrivez la nouveauté..." style="min-height:80px;resize:vertical"></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="publishChangelog()" style="margin-top:var(--space-sm)">📣 Publier</button>
+    </div>
+
+    <!-- Liste changelog -->
+    <div class="pronos-table" style="padding:0">
+      ${changelogRows}
+    </div>
+  `;
+}
+
+async function updateFeedbackStatut(id, statut) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/feedback?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+    body: JSON.stringify({ statut })
+  });
+  showToast('Statut mis à jour ✓', 'success');
+}
+
+async function publishChangelog() {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const type  = document.getElementById('cl-type')?.value;
+  const titre = document.getElementById('cl-titre')?.value.trim();
+  const desc  = document.getElementById('cl-description')?.value.trim();
+  if (!titre || !desc) { showToast('Veuillez remplir le titre et la description.', 'error'); return; }
+
+  const r = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/changelog', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON, 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ type, titre, description: desc })
+  });
+  if (r.ok || r.status === 201) {
+    showToast('Nouveauté publiée ! ✓', 'success');
+    navigateTo('feedback');
+  } else {
+    showToast('Erreur lors de la publication', 'error');
+  }
+}
+
+async function deleteChangelog(id) {
+  if (!confirm('Supprimer cette entrée ?')) return;
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/changelog?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
+  });
+  showToast('Entrée supprimée.', 'success');
+  navigateTo('feedback');
+}
+
+function exportFeedbackCSV() {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  fetch(`${SUPA}/rest/v1/feedback?select=*&order=created_at.desc&apikey=${ANON}`, {
+    headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (!Array.isArray(data) || !data.length) { showToast('Aucun feedback à exporter.', 'info'); return; }
+    const headers = ['Date','Rôle','Pseudo','Email','Catégorie','Titre','Description','Statut'];
+    const rows = data.map(f => [
+      new Date(f.created_at).toLocaleString('fr-FR'),
+      f.role || '', f.pseudo || '', f.email || '',
+      f.categorie || '', f.titre || '',
+      (f.description || '').replace(/"/g, '""'),
+      f.statut || ''
+    ].map(v => `"${v}"`).join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'feedbacks-payperwin.csv';
+    a.click(); URL.revokeObjectURL(url);
+  });
+}
+
+// Fonction partagée pour user/tipster
+async function renderPageFeedback(container) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  const rCL = await fetch(`${SUPA}/rest/v1/changelog?select=*&order=created_at.desc&apikey=${ANON}`, {
+    headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
+  });
+  const changelog = await rCL.json().catch(() => []);
+  const badgeColors = { 'Nouveau':{ bg:'var(--blue-pale)', color:'var(--blue)' }, 'Amélioration':{ bg:'var(--success-pale)', color:'var(--success)' }, 'Correction bug':{ bg:'var(--error-pale)', color:'var(--error)' } };
+  const changelogHtml = Array.isArray(changelog) && changelog.length > 0
+    ? changelog.map(e => {
+        const bc = badgeColors[e.type] || badgeColors['Nouveau'];
+        const date = new Date(e.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' });
+        return `<div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:6px;flex-wrap:wrap">
+            <span style="font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:var(--radius-full);background:${bc.bg};color:${bc.color}">${e.type}</span>
+            <span style="font-size:0.78rem;color:var(--text-muted)">${date}</span>
+          </div>
+          <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px">${e.titre}</div>
+          <div style="font-size:0.88rem;color:var(--text-muted);line-height:1.6">${e.description}</div>
+        </div>`;
+      }).join('')
+    : `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucune nouveauté pour l'instant.</div>`;
+
+  container.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-lg);align-items:start">
+      <div>
+        <div class="section-header"><div><h2>📣 Nouveautés</h2><p>Les dernières mises à jour de PayPerWin</p></div></div>
+        <div class="pronos-table" style="padding:0">${changelogHtml}</div>
+      </div>
+      <div>
+        <div class="section-header"><div><h2>💬 Votre avis</h2><p>Suggestions, bugs, idées — on lit tout</p></div></div>
+        <div class="pronos-table" style="padding:var(--space-lg);display:flex;flex-direction:column;gap:var(--space-md)">
+          <div class="form-group">
+            <label>Catégorie</label>
+            <select class="input" id="fb-categorie" style="cursor:pointer">
+              <option value="suggestion">💡 Suggestion</option>
+              <option value="bug">🐛 Bug</option>
+              <option value="autre">💬 Autre</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Titre</label>
+            <input class="input" type="text" id="fb-titre" placeholder="Ex: Ajouter un filtre par sport" maxlength="100" />
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea class="input input-textarea" id="fb-description" placeholder="Décrivez votre idée ou le bug rencontré..." style="min-height:120px"></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="submitFeedback()" style="width:100%">Envoyer mon feedback →</button>
+          <div id="fb-success" style="display:none;background:var(--success-pale);border:1px solid var(--success);border-radius:var(--radius-md);padding:var(--space-md);font-size:0.88rem;color:var(--success);text-align:center">✓ Merci ! Votre feedback a bien été envoyé.</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function submitFeedback() {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  const categorie = document.getElementById('fb-categorie')?.value;
+  const titre = document.getElementById('fb-titre')?.value.trim();
+  const description = document.getElementById('fb-description')?.value.trim();
+  if (!titre || !description) { showToast('Veuillez remplir le titre et la description.', 'error'); return; }
+  const btn = document.querySelector('[onclick="submitFeedback()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi...'; }
+  try {
+    const { data: { user } } = await sb.auth.getUser();
+    let pseudo = '', email = '', role = '';
+    if (user) {
+      email = user.email;
+      const rP = await fetch(`${SUPA}/rest/v1/profiles?select=pseudo,first_name,last_name,role&id=eq.${user.id}&apikey=${ANON}`, { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
+      const profiles = await rP.json();
+      if (Array.isArray(profiles) && profiles[0]) { const p = profiles[0]; pseudo = p.pseudo || (p.first_name + ' ' + p.last_name); role = p.role; }
+    }
+    const r = await fetch(`${SUPA}/rest/v1/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ user_id: user?.id, role, pseudo, email, categorie, titre, description, statut: 'nouveau' })
+    });
+    if (r.ok || r.status === 201) {
+      document.getElementById('fb-success').style.display = 'block';
+      document.getElementById('fb-titre').value = '';
+      document.getElementById('fb-description').value = '';
+    } else { throw new Error('Erreur serveur'); }
+  } catch(e) {
+    showToast('Erreur : ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Envoyer mon feedback →'; }
   }
 }
