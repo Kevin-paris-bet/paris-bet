@@ -275,7 +275,7 @@ input, textarea, select { font-family: var(--font-body); }
 /* ── Responsive ── */
 @media (max-width: 768px) {
   .container { padding: 0 var(--space-md); }
-  .section   { padding: 40px 0; }
+  .section   { padding: 20px 0; }
 }
 
 /* ══════════════════════════════════════════════════════════════
