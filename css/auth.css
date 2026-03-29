@@ -391,8 +391,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background: var(--blue);
-    padding: 10px var(--space-lg);
+    background: linear-gradient(to bottom, var(--blue) 70%, transparent 100%);
+    padding: 10px var(--space-lg) 28px;
     flex-shrink: 0;
   }
   .auth-mobile-logo a {
