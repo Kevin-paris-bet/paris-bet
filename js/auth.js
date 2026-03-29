@@ -15,15 +15,16 @@ const authState = {
 document.addEventListener('DOMContentLoaded', () => {
 
   // Lire le hash de l'URL pour ouvrir le bon onglet
-  // Ex: auth.html#register ou auth.html#login
   const hash = window.location.hash.replace('#', '').split('?')[0];
   if (hash === 'register') switchTab('register');
   else switchTab('login');
 
   // Lire le rôle dans l'URL si fourni
-  // Ex: auth.html#register?role=tipster
   const params = new URLSearchParams(window.location.hash.split('?')[1] || '');
   if (params.get('role') === 'tipster') selectRole('tipster');
+
+  // Stats colonne gauche
+  injectAuthStats();
 
 });
 
@@ -292,8 +293,6 @@ async function injectAuthStats() {
     set('auth-stat-paid', '—');
   }
 }
-
-document.addEventListener('DOMContentLoaded', () => { injectAuthStats(); });
 
 // ── Helpers ───────────────────────────────────────────────────
 function setLoading(btn, loading) {
