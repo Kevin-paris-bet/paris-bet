@@ -438,21 +438,61 @@ input[type=range] {
   .sim__controls { border-right: none; border-bottom: 1px solid var(--border); }
   .cta-banner__inner { flex-direction: column; text-align: center; }
 
-  /* Steps mobile : padding réduit + icône sur même ligne que titre */
+  /* Steps : padding réduit + icône inline avec titre, centré */
   .how__step {
     padding: var(--space-md) var(--space-lg);
-    text-align: left;
+    text-align: center;
   }
   .how__step-icon {
     font-size: 1.4rem;
-    margin: 0 8px 0 0;
-    display: inline;
+    display: inline-block;
+    margin: 0 6px -4px 0;
     vertical-align: middle;
   }
   .how__step h3 {
     display: inline;
     vertical-align: middle;
   }
+  .how__step p {
+    display: block;
+    margin-top: var(--space-sm);
+  }
+
+  /* Features : padding réduit */
+  .feat { padding: var(--space-md) var(--space-lg); }
+
+  /* Feat--large (pay-per-win) : trophée inline avec titre, centré */
+  .feat--large { text-align: center; }
+  .feat--large .feat__icon {
+    font-size: 1.4rem;
+    display: inline-block;
+    margin: 0 6px -4px 0;
+    vertical-align: middle;
+  }
+  .feat--large h3 {
+    display: inline;
+    vertical-align: middle;
+  }
+  .feat--large p { display: block; margin-top: var(--space-sm); }
+
+  /* Feat normaux : icône inline avec titre, centré */
+  .feat:not(.feat--large) { text-align: center; }
+  .feat:not(.feat--large) .feat__icon {
+    font-size: 1.4rem;
+    display: inline-block;
+    margin: 0 6px -4px 0;
+    vertical-align: middle;
+  }
+  .feat:not(.feat--large) h3 {
+    display: inline;
+    vertical-align: middle;
+  }
+  .feat:not(.feat--large) p { display: block; margin-top: var(--space-sm); }
+
+  /* Simulator : réduire les espaces */
+  .sim__controls { gap: var(--space-md); padding: var(--space-md); }
+  .sim__results  { gap: var(--space-sm); padding: var(--space-md); }
+  .sim__result   { padding: var(--space-sm) var(--space-md); }
 }
 @media (max-width: 600px) {
   .features__grid { grid-template-columns: 1fr; }
