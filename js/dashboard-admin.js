@@ -1381,24 +1381,24 @@ async function renderPageFeedbackAdmin(container) {
 
   const feedbackRows = Array.isArray(feedbacks) && feedbacks.length > 0
     ? feedbacks.map(f => `
-      <div style="display:grid;grid-template-columns:80px 80px 120px 120px 1fr 120px;gap:var(--space-md);align-items:center;padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);font-size:0.85rem">
-        <div style="color:var(--text-muted);font-size:0.75rem">${formatDate(f.created_at)}</div>
-        <div>
-          <span style="font-size:0.72rem;padding:2px 8px;border-radius:var(--radius-full);background:var(--bg-soft);color:var(--text-muted)">${f.role || '—'}</span>
+      <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);flex-wrap:wrap;margin-bottom:var(--space-sm)">
+          <div style="display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap">
+            <span style="font-size:0.72rem;padding:2px 8px;border-radius:var(--radius-full);background:var(--bg-soft);color:var(--text-muted);font-weight:600">${f.role || '—'}</span>
+            <span style="font-weight:700;color:var(--text-dark)">${f.pseudo || '—'}</span>
+            <span style="font-size:0.78rem;color:var(--text-muted)">${f.email || '—'}</span>
+          </div>
+          <span style="font-size:0.75rem;color:var(--text-muted)">${formatDate(f.created_at)}</span>
         </div>
-        <div style="font-weight:600;color:var(--text-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.pseudo || '—'}</div>
-        <div style="color:var(--text-muted);font-size:0.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.email || '—'}</div>
-        <div>
-          <div style="font-weight:600;color:var(--text-dark)">${catIcons[f.categorie] || '💬'} ${f.titre}</div>
-          <div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px;line-height:1.5">${f.description}</div>
+        <div style="margin-bottom:var(--space-sm)">
+          <div style="font-weight:600;color:var(--text-dark);margin-bottom:4px">${catIcons[f.categorie] || '💬'} ${f.titre}</div>
+          <div style="font-size:0.85rem;color:var(--text-muted);line-height:1.6">${f.description}</div>
         </div>
-        <div>
-          <select style="font-size:0.78rem;padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:${statutColors[f.statut]||'var(--blue)'};cursor:pointer" onchange="updateFeedbackStatut('${f.id}', this.value)">
-            <option value="nouveau" ${f.statut==='nouveau'?'selected':''}>🔵 Nouveau</option>
-            <option value="en cours" ${f.statut==='en cours'?'selected':''}>🟡 En cours</option>
-            <option value="résolu" ${f.statut==='résolu'?'selected':''}>🟢 Résolu</option>
-          </select>
-        </div>
+        <select style="font-size:0.78rem;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:${statutColors[f.statut]||'var(--blue)'};cursor:pointer" onchange="updateFeedbackStatut('${f.id}', this.value)">
+          <option value="nouveau" ${f.statut==='nouveau'?'selected':''}>🔵 Nouveau</option>
+          <option value="en cours" ${f.statut==='en cours'?'selected':''}>🟡 En cours</option>
+          <option value="résolu" ${f.statut==='résolu'?'selected':''}>🟢 Résolu</option>
+        </select>
       </div>`).join('')
     : `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun feedback reçu pour l'instant.</div>`;
 
@@ -1418,10 +1418,7 @@ async function renderPageFeedbackAdmin(container) {
       <div><h2>💬 Feedbacks reçus</h2><p>${Array.isArray(feedbacks) ? feedbacks.length : 0} feedback(s)</p></div>
       <button class="btn btn-outline" onclick="exportFeedbackCSV()">⬇ Exporter CSV</button>
     </div>
-    <div class="pronos-table" style="padding:0;margin-bottom:var(--space-2xl);overflow-x:auto">
-      <div style="display:grid;grid-template-columns:80px 80px 120px 120px 1fr 120px;gap:var(--space-md);padding:var(--space-sm) var(--space-lg);background:var(--bg-soft);border-bottom:1px solid var(--border);font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted)">
-        <span>Date</span><span>Rôle</span><span>Pseudo</span><span>Email</span><span>Feedback</span><span>Statut</span>
-      </div>
+    <div class="pronos-table" style="padding:0;margin-bottom:var(--space-2xl)">
       ${feedbackRows}
     </div>
 

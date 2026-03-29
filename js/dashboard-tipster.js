@@ -1175,7 +1175,7 @@ async function renderPageFeedback(container, isAdmin) {
     : `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucune nouveauté pour l'instant.</div>`;
 
   container.innerHTML = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-lg);align-items:start">
+    <div style="display:flex;flex-direction:column;gap:var(--space-lg)">
 
       <!-- Changelog -->
       <div>
@@ -1215,8 +1215,6 @@ async function renderPageFeedback(container, isAdmin) {
       </div>
 
     </div>
-
-    @media (max-width: 900px) { .feedback-grid { grid-template-columns: 1fr !important; } }
   `;
 }
 
