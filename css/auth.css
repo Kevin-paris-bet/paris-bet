@@ -382,6 +382,10 @@
 @media (max-width: 900px) {
   .auth-left { display: none; }
   .auth-right { padding: 32px var(--space-lg); }
+  .auth-mobile-logo { display: flex; justify-content: center; margin-bottom: var(--space-lg); }
+}
+@media (min-width: 901px) {
+  .auth-mobile-logo { display: none; }
 }
 @media (max-width: 480px) {
   .form-row { grid-template-columns: 1fr; }
