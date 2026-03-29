@@ -222,9 +222,9 @@
   padding: 3px 12px;
   border-radius: var(--radius-full);
 }
-.how__step-icon { font-size: 1.6rem; display: inline-block; margin: 0 6px -4px 0; vertical-align: middle; }
-.how__step h3 { font-family: var(--font-display); font-size: 1.1rem; color: var(--text-dark); display: inline; vertical-align: middle; }
-.how__step p  { font-size: 0.85rem; color: var(--text-muted); line-height: 1.65; display: block; margin-top: var(--space-sm); }
+.how__step-icon { font-size: 1.8rem; display: block; margin: 0 auto var(--space-sm); }
+.how__step h3 { font-family: var(--font-display); font-size: 1rem; color: var(--text-dark); display: block; margin-bottom: var(--space-sm); }
+.how__step p  { font-size: 0.85rem; color: var(--text-muted); line-height: 1.65; display: block; }
 .how__connector {
   flex-shrink: 0;
   width: 40px;
@@ -280,13 +280,14 @@
   padding: 3px 10px; border-radius: var(--radius-full);
   margin-bottom: var(--space-md);
 }
-.feat__icon  { font-size: 1.6rem; display: inline-block; margin: 0 6px -4px 0; vertical-align: middle; }
+.feat__icon  { font-size: 1.8rem; display: block; margin-bottom: var(--space-sm); }
 .feat h3 {
   font-family: var(--font-display);
   font-size: 1.1rem; color: var(--text-dark);
-  display: inline; vertical-align: middle;
+  display: block;
+  margin-bottom: var(--space-sm);
 }
-.feat p { font-size: 0.87rem; color: var(--text-muted); line-height: 1.7; display: block; margin-top: var(--space-sm); }
+.feat p { font-size: 0.87rem; color: var(--text-muted); line-height: 1.7; display: block; }
 .feat__highlight {
   display: flex; gap: var(--space-lg);
   margin-top: var(--space-md);
@@ -423,7 +424,7 @@ input[type=range] {
 .cta-banner__text h2 span { opacity: 0.8; }
 .cta-banner__text p {
   color: rgba(255,255,255,0.65);
-  font-size: 0.9rem; margin-top: var(--space-sm);
+  font-size: 0.9rem; margin-top: 4px;
 }
 .cta-banner__actions { display: flex; gap: var(--space-md); flex-shrink: 0; flex-wrap: wrap; }
 
@@ -499,7 +500,7 @@ input[type=range] {
   .features__grid { grid-template-columns: 1fr; }
   .feat--large { grid-column: span 1; }
   .hero__actions { flex-direction: column; }
-  .hero__trust { gap: var(--space-md); padding-top: var(--space-sm); margin-bottom: 0; }
+  .hero__trust { gap: var(--space-md); padding-top: var(--space-xs); margin-bottom: 0; }
   .cta-banner { padding: 32px 0; }
   /* Réduire le padding-top du hero de 75% */
   .hero { padding-top: calc(var(--nav-height) + 8px); }
