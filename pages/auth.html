@@ -44,16 +44,16 @@
 
     <div class="auth-left__stats">
       <div>
-        <div class="auth-stat__num">1 200+</div>
-        <div class="auth-stat__label">Tipsters</div>
+        <div class="auth-stat__num" id="auth-stat-tipsters">—</div>
+        <div class="auth-stat__label">Tipsters actifs</div>
       </div>
       <div>
-        <div class="auth-stat__num">0 €</div>
-        <div class="auth-stat__label">Pour démarrer</div>
+        <div class="auth-stat__num" id="auth-stat-users">—</div>
+        <div class="auth-stat__label">Utilisateurs</div>
       </div>
       <div>
-        <div class="auth-stat__num">Lundi</div>
-        <div class="auth-stat__label">Virements</div>
+        <div class="auth-stat__num" id="auth-stat-paid">—</div>
+        <div class="auth-stat__label">Versés aux tipsters</div>
       </div>
     </div>
 
@@ -63,6 +63,9 @@
        COLONNE DROITE — Formulaire
   ══════════════════════════════ -->
   <div class="auth-right">
+    <div class="auth-mobile-logo">
+      <a href="../index.html" class="auth-left__logo" style="color:var(--text-dark)">Pay<span>PerWin</span></a>
+    </div>
     <div class="auth-box">
 
       <!-- Tabs -->
@@ -235,8 +238,8 @@
         <div class="form-check">
           <input type="checkbox" id="reg-terms" />
           <label for="reg-terms">
-            J'accepte les <a href="#">conditions d'utilisation</a> et la
-            <a href="#">politique de confidentialité</a> de PayPerWin
+            J'accepte les <a href="cgu.html">conditions d'utilisation</a> et la
+            <a href="confidentialite.html">politique de confidentialité</a> de PayPerWin
           </label>
         </div>
 
