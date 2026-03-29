@@ -437,6 +437,22 @@ input[type=range] {
   .sim__box { grid-template-columns: 1fr; }
   .sim__controls { border-right: none; border-bottom: 1px solid var(--border); }
   .cta-banner__inner { flex-direction: column; text-align: center; }
+
+  /* Steps mobile : padding réduit + icône sur même ligne que titre */
+  .how__step {
+    padding: var(--space-md) var(--space-lg);
+    text-align: left;
+  }
+  .how__step-icon {
+    font-size: 1.4rem;
+    margin: 0 8px 0 0;
+    display: inline;
+    vertical-align: middle;
+  }
+  .how__step h3 {
+    display: inline;
+    vertical-align: middle;
+  }
 }
 @media (max-width: 600px) {
   .features__grid { grid-template-columns: 1fr; }
