@@ -745,7 +745,7 @@ async function renderExplorerTipsters(container, publicUrlBase) {
 async function renderPageExplorerTipsters(container) {
   await renderExplorerTipsters(container, 'https://payperwin.co/');
 }
-/ ── Sidebar mobile ───────────────────────────────────────────
+// ── Sidebar mobile ───────────────────────────────────────────
 function toggleSidebar() {
   const sidebar = document.querySelector('.sidebar');
   const overlay = document.getElementById('sidebar-overlay');
