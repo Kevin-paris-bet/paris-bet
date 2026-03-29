@@ -271,6 +271,33 @@ async function handleGoogleAuth() {
   });
 }
 
+// ── Stats dynamiques (colonne gauche) ─────────────────────────
+async function injectAuthStats() {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  const set = (id, val) => { const n = document.getElementById(id); if (n) n.textContent = val; };
+  try {
+    const r1 = await fetch(`${SUPA}/rest/v1/profiles?select=id&role=eq.tipster&apikey=${ANON}`);
+    const tipsters = await r1.json();
+    set('auth-stat-tipsters', Array.isArray(tipsters) ? tipsters.length + '+' : '0');
+
+    const r2 = await fetch(`${SUPA}/rest/v1/profiles?select=id&role=eq.user&apikey=${ANON}`);
+    const users = await r2.json();
+    set('auth-stat-users', Array.isArray(users) ? users.length + '+' : '0');
+
+    const r3 = await fetch(`${SUPA}/rest/v1/purchases?select=amount&status=eq.won&apikey=${ANON}`);
+    const won = await r3.json();
+    const total = Array.isArray(won) ? won.reduce((s, p) => s + parseFloat(p.amount || 0), 0) * 0.9 : 0;
+    set('auth-stat-paid', total > 0 ? Math.round(total).toLocaleString('fr-FR') + '€+' : '0€');
+  } catch(e) {
+    set('auth-stat-tipsters', '—');
+    set('auth-stat-users', '—');
+    set('auth-stat-paid', '—');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => { injectAuthStats(); });
+
 // ── Helpers ───────────────────────────────────────────────────
 function setLoading(btn, loading) {
   btn.disabled = loading;

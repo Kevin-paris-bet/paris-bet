@@ -6,7 +6,7 @@
 
 /* ── HERO ── */
 .hero {
-  min-height: 100vh;
+  min-height: auto;
   display: flex; align-items: center;
   padding-top: var(--nav-height);
   position: relative;
@@ -51,7 +51,7 @@
   gap: var(--space-2xl);
   align-items: center;
   padding-top: var(--space-2xl);
-  padding-bottom: var(--space-2xl);
+  padding-bottom: var(--space-sm);
 }
 
 .hero__badge {
@@ -98,6 +98,7 @@
 .hero__trust {
   display: flex; align-items: center; gap: var(--space-lg);
   padding-top: var(--space-lg);
+  margin-bottom: 0;
   border-top: 1px solid var(--border);
 }
 .hero__trust-item {
@@ -201,7 +202,7 @@
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: var(--space-xl) var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
   text-align: center;
   position: relative;
   transition: box-shadow var(--transition), transform var(--transition);
@@ -221,9 +222,9 @@
   padding: 3px 12px;
   border-radius: var(--radius-full);
 }
-.how__step-icon { font-size: 2.2rem; margin-bottom: var(--space-md); margin-top: var(--space-sm); }
-.how__step h3 { font-family: var(--font-display); font-size: 1.1rem; color: var(--text-dark); margin-bottom: var(--space-sm); }
-.how__step p  { font-size: 0.85rem; color: var(--text-muted); line-height: 1.65; }
+.how__step-icon { font-size: 1.8rem; display: block; margin: 0 auto var(--space-sm); }
+.how__step h3 { font-family: var(--font-display); font-size: 1rem; color: var(--text-dark); display: block; margin-bottom: var(--space-sm); }
+.how__step p  { font-size: 0.85rem; color: var(--text-muted); line-height: 1.65; display: block; }
 .how__connector {
   flex-shrink: 0;
   width: 40px;
@@ -247,7 +248,7 @@
   background: var(--bg-soft);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: var(--space-xl) var(--space-lg);
+  padding: var(--space-md) var(--space-lg);
   transition: all var(--transition);
   position: relative;
   overflow: hidden;
@@ -279,13 +280,14 @@
   padding: 3px 10px; border-radius: var(--radius-full);
   margin-bottom: var(--space-md);
 }
-.feat__icon  { font-size: 1.8rem; margin-bottom: var(--space-md); }
+.feat__icon  { font-size: 1.8rem; display: block; margin-bottom: var(--space-sm); }
 .feat h3 {
   font-family: var(--font-display);
   font-size: 1.1rem; color: var(--text-dark);
+  display: block;
   margin-bottom: var(--space-sm);
 }
-.feat p { font-size: 0.87rem; color: var(--text-muted); line-height: 1.7; }
+.feat p { font-size: 0.87rem; color: var(--text-muted); line-height: 1.7; display: block; }
 .feat__highlight {
   display: flex; gap: var(--space-lg);
   margin-top: var(--space-md);
@@ -422,7 +424,7 @@ input[type=range] {
 .cta-banner__text h2 span { opacity: 0.8; }
 .cta-banner__text p {
   color: rgba(255,255,255,0.65);
-  font-size: 0.9rem; margin-top: var(--space-sm);
+  font-size: 0.9rem; margin-top: 4px;
 }
 .cta-banner__actions { display: flex; gap: var(--space-md); flex-shrink: 0; flex-wrap: wrap; }
 
@@ -437,14 +439,69 @@ input[type=range] {
   .sim__box { grid-template-columns: 1fr; }
   .sim__controls { border-right: none; border-bottom: 1px solid var(--border); }
   .cta-banner__inner { flex-direction: column; text-align: center; }
+
+  /* Steps : padding réduit + icône inline avec titre, centré */
+  .how__step {
+    padding: var(--space-md) var(--space-lg);
+    text-align: center;
+  }
+  .how__step-icon {
+    font-size: 1.4rem;
+    display: inline-block;
+    margin: 0 6px -4px 0;
+    vertical-align: middle;
+  }
+  .how__step h3 {
+    display: inline;
+    vertical-align: middle;
+  }
+  .how__step p {
+    display: block;
+    margin-top: var(--space-sm);
+  }
+
+  /* Features : padding réduit */
+  .feat { padding: var(--space-md) var(--space-lg); }
+
+  /* Feat--large (pay-per-win) : trophée inline avec titre, centré */
+  .feat--large { text-align: center; }
+  .feat--large .feat__icon {
+    font-size: 1.4rem;
+    display: inline-block;
+    margin: 0 6px -4px 0;
+    vertical-align: middle;
+  }
+  .feat--large h3 {
+    display: inline;
+    vertical-align: middle;
+  }
+  .feat--large p { display: block; margin-top: var(--space-sm); }
+
+  /* Feat normaux : icône inline avec titre, centré */
+  .feat:not(.feat--large) { text-align: center; }
+  .feat:not(.feat--large) .feat__icon {
+    font-size: 1.4rem;
+    display: inline-block;
+    margin: 0 6px -4px 0;
+    vertical-align: middle;
+  }
+  .feat:not(.feat--large) h3 {
+    display: inline;
+    vertical-align: middle;
+  }
+  .feat:not(.feat--large) p { display: block; margin-top: var(--space-sm); }
+
+  /* Simulator : réduire les espaces */
+  .sim__controls { gap: var(--space-md); padding: var(--space-md); }
+  .sim__results  { gap: var(--space-sm); padding: var(--space-md); }
+  .sim__result   { padding: var(--space-sm) var(--space-md); }
 }
 @media (max-width: 600px) {
   .features__grid { grid-template-columns: 1fr; }
   .feat--large { grid-column: span 1; }
   .hero__actions { flex-direction: column; }
-  .hero__trust { gap: var(--space-md); }
+  .hero__trust { gap: var(--space-md); padding-top: var(--space-md); padding-bottom: var(--space-md); margin-bottom: 0; }
   .cta-banner { padding: 32px 0; }
-  /* Réduire le padding-top du hero de 75% */
-  .hero { padding-top: calc(var(--nav-height) + 8px); }
-  .hero__inner { padding-top: var(--space-sm); }
+  .hero { min-height: auto; padding-bottom: 0; padding-top: calc(var(--nav-height) + 8px); }
+  .hero__inner { padding-top: var(--space-sm); padding-bottom: 0; }
 }
