@@ -381,14 +381,19 @@
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .auth-left { display: none; }
-  .auth-right { padding: 0 var(--space-lg) 32px; }
+  .auth-right {
+    padding: 0;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
   .auth-mobile-logo {
     display: flex;
     justify-content: center;
     align-items: center;
     background: var(--blue);
-    padding: 16px var(--space-lg);
-    margin: 0 calc(-1 * var(--space-lg)) var(--space-xl);
+    padding: 18px var(--space-lg);
+    flex-shrink: 0;
   }
   .auth-mobile-logo a {
     font-family: var(--font-display);
@@ -397,7 +402,11 @@
     color: var(--white);
     text-decoration: none;
   }
-  .auth-mobile-logo a span { color: rgba(255,255,255,0.7); }
+  .auth-mobile-logo a span { color: rgba(255,255,255,0.75); }
+  .auth-box {
+    padding: var(--space-xl) var(--space-lg);
+    max-width: 100%;
+  }
 }
 @media (min-width: 901px) {
   .auth-mobile-logo { display: none; }
