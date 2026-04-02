@@ -49,7 +49,6 @@ const adminState = {
 };
 
 // ── Init ──────────────────────────────────────────────────────
-// ── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   const user = await requireAuth(['admin']);
   if (!user) return;
@@ -64,7 +63,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const rp = await fetch(urlP.toString());
     const pronos = await rp.json();
 
-    // Charger les profils pour les noms tipsters
     const urlPr = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles');
     urlPr.searchParams.set('select', 'id,first_name,last_name');
     urlPr.searchParams.set('apikey', ANON);
@@ -73,7 +71,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     const profilesMap = {};
     if (Array.isArray(profilesList)) profilesList.forEach(p => profilesMap[p.id] = p.first_name + ' ' + p.last_name);
 
-    // Charger les purchases pour avoir le vrai nombre d acheteurs et montant
     const urlPurch = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/purchases');
     urlPurch.searchParams.set('select', 'prono_id,amount');
     urlPurch.searchParams.set('apikey', ANON);
@@ -111,7 +108,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     .order('created_at', { ascending: false });
 
   if (tipsters && tipsters.length > 0) {
-    // Charger les pronos pour calculer win rate et nb pronos par tipster
     const ANON2 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
     const rAllPronos = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos?select=tipster_id,status&apikey=' + ANON2, { headers: { 'apikey': ANON2, 'Authorization': 'Bearer ' + ANON2 } });
     const allPronos = await rAllPronos.json();
@@ -170,7 +166,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // ── Navigation ────────────────────────────────────────────────
 function navigateTo(page) {
-  // Fermer la sidebar sur mobile
   const sidebar = document.querySelector('.sidebar');
   const overlay = document.getElementById('sidebar-overlay');
   if (sidebar) sidebar.classList.remove('open');
@@ -186,6 +181,9 @@ function navigateTo(page) {
     tipsters:  'Gestion des tipsters',
     users:     'Gestion des utilisateurs',
     virements: 'Virements',
+    finances:  'Finances & Commissions',
+    explorer:  'Explorer les tipsters',
+    feedback:  'Feedback & Changelog',
   };
   document.getElementById('topbar-title').textContent = titles[page] || 'Admin';
   const content = document.getElementById('page-content');
@@ -195,6 +193,9 @@ function navigateTo(page) {
   if (page === 'tipsters')  renderTipsters(content);
   if (page === 'users')     renderUsers(content);
   if (page === 'virements') renderVirements(content);
+  if (page === 'finances')  renderFinances(content);
+  if (page === 'explorer')  renderExplorerTipsters(content, 'https://payperwin.co/');
+  if (page === 'feedback')  renderPageFeedbackAdmin(content);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -235,7 +236,6 @@ function renderOverview(c) {
       </div>
     </div>
 
-    <!-- Actions rapides -->
     <div class="section-header">
       <div><h2>Actions urgentes</h2><p>Éléments nécessitant votre attention</p></div>
     </div>
@@ -275,7 +275,6 @@ function renderOverview(c) {
         </div>` : ''}
     </div>
 
-    <!-- Derniers pronos -->
     <div class="section-header" style="margin-top:var(--space-xl)">
       <div><h2>Derniers pronostics</h2></div>
       <button class="btn btn-outline btn--sm" onclick="navigateTo('pronos')">Voir tout →</button>
@@ -311,10 +310,6 @@ function renderPronos(c) {
 
 function setPronosFilter(f) {
   adminState.pronosFilter = f;
-  document.querySelectorAll('.achats-filters .filter-btn').forEach(b =>
-    b.classList.toggle('active', b.dataset && b.textContent.includes(f) || b.onclick?.toString().includes(`'${f}'`))
-  );
-  // Re-render propre
   navigateTo('pronos');
 }
 
@@ -410,53 +405,32 @@ async function validateProno(id, status) {
   if (!confirm(msgs[status])) return;
 
   try {
-    // Mettre à jour le statut du prono dans Supabase
-    const { error } = await sb
-      .from('pronos')
-      .update({ status })
-      .eq('id', id);
-
+    const { error } = await sb.from('pronos').update({ status }).eq('id', id);
     if (error) throw error;
 
-    // Récupérer tous les achats de ce prono (sans filtre status)
-    const { data: purchases } = await sb
-      .from('purchases')
-      .select('*')
-      .eq('prono_id', p.id);
+    const { data: purchases } = await sb.from('purchases').select('*').eq('prono_id', p.id);
 
     if (purchases && purchases.length > 0) {
       if (status === 'won') {
-        // Calculer le total réel depuis les achats
         const totalRevenue = purchases.reduce((sum, a) => sum + parseFloat(a.amount || 0), 0);
         const tipsterShare = totalRevenue * 0.9;
-
-        // Lire le solde actuel du tipster
         const { data: tipsterProfile } = await sb.from('profiles').select('balance').eq('id', p.tipster_id).single();
         const currentBalance = parseFloat(tipsterProfile?.balance || 0);
-
-        // Créditer le tipster
         await sb.from('profiles').update({ balance: currentBalance + tipsterShare }).eq('id', p.tipster_id);
-
-        // Mettre à jour les achats en "won"
         await sb.from('purchases').update({ status: 'won' }).eq('prono_id', p.id);
-
       } else {
-        // Rembourser chaque acheteur
         for (const achat of purchases) {
           const { data: userProfile } = await sb.from('profiles').select('balance').eq('id', achat.user_id).single();
           const currentBalance = parseFloat(userProfile?.balance || 0);
           await sb.from('profiles').update({ balance: currentBalance + parseFloat(achat.amount || 0) }).eq('id', achat.user_id);
         }
-        // Mettre à jour les achats
         await sb.from('purchases').update({ status }).eq('prono_id', p.id);
       }
     }
 
-    // Mettre à jour localement
     p.status = status;
     navigateTo('pronos');
-    const toastType = status === 'won' ? 'success' : 'info';
-    showToast(`Pronostic "${p.game}" validé comme ${labels[status]}`, toastType);
+    showToast(`Pronostic "${p.game}" validé comme ${labels[status]}`, status === 'won' ? 'success' : 'info');
   } catch (err) {
     showToast('Erreur : ' + err.message, 'error');
   }
@@ -480,6 +454,7 @@ function renderTipsters(c) {
           <div>
             <div class="prono-title">${t.name}</div>
             <div class="prono-meta">${t.email}</div>
+            ${t.pseudo ? `<div><a href="https://payperwin.co/${t.pseudo}" target="_blank" style="font-size:0.75rem;color:var(--blue)">@${t.pseudo} →</a></div>` : ''}
             ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
           </div>
           <div style="font-weight:600">${t.pronos}</div>
@@ -564,7 +539,7 @@ function renderUsers(c) {
             ${u.role === 'moderator'
               ? `<span style="font-size:0.75rem;padding:3px 10px;border-radius:var(--radius-full);background:var(--warning-pale,#fff8e1);color:var(--warning);font-weight:600">⚖️ Modérateur</span>
                  <button onclick="setModerator('${u.id}','user')" style="margin-left:6px;font-size:0.72rem;padding:2px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:none;color:var(--text-muted);cursor:pointer">Retirer</button>`
-              : `<button onclick="setModerator('${u.id}','moderator')" style="font-size:0.75rem;padding:3px 10px;border:1px solid var(--border);border-radius:var(--radius-full);background:none;color:var(--text-muted);cursor:pointer;hover:background:var(--bg-soft)">+ Modérateur</button>`
+              : `<button onclick="setModerator('${u.id}','moderator')" style="font-size:0.75rem;padding:3px 10px;border:1px solid var(--border);border-radius:var(--radius-full);background:none;color:var(--text-muted);cursor:pointer">+ Modérateur</button>`
             }
           </div>
         </div>`).join('')}
@@ -581,14 +556,12 @@ async function renderVirements(c) {
 
   c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>';
 
-  // Charger les tipsters avec leur solde
   const rT = await fetch(SUPA + '/rest/v1/profiles?select=id,first_name,last_name,balance,rib_iban,rib_bic,role&apikey=' + ANON, {
     headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
   });
   const allProfiles = await rT.json();
   const tipsters = Array.isArray(allProfiles) ? allProfiles.filter(p => p.role === 'tipster') : [];
 
-  // Charger l'historique des virements
   const urlP = new URL(SUPA + '/rest/v1/payouts');
   urlP.searchParams.set('select', 'id,tipster_id,amount,created_at');
   urlP.searchParams.set('order', 'created_at.desc');
@@ -597,7 +570,6 @@ async function renderVirements(c) {
   const payoutsRaw = await rP.json();
   const payouts = Array.isArray(payoutsRaw) ? payoutsRaw : [];
 
-  // Enrichir les payouts avec le nom du tipster
   const tipstersMap = {};
   if (Array.isArray(tipsters)) tipsters.forEach(t => { tipstersMap[t.id] = t.first_name + ' ' + t.last_name; });
 
@@ -667,20 +639,16 @@ async function markVirementDone(tipsterId, tipsterName, amount) {
   const SUPA  = 'https://haezbgglpghjrgdpmcrj.supabase.co';
 
   try {
-    // 1. Créer le payout
     await fetch(SUPA + '/rest/v1/payouts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
       body: JSON.stringify({ tipster_id: tipsterId, amount: amount })
     });
-
-    // 2. Remettre le solde du tipster à 0
     await fetch(SUPA + '/rest/v1/profiles?id=eq.' + tipsterId, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
       body: JSON.stringify({ balance: 0 })
     });
-
     showToast(`Virement de ${formatEuros(amount)} à ${tipsterName} confirmé ✓`, 'success');
     navigateTo('virements');
   } catch(e) {
@@ -695,7 +663,6 @@ function renderSidebar() {
     l.classList.toggle('active', l.dataset.page === adminState.activePage)
   );
 
-  // Mettre à jour les badges avec les vraies données
   const pendingPronos = adminState.pronos.filter(p => p.status === 'pending').length;
   const badgePronos = document.getElementById('badge-pronos');
   if (badgePronos) {
@@ -703,7 +670,6 @@ function renderSidebar() {
     badgePronos.style.display = pendingPronos > 0 ? '' : 'none';
   }
 
-  // Badge virements = tipsters avec solde >= 30€
   const pendingVir = adminState.tipsters.filter(t => parseFloat(t.balance) >= 30).length;
   const badgeVir = document.getElementById('badge-vir');
   if (badgeVir) {
@@ -711,7 +677,6 @@ function renderSidebar() {
     badgeVir.style.display = pendingVir > 0 ? '' : 'none';
   }
 
-  // Badge urgent = pronos en attente
   const badgeUrgent = document.getElementById('badge-urgent');
   if (badgeUrgent) {
     badgeUrgent.textContent = pendingPronos;
@@ -739,7 +704,7 @@ function showToast(message, type = 'info') {
   setTimeout(() => t?.remove(), 3500);
 }
 
-// ── Attribuer / Retirer le rôle modérateur ────────────────────
+// ── Modérateur ────────────────────────────────────────────────
 async function setModerator(userId, newRole) {
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
   const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
@@ -752,7 +717,6 @@ async function setModerator(userId, newRole) {
       body: JSON.stringify({ role: newRole })
     });
     if (!r.ok) throw new Error('Erreur serveur');
-    // Mettre à jour localement
     const u = adminState.users.find(u => u.id === userId);
     if (u) u.role = newRole;
     showToast(`Rôle mis à jour : ${label} ✓`, 'success');
@@ -769,3 +733,9 @@ function toggleSidebar() {
   if (sidebar) sidebar.classList.toggle('open');
   if (overlay) overlay.classList.toggle('show');
 }
+
+// ── Stubs pour rubriques supplémentaires (finances, explorer, feedback) ──
+// Ces fonctions sont définies dans les fichiers JS additionnels chargés après
+function renderFinances(c) { c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>'; }
+function renderExplorerTipsters(c) { c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>'; }
+function renderPageFeedbackAdmin(c) { c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>'; }
