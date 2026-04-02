@@ -101,11 +101,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   // Charger les vrais tipsters
-  const { data: tipsters } = await sb
-    .from('profiles_with_email')
-    .select('*')
-    .eq('role', 'tipster')
-    .order('created_at', { ascending: false });
+  const ANON_T = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const rTipsters = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles_with_email?select=id,first_name,last_name,pseudo,email,balance,pending,rib_iban,rib_bic,rib_name,avatar_url,created_at&role=eq.tipster&order=created_at.desc&apikey=' + ANON_T, {
+    headers: { 'apikey': ANON_T, 'Authorization': 'Bearer ' + ANON_T }
+  });
+  const tipsters = await rTipsters.json();
+  const { data: _ } = { data: null }; // placeholder
 
   if (tipsters && tipsters.length > 0) {
     const ANON2 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
