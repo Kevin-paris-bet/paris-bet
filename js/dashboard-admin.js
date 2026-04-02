@@ -46,6 +46,8 @@ const adminState = {
   users:      [...MOCK_USERS_ADMIN],
   virements:  [...MOCK_VIREMENTS],
   pronosFilter: 'pending',
+  tipsterSearch: '',
+  userSearch: '',
 };
 
 // ── Init ──────────────────────────────────────────────────────
@@ -451,9 +453,17 @@ async function validateProno(id, status) {
 // ══════════════════════════════════════════════════════════════
 function renderTipsters(c) {
   const mobile = isMobile();
-  const rows = adminState.tipsters.map(t => {
+
+  // Filtrage par pseudo
+  const filtered = adminState.tipsters.filter(t => {
+    const pseudo = (t.pseudo || '').toLowerCase();
+    return pseudo.includes(adminState.tipsterSearch.toLowerCase());
+  });
+
+  const rows = filtered.map(t => {
     const lienHref = t.pseudo ? `https://payperwin.co/${t.pseudo}` : `https://payperwin.co/pages/tipster-public.html?id=${t.id}`;
     const lienIcon = `<a href="${lienHref}" target="_blank" style="color:var(--blue);text-decoration:none;font-size:0.9rem;margin-left:6px" title="Voir la page publique">🔗</a>`;
+    const pseudoDisplay = t.pseudo ? `@${t.pseudo}` : '<span style="color:var(--text-muted);font-style:italic">—</span>';
     const rib = t.ribSaved
       ? `<span class="badge badge-won" style="font-size:0.7rem">✓ Enregistré</span>`
       : `<span class="badge badge-lost" style="font-size:0.7rem">✕ Manquant</span>`;
@@ -466,6 +476,7 @@ function renderTipsters(c) {
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
             <div>
               <div class="prono-title">${t.name}${lienIcon}</div>
+              <div class="prono-meta" style="color:var(--blue);font-weight:600">${pseudoDisplay}</div>
               <div class="prono-meta">${t.email}</div>
               ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
             </div>
@@ -481,12 +492,13 @@ function renderTipsters(c) {
     }
 
     return `
-      <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px;${t.suspended?'opacity:0.55':''}">
+      <div class="table-row" style="grid-template-columns:2fr 1.2fr 1fr 1fr 1fr 1fr 120px;${t.suspended?'opacity:0.55':''}">
         <div>
           <div class="prono-title">${t.name}${lienIcon}</div>
           <div class="prono-meta">${t.email}</div>
           ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
         </div>
+        <div style="font-weight:600;color:var(--blue)">${pseudoDisplay}</div>
         <div style="font-weight:600">${t.pronos}</div>
         <div style="font-weight:700;color:${t.winRate>=60?'var(--success)':'var(--warning)'}">${t.winRate}%</div>
         <div class="prono-price">${formatEuros(t.balance)}</div>
@@ -495,15 +507,25 @@ function renderTipsters(c) {
       </div>`;
   }).join('');
 
+  const emptyState = filtered.length === 0
+    ? `<div class="empty-state"><div class="empty-state__icon">🔍</div><h3>Aucun tipster trouvé</h3><p>Essayez un autre pseudo.</p></div>`
+    : rows;
+
   c.innerHTML = `
     <div class="section-header">
       <div><h2>Tipsters</h2><p>${adminState.tipsters.length} tipster(s) inscrits</p></div>
     </div>
+    <div class="tipster-search-wrap" style="margin-bottom:var(--space-md)">
+      <span class="input-icon">🔍</span>
+      <input class="input" id="tipster-admin-search" type="text" placeholder="Rechercher par pseudo..."
+        value="${adminState.tipsterSearch}"
+        oninput="adminState.tipsterSearch=this.value;renderTipsters(document.getElementById('page-content'))" />
+    </div>
     <div class="pronos-table" style="${mobile?'padding:0':''}">
-      ${!mobile ? `<div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px">
-        <span>Tipster</span><span>Pronos</span><span>Win Rate</span><span>Solde</span><span>RIB</span><span>Actions</span>
+      ${!mobile ? `<div class="table-header" style="grid-template-columns:2fr 1.2fr 1fr 1fr 1fr 1fr 120px">
+        <span>Tipster</span><span>Pseudo</span><span>Pronos</span><span>Win Rate</span><span>Solde</span><span>RIB</span><span>Actions</span>
       </div>` : ''}
-      ${rows}
+      ${emptyState}
     </div>
   `;
 }
@@ -536,12 +558,18 @@ function renderUsers(c) {
   const mobile = isMobile();
   const totalBalance = adminState.users.reduce((s,u) => s + u.balance + u.pending, 0);
 
+  // Filtrage par prénom
+  const filtered = adminState.users.filter(u => {
+    const prenom = (u.first_name || '').toLowerCase();
+    return prenom.includes(adminState.userSearch.toLowerCase());
+  });
+
   const roleBtn = (u) => u.role === 'moderator'
     ? `<span style="font-size:0.72rem;padding:2px 8px;border-radius:var(--radius-full);background:var(--warning-pale,#fff8e1);color:var(--warning);font-weight:600">⚖️ Modo</span>
        <button onclick="setModerator('${u.id}','user')" style="margin-left:4px;font-size:0.7rem;padding:2px 6px;border:1px solid var(--border);border-radius:var(--radius-sm);background:none;color:var(--text-muted);cursor:pointer">Retirer</button>`
     : `<button onclick="setModerator('${u.id}','moderator')" style="font-size:0.72rem;padding:2px 8px;border:1px solid var(--border);border-radius:var(--radius-full);background:none;color:var(--text-muted);cursor:pointer">+ Modo</button>`;
 
-  const rows = adminState.users.map(u => {
+  const rows = filtered.map(u => {
     if (mobile) return `
       <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
@@ -570,17 +598,27 @@ function renderUsers(c) {
       </div>`;
   }).join('');
 
+  const emptyState = filtered.length === 0
+    ? `<div class="empty-state"><div class="empty-state__icon">🔍</div><h3>Aucun utilisateur trouvé</h3><p>Essayez un autre prénom.</p></div>`
+    : rows;
+
   c.innerHTML = `
     <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:var(--space-xl)">
       <div class="stat-card"><div class="stat-card__label">👤 Utilisateurs</div><div class="stat-card__value">${adminState.users.length}</div><div class="stat-card__sub">inscrits</div></div>
       <div class="stat-card"><div class="stat-card__label">💰 Soldes cumulés</div><div class="stat-card__value">${formatEuros(totalBalance)}</div><div class="stat-card__sub">dépôts + attentes</div></div>
       <div class="stat-card"><div class="stat-card__label">⏳ En attente</div><div class="stat-card__value">${formatEuros(adminState.users.reduce((s,u)=>s+(parseFloat(u.pending)||0),0))}</div><div class="stat-card__sub">pronos non validés</div></div>
     </div>
+    <div class="tipster-search-wrap" style="margin-bottom:var(--space-md)">
+      <span class="input-icon">🔍</span>
+      <input class="input" id="user-admin-search" type="text" placeholder="Rechercher par prénom..."
+        value="${adminState.userSearch}"
+        oninput="adminState.userSearch=this.value;renderUsers(document.getElementById('page-content'))" />
+    </div>
     <div class="pronos-table" style="${mobile?'padding:0':''}">
       ${!mobile ? `<div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
         <span>Utilisateur</span><span>Solde dispo</span><span>En attente</span><span>Inscrit</span><span>Rôle</span>
       </div>` : ''}
-      ${rows}
+      ${emptyState}
     </div>
   `;
 }
