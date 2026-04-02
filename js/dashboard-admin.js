@@ -687,6 +687,16 @@ function renderSidebar() {
 function renderTopbar() {}
 
 // ── Utilitaires ───────────────────────────────────────────────
+
+function isMobile() { return window.innerWidth < 900; }
+
+function formatDate(str) {
+  if (!str) return "—";
+  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) return `${match[3]}/${match[2]}/${match[1].slice(2)}`;
+  return str;
+}
+
 function formatEuros(n) {
   return n % 1 === 0
     ? Math.round(n).toLocaleString('fr-FR') + ' €'
@@ -734,122 +744,387 @@ function toggleSidebar() {
   if (overlay) overlay.classList.toggle('show');
 }
 
-// ── Stubs pour rubriques supplémentaires (finances, explorer, feedback) ──
-// Ces fonctions sont définies dans les fichiers JS additionnels chargés après
-function renderFinances(c) { c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>'; }
-function renderExplorerTipsters(c) { c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>'; }
-function renderPageFeedbackAdmin(c) { c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>'; }
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE — FINANCES & COMMISSIONS
+// ══════════════════════════════════════════════════════════════
+async function renderFinances(container) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  container.innerHTML = `
+    <div class="section-header">
+      <div><h2>Finances & Commissions</h2><p>Revenus par tipster sur les pronos terminés</p></div>
+    </div>
+    <div style="display:flex;gap:var(--space-md);align-items:flex-end;margin-bottom:var(--space-lg);flex-wrap:wrap">
+      <div class="form-group" style="margin:0">
+        <label style="font-size:0.8rem;color:var(--text-muted)">Date début</label>
+        <input class="input" type="date" id="fin-date-from" style="width:160px" />
+      </div>
+      <div class="form-group" style="margin:0">
+        <label style="font-size:0.8rem;color:var(--text-muted)">Date fin</label>
+        <input class="input" type="date" id="fin-date-to" style="width:160px" />
+      </div>
+      <button class="btn btn-primary" onclick="loadFinances()">Filtrer</button>
+      <button class="btn btn-outline" onclick="document.getElementById('fin-date-from').value='';document.getElementById('fin-date-to').value='';loadFinances();">Tout afficher</button>
+    </div>
+    <div class="stats-grid" id="fin-totals">
+      <div class="stat-card"><div class="stat-card__label">CA Total</div><div class="stat-card__value" id="fin-total-ca">—</div></div>
+      <div class="stat-card"><div class="stat-card__label">Mes commissions (10%)</div><div class="stat-card__value" id="fin-total-comm" style="color:var(--success)">—</div></div>
+      <div class="stat-card"><div class="stat-card__label">Versé aux tipsters (90%)</div><div class="stat-card__value" id="fin-total-net">—</div></div>
+    </div>
+    <div id="fin-table"><div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div></div>`;
+  loadFinances();
+}
+
+async function loadFinances() {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  const dateFrom = document.getElementById('fin-date-from')?.value || '';
+  const dateTo   = document.getElementById('fin-date-to')?.value || '';
+  const table = document.getElementById('fin-table');
+  if (!table) return;
+  table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>`;
+  try {
+    const urlP = new URL(SUPA + '/rest/v1/pronos');
+    urlP.searchParams.set('select', 'id,game,sport,match_date,status,tipster_id,buyers');
+    urlP.searchParams.set('status', 'in.(won,lost,cancelled)');
+    if (dateFrom) urlP.searchParams.set('match_date', 'gte.' + dateFrom);
+    if (dateTo)   urlP.searchParams.append('match_date', 'lte.' + dateTo);
+    urlP.searchParams.set('apikey', ANON);
+    const rP = await fetch(urlP.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
+    const pronos = await rP.json();
+    if (!Array.isArray(pronos) || pronos.length === 0) {
+      table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun prono terminé sur cette période.</div>`;
+      ['fin-total-ca','fin-total-comm','fin-total-net'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = '0 €'; });
+      return;
+    }
+    const pronoIds = pronos.map(p => p.id);
+    const urlPurch = new URL(SUPA + '/rest/v1/purchases');
+    urlPurch.searchParams.set('select', 'prono_id,amount,status');
+    urlPurch.searchParams.set('prono_id', 'in.(' + pronoIds.join(',') + ')');
+    urlPurch.searchParams.set('apikey', ANON);
+    const rPurch = await fetch(urlPurch.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
+    const purchases = await rPurch.json();
+    const tipsterIds = [...new Set(pronos.map(p => p.tipster_id).filter(Boolean))];
+    const urlProf = new URL(SUPA + '/rest/v1/profiles');
+    urlProf.searchParams.set('select', 'id,first_name,last_name');
+    urlProf.searchParams.set('id', 'in.(' + tipsterIds.join(',') + ')');
+    urlProf.searchParams.set('apikey', ANON);
+    const rProf = await fetch(urlProf.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
+    const profiles = await rProf.json();
+    const profilesMap = {};
+    (profiles || []).forEach(p => profilesMap[p.id] = p.first_name + ' ' + p.last_name);
+    const tipsterStats = {};
+    pronos.forEach(prono => {
+      const tid = prono.tipster_id; if (!tid) return;
+      if (!tipsterStats[tid]) tipsterStats[tid] = { name: profilesMap[tid]||'—', pronos:0, won:0, lost:0, cancelled:0, ca:0, acheteurs:0 };
+      const s = tipsterStats[tid]; s.pronos++;
+      if (prono.status==='won') s.won++; else if (prono.status==='lost') s.lost++; else if (prono.status==='cancelled') s.cancelled++;
+      const pPurchases = (purchases||[]).filter(p => p.prono_id === prono.id);
+      s.ca += pPurchases.reduce((sum, p) => sum + parseFloat(p.amount||0), 0);
+      s.acheteurs += prono.buyers||0;
+    });
+    const tipsters = Object.values(tipsterStats).filter(s => s.ca > 0);
+    const totalCA = tipsters.reduce((s,t) => s+t.ca, 0);
+    const el1 = document.getElementById('fin-total-ca'); if(el1) el1.textContent = formatEuros(totalCA);
+    const el2 = document.getElementById('fin-total-comm'); if(el2) el2.textContent = formatEuros(totalCA*0.1);
+    const el3 = document.getElementById('fin-total-net'); if(el3) el3.textContent = formatEuros(totalCA*0.9);
+    if (!tipsters.length) { table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucune vente sur cette période.</div>`; return; }
+    table.innerHTML = `
+      <div class="pronos-table">
+        <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr">
+          <span>Tipster</span><span>Pronos</span><span>Win Rate</span><span>Acheteurs</span><span>CA Total</span><span style="color:var(--success)">Mes 10%</span><span>Net Tipster</span>
+        </div>
+        ${tipsters.sort((a,b)=>b.ca-a.ca).map(t => {
+          const wr = (t.won+t.lost)>0 ? Math.round(t.won/(t.won+t.lost)*100) : 0;
+          return `<div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr">
+            <div><div class="prono-title">${t.name}</div><div class="prono-meta">${t.won}W · ${t.lost}L · ${t.cancelled} annulés</div></div>
+            <div style="font-weight:600">${t.pronos}</div>
+            <div style="color:${wr>=60?'var(--success)':'var(--text-muted)'};font-weight:600">${wr}%</div>
+            <div>👥 ${t.acheteurs}</div>
+            <div style="font-weight:700;color:var(--primary)">${formatEuros(t.ca)}</div>
+            <div style="font-weight:700;color:var(--success)">${formatEuros(t.ca*0.1)}</div>
+            <div style="font-weight:600">${formatEuros(t.ca*0.9)}</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  } catch(e) {
+    table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur : ${e.message}</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE — EXPLORER TIPSTERS
+// ══════════════════════════════════════════════════════════════
+async function renderExplorerTipsters(container, publicUrlBase) {
+  container.innerHTML = `<div class="section-header"><div><h2>Explorer les tipsters</h2><p>Chargement...</p></div></div><div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>`;
+  try {
+    const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+    const [rT, rP] = await Promise.all([
+      fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,pseudo,avatar_url&role=eq.tipster&apikey=${ANON}`),
+      fetch(`${SUPA}/rest/v1/pronos?select=tipster_id,status,buyers,cote&apikey=${ANON}`)
+    ]);
+    const tipsters = await rT.json();
+    const pronos   = await rP.json();
+    const stats = {};
+    for (const t of tipsters) {
+      const my = pronos.filter(p => p.tipster_id === t.id);
+      const won = my.filter(p => p.status==='won').length;
+      const lost = my.filter(p => p.status==='lost').length;
+      const finished = won+lost;
+      const winRate = finished>0 ? Math.round(won/finished*100) : null;
+      const withCote = my.filter(p => (p.status==='won'||p.status==='lost') && p.cote && parseFloat(p.cote)>1);
+      const avgCote = withCote.length>0 ? Math.round(withCote.reduce((s,p)=>s+parseFloat(p.cote),0)/withCote.length*100)/100 : null;
+      const score = winRate!==null ? winRate*(avgCote!==null?avgCote:1)*Math.log10(finished+1) : null;
+      stats[t.id] = { won, lost, total:my.length, totalAcheteurs:my.reduce((s,p)=>s+(parseInt(p.buyers)||0),0), winRate, avgCote, score };
+    }
+    let sortCol='score', sortDir=-1, filterVal='';
+    function sortedFiltered() {
+      return tipsters.filter(t=>(t.pseudo||'').toLowerCase().includes(filterVal.toLowerCase()))
+        .sort((a,b)=>{ const sa=stats[a.id][sortCol], sb=stats[b.id][sortCol]; if(sa===null&&sb===null)return 0; if(sa===null)return 1; if(sb===null)return -1; return (sb-sa)*sortDir*-1; });
+    }
+    function setSortCol(col) { if(sortCol===col)sortDir*=-1; else{sortCol=col;sortDir=-1;} renderList(); }
+    function arrowHtml(col) { if(sortCol!==col)return `<span style="color:var(--text-muted);font-size:0.7rem;margin-left:3px">⇅</span>`; return sortDir===-1?`<span style="font-size:0.7rem;margin-left:3px">↓</span>`:`<span style="font-size:0.7rem;margin-left:3px">↑</span>`; }
+    function renderList() {
+      ['total','totalAcheteurs','winRate','avgCote','score'].forEach(col=>{
+        const el=document.getElementById('sort-btn-'+col); if(el){el.style.borderColor=sortCol===col?'var(--blue)':'';el.style.color=sortCol===col?'var(--blue)':'';}
+        const arr=document.getElementById('sort-arr-'+col); if(arr)arr.innerHTML=arrowHtml(col);
+      });
+      const listEl=document.getElementById('tipsters-list');
+      const list=sortedFiltered();
+      if(!list.length){listEl.innerHTML=`<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun tipster trouvé.</div>`;return;}
+      listEl.innerHTML=list.map((t,i)=>{
+        const s=stats[t.id];
+        const pseudo=t.pseudo||(t.first_name+' '+t.last_name);
+        const avatarHtml=t.avatar_url?`<img src="${t.avatar_url}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0" />`:`<div style="width:44px;height:44px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;flex-shrink:0">${pseudo[0]?.toUpperCase()}</div>`;
+        const winRateHtml=s.winRate!==null?`<span style="font-weight:800;font-size:1rem;color:${s.winRate>=60?'var(--success)':'var(--warning)'}">${s.winRate}%</span>`:`<span style="color:var(--text-muted);font-size:0.85rem">—</span>`;
+        const coteHtml=s.avgCote!==null?`<span style="font-weight:800;font-size:1rem;color:var(--blue)">${s.avgCote.toFixed(2).replace('.',',')}</span>`:`<span style="color:var(--text-muted);font-size:0.85rem">—</span>`;
+        const rankColor=i===0?'#FFD700':i===1?'#C0C0C0':i===2?'#CD7F32':'var(--text-muted)';
+        const href=t.pseudo?publicUrlBase+t.pseudo:'#';
+        return `<a href="${href}" target="_blank" style="text-decoration:none"><div class="tipster-explorer-card">
+          <div style="display:flex;align-items:center;gap:12px;min-width:0">
+            <div style="font-size:0.85rem;font-weight:700;color:${rankColor};min-width:20px;text-align:center">${i+1}</div>
+            ${avatarHtml}
+            <div style="font-weight:700;font-size:0.95rem;color:var(--text-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@${pseudo}</div>
+          </div>
+          <div class="tipster-explorer-stats">
+            <div class="tipster-explorer-stat"><div class="tipster-explorer-stat__label">Pronos</div><div class="tipster-explorer-stat__value">${s.total}</div></div>
+            <div class="tipster-explorer-stat"><div class="tipster-explorer-stat__label">Acheteurs</div><div class="tipster-explorer-stat__value">${s.totalAcheteurs}</div></div>
+            <div class="tipster-explorer-stat"><div class="tipster-explorer-stat__label">Win Rate</div><div class="tipster-explorer-stat__value">${winRateHtml}</div></div>
+            <div class="tipster-explorer-stat"><div class="tipster-explorer-stat__label">Cote moy.</div><div class="tipster-explorer-stat__value">${coteHtml}</div></div>
+          </div>
+        </div></a>`;
+      }).join('');
+    }
+    const sortBtns=['total','totalAcheteurs','winRate','avgCote','score'].map(col=>{
+      const labels={total:'Pronos',totalAcheteurs:'Acheteurs',winRate:'Win Rate',avgCote:'Cote moy.',score:'🏆 Score'};
+      return `<button id="sort-btn-${col}" class="btn btn-outline" style="font-size:0.78rem;padding:6px 12px" onclick="document.setSortCol('${col}')">${labels[col]} <span id="sort-arr-${col}"></span></button>`;
+    }).join('');
+    container.innerHTML=`
+      <div class="section-header"><div><h2>Explorer les tipsters</h2><p>${tipsters.length} tipsters inscrits</p></div></div>
+      <div class="tipster-search-wrap"><span class="input-icon">🔍</span><input class="input" id="tipster-search" type="text" placeholder="Rechercher par pseudo..." oninput="document.tipsterFilter(this.value)" /></div>
+      <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md);flex-wrap:wrap;align-items:center;">${sortBtns}</div>
+      <div id="tipsters-list"></div>`;
+    document.tipsterFilter=(val)=>{filterVal=val;renderList();};
+    document.setSortCol=setSortCol;
+    renderList();
+  } catch(e) {
+    container.innerHTML=`<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur : ${e.message}</div>`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE — FEEDBACK & CHANGELOG (ADMIN)
+// ══════════════════════════════════════════════════════════════
+async function renderPageFeedbackAdmin(container) {
+  const ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA='https://haezbgglpghjrgdpmcrj.supabase.co';
+  container.innerHTML='<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>';
+  const [rFB,rCL]=await Promise.all([
+    fetch(`${SUPA}/rest/v1/feedback?select=*&order=created_at.desc&apikey=${ANON}`,{headers:{apikey:ANON,'Authorization':'Bearer '+ANON}}),
+    fetch(`${SUPA}/rest/v1/changelog?select=*&order=created_at.desc&apikey=${ANON}`,{headers:{apikey:ANON,'Authorization':'Bearer '+ANON}})
+  ]);
+  const feedbacks=await rFB.json().catch(()=>[]);
+  const changelog=await rCL.json().catch(()=>[]);
+  const statutColors={nouveau:'var(--blue)','en cours':'var(--warning)',résolu:'var(--success)'};
+  const catIcons={suggestion:'💡',bug:'🐛',autre:'💬'};
+  function fmtD(str){return new Date(str).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'});}
+  const feedbackRows=Array.isArray(feedbacks)&&feedbacks.length>0
+    ?feedbacks.map(f=>`<div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:0.72rem;padding:2px 8px;border-radius:var(--radius-full);background:var(--bg-soft);color:var(--text-muted);font-weight:600">${f.role||'—'}</span>
+            <span style="font-weight:700;color:var(--text-dark)">${f.pseudo||'—'}</span>
+            <span style="font-size:0.78rem;color:var(--text-muted)">${f.email||'—'}</span>
+          </div>
+          <span style="font-size:0.75rem;color:var(--text-muted)">${fmtD(f.created_at)}</span>
+        </div>
+        <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px">${catIcons[f.categorie]||'💬'} ${f.titre}</div>
+        <div style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;margin-bottom:8px">${f.description}</div>
+        <select style="font-size:0.78rem;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:${statutColors[f.statut]||'var(--blue)'};cursor:pointer" onchange="updateFeedbackStatut('${f.id}',this.value)">
+          <option value="nouveau" ${f.statut==='nouveau'?'selected':''}>🔵 Nouveau</option>
+          <option value="en cours" ${f.statut==='en cours'?'selected':''}>🟡 En cours</option>
+          <option value="résolu" ${f.statut==='résolu'?'selected':''}>🟢 Résolu</option>
+        </select>
+      </div>`).join('')
+    :'<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun feedback reçu.</div>';
+  const changelogRows=Array.isArray(changelog)&&changelog.length>0
+    ?changelog.map(e=>`<div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:0.72rem;padding:2px 10px;border-radius:var(--radius-full);background:var(--blue-xpale);color:var(--blue);font-weight:600">${e.type}</span>
+            <span style="font-size:0.75rem;color:var(--text-muted)">${fmtD(e.created_at)}</span>
+          </div>
+          <button onclick="deleteChangelog('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--error);font-size:0.95rem;padding:2px">🗑</button>
+        </div>
+        <div style="font-weight:700;color:var(--text-dark);margin-bottom:3px">${e.titre}</div>
+        <div style="font-size:0.85rem;color:var(--text-muted);line-height:1.6">${e.description}</div>
+      </div>`).join('')
+    :'<div style="text-align:center;padding:var(--space-xl);color:var(--text-muted)">Aucune entrée changelog.</div>';
+  container.innerHTML=`
+    <div class="section-header" style="margin-bottom:var(--space-md)">
+      <div><h2>💬 Feedbacks reçus</h2><p>${Array.isArray(feedbacks)?feedbacks.length:0} feedback(s)</p></div>
+      <button class="btn btn-outline" onclick="exportFeedbackCSV()">⬇ Exporter CSV</button>
+    </div>
+    <div class="pronos-table" style="padding:0;margin-bottom:var(--space-2xl)">${feedbackRows}</div>
+    <div class="section-header" style="margin-bottom:var(--space-md)"><div><h2>📣 Changelog</h2><p>Annonces visibles par tous</p></div></div>
+    <div class="pronos-table" style="padding:var(--space-lg);margin-bottom:var(--space-lg)">
+      <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-dark);margin-bottom:var(--space-md)">+ Publier une nouveauté</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);margin-bottom:var(--space-md)">
+        <div class="form-group"><label>Type</label><select class="input" id="cl-type"><option>Nouveau</option><option>Amélioration</option><option>Correction bug</option></select></div>
+        <div class="form-group"><label>Titre</label><input class="input" type="text" id="cl-titre" placeholder="Ex: Nouveau classement des tipsters" /></div>
+      </div>
+      <div class="form-group"><label>Description</label><textarea class="input" id="cl-description" placeholder="Décrivez la nouveauté..." style="min-height:80px;resize:vertical"></textarea></div>
+      <button class="btn btn-primary" onclick="publishChangelog()" style="margin-top:var(--space-sm)">📣 Publier</button>
+    </div>
+    <div class="pronos-table" style="padding:0">${changelogRows}</div>`;
+}
+
+async function updateFeedbackStatut(id,statut){
+  const ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/feedback?id=eq.${id}`,{method:'PATCH',headers:{'Content-Type':'application/json',apikey:ANON,'Authorization':'Bearer '+ANON},body:JSON.stringify({statut})});
+  showToast('Statut mis à jour ✓','success');
+}
+
+async function publishChangelog(){
+  const ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const type=document.getElementById('cl-type')?.value;
+  const titre=document.getElementById('cl-titre')?.value.trim();
+  const desc=document.getElementById('cl-description')?.value.trim();
+  if(!titre||!desc){showToast('Veuillez remplir le titre et la description.','error');return;}
+  const r=await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/changelog',{method:'POST',headers:{'Content-Type':'application/json',apikey:ANON,'Authorization':'Bearer '+ANON,Prefer:'return=minimal'},body:JSON.stringify({type,titre,description:desc})});
+  if(r.ok||r.status===201){showToast('Nouveauté publiée ! ✓','success');navigateTo('feedback');}
+  else showToast('Erreur lors de la publication','error');
+}
+
+async function deleteChangelog(id){
+  if(!confirm('Supprimer cette entrée ?'))return;
+  const ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/changelog?id=eq.${id}`,{method:'DELETE',headers:{apikey:ANON,'Authorization':'Bearer '+ANON}});
+  showToast('Entrée supprimée.','success');
+  navigateTo('feedback');
+}
+
+function exportFeedbackCSV(){
+  const ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/feedback?select=*&order=created_at.desc&apikey=${ANON}`,{headers:{apikey:ANON,'Authorization':'Bearer '+ANON}})
+  .then(r=>r.json()).then(data=>{
+    if(!Array.isArray(data)||!data.length){showToast('Aucun feedback à exporter.','info');return;}
+    const headers=['Date','Rôle','Pseudo','Email','Catégorie','Titre','Description','Statut'];
+    const rows=data.map(f=>[new Date(f.created_at).toLocaleString('fr-FR'),f.role||'',f.pseudo||'',f.email||'',f.categorie||'',f.titre||'',(f.description||'').replace(/"/g,'""'),f.statut||''].map(v=>`"${v}"`).join(','));
+    const csv=[headers.join(','),...rows].join('\n');
+    const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='feedbacks-payperwin.csv';a.click();
+  });
+}
 
 // ══════════════════════════════════════════════════════════════
 //  MODALES — FICHES DÉTAILLÉES
 // ══════════════════════════════════════════════════════════════
-function closeFicheModal(e) {
-  if (!e || e.target === document.getElementById('fiche-modal-overlay')) {
-    document.getElementById('fiche-modal-overlay').style.display = 'none';
-  }
+function closeFicheModal(e){
+  if(!e||e.target===document.getElementById('fiche-modal-overlay'))
+    document.getElementById('fiche-modal-overlay').style.display='none';
 }
 
-async function openFicheTipster(id) {
-  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
-  const overlay = document.getElementById('fiche-modal-overlay');
-  const modal   = document.getElementById('fiche-modal-content');
-  overlay.style.display = 'block';
-  modal.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Chargement...</div>';
-
-  try {
-    const rP = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,rib_iban,rib_bic,rib_name,created_at&id=eq.${id}&apikey=${ANON}`, { headers: { apikey: ANON } });
-    const profiles = await rP.json();
-    const p = profiles[0] || {};
-
-    const rPr = await fetch(`${SUPA}/rest/v1/pronos?select=id,game,sport,match_date,status,buyers,price,content,cote&tipster_id=eq.${id}&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON } });
-    const pronos = await rPr.json();
-
-    const pronoIds = (pronos||[]).map(p => p.id);
-    let totalCA = 0, totalComm = 0;
-    if (pronoIds.length > 0) {
-      const rPurch = await fetch(`${SUPA}/rest/v1/purchases?select=amount,status&prono_id=in.(${pronoIds.join(',')})&apikey=${ANON}`, { headers: { apikey: ANON } });
-      const purchases = await rPurch.json();
-      totalCA = (purchases||[]).reduce((s,p) => s + parseFloat(p.amount||0), 0);
-      totalComm = totalCA * 0.10;
+async function openFicheTipster(id){
+  const ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA='https://haezbgglpghjrgdpmcrj.supabase.co';
+  const overlay=document.getElementById('fiche-modal-overlay');
+  const modal=document.getElementById('fiche-modal-content');
+  overlay.style.display='block';
+  modal.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Chargement...</div>';
+  try{
+    const rP=await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,rib_iban,rib_bic,rib_name,created_at&id=eq.${id}&apikey=${ANON}`,{headers:{apikey:ANON}});
+    const profiles=await rP.json(); const p=profiles[0]||{};
+    const rPr=await fetch(`${SUPA}/rest/v1/pronos?select=id,game,sport,match_date,status,buyers,price,content,cote&tipster_id=eq.${id}&order=created_at.desc&apikey=${ANON}`,{headers:{apikey:ANON}});
+    const pronos=await rPr.json();
+    const pronoIds=(pronos||[]).map(p=>p.id);
+    let totalCA=0;
+    if(pronoIds.length>0){
+      const rPurch=await fetch(`${SUPA}/rest/v1/purchases?select=amount&prono_id=in.(${pronoIds.join(',')})&apikey=${ANON}`,{headers:{apikey:ANON}});
+      const purchases=await rPurch.json();
+      totalCA=(purchases||[]).reduce((s,p)=>s+parseFloat(p.amount||0),0);
     }
-
-    const won  = (pronos||[]).filter(p => p.status === 'won').length;
-    const lost = (pronos||[]).filter(p => p.status === 'lost').length;
-    const wr   = (won+lost) > 0 ? Math.round(won/(won+lost)*100) : 0;
-
-    modal.innerHTML = `
+    const won=(pronos||[]).filter(p=>p.status==='won').length;
+    const lost=(pronos||[]).filter(p=>p.status==='lost').length;
+    const wr=(won+lost)>0?Math.round(won/(won+lost)*100):0;
+    const badge={won:'<span class="badge badge-won">✓ Gagné</span>',lost:'<span class="badge badge-lost">✕ Perdu</span>',cancelled:'<span class="badge badge-cancelled">⊘ Annulé</span>',pending:'<span class="badge badge-pending">⏳ En attente</span>'};
+    modal.innerHTML=`
       <h2 style="margin-bottom:4px">${p.first_name} ${p.last_name}</h2>
       <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">Membre depuis ${formatDate(p.created_at?.split('T')[0])}</div>
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-card__label">Pronos</div><div class="stat-card__value">${(pronos||[]).length}</div></div>
         <div class="stat-card"><div class="stat-card__label">Win Rate</div><div class="stat-card__value" style="color:var(--success)">${wr}%</div></div>
         <div class="stat-card"><div class="stat-card__label">CA Total</div><div class="stat-card__value">${formatEuros(totalCA)}</div></div>
-        <div class="stat-card"><div class="stat-card__label">Mes 10%</div><div class="stat-card__value" style="color:var(--success)">${formatEuros(totalComm)}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Mes 10%</div><div class="stat-card__value" style="color:var(--success)">${formatEuros(totalCA*0.1)}</div></div>
       </div>
       <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-lg);font-size:0.85rem">
-        <strong>🏦 RIB</strong><br>
-        Titulaire : ${p.rib_name || '—'}<br>
-        IBAN : ${p.rib_iban || '—'}<br>
-        BIC : ${p.rib_bic || '—'}<br>
+        <strong>🏦 RIB</strong><br>Titulaire : ${p.rib_name||'—'}<br>IBAN : ${p.rib_iban||'—'}<br>BIC : ${p.rib_bic||'—'}<br>
         Solde : <strong>${formatEuros(p.balance||0)}</strong> · En attente : <strong>${formatEuros(p.pending||0)}</strong>
       </div>
       <h3 style="margin-bottom:var(--space-md)">Historique des pronos</h3>
-      ${(pronos||[]).length === 0 ? '<p style="color:var(--text-muted)">Aucun prono.</p>' : `
+      ${(pronos||[]).length===0?'<p style="color:var(--text-muted)">Aucun prono.</p>':`
         <div style="display:flex;flex-direction:column;gap:8px;max-height:350px;overflow-y:auto">
-          ${(pronos||[]).map(pr => {
-            const badge = { won:'<span class="badge badge-won">✓ Gagné</span>', lost:'<span class="badge badge-lost">✕ Perdu</span>', cancelled:'<span class="badge badge-cancelled">⊘ Annulé</span>', pending:'<span class="badge badge-pending">⏳ En attente</span>' };
-            return `<div style="background:var(--bg-soft);border-radius:var(--radius-sm);padding:10px 14px;font-size:0.85rem">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <strong>${pr.game}</strong>${badge[pr.status]||''}
-              </div>
-              <div style="color:var(--text-muted);margin-top:2px">${pr.sport} · ${formatDate(pr.match_date)} · 👥 ${pr.buyers||0} · ${formatEuros(pr.price)}${pr.cote ? ` · 📊 ${parseFloat(pr.cote).toFixed(2).replace('.',',')}` : ''}</div>
-              ${pr.content ? `<div style="margin-top:4px;font-style:italic;color:var(--text-muted)">📋 ${pr.content}</div>` : ''}
-            </div>`;
-          }).join('')}
+          ${(pronos||[]).map(pr=>`<div style="background:var(--bg-soft);border-radius:var(--radius-sm);padding:10px 14px;font-size:0.85rem">
+            <div style="display:flex;justify-content:space-between;align-items:center"><strong>${pr.game}</strong>${badge[pr.status]||''}</div>
+            <div style="color:var(--text-muted);margin-top:2px">${pr.sport} · ${formatDate(pr.match_date)} · 👥 ${pr.buyers||0} · ${formatEuros(pr.price)}${pr.cote?` · 📊 ${parseFloat(pr.cote).toFixed(2).replace('.',',')}`:''}</div>
+            ${pr.content?`<div style="margin-top:4px;font-style:italic;color:var(--text-muted)">📋 ${pr.content}</div>`:''}
+          </div>`).join('')}
         </div>`}`;
-  } catch(e) {
-    modal.innerHTML = `<div style="color:var(--error)">Erreur de chargement.</div>`;
-  }
+  }catch(e){modal.innerHTML=`<div style="color:var(--error)">Erreur de chargement.</div>`;}
 }
 
-async function openFicheUser(id) {
-  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
-  const overlay = document.getElementById('fiche-modal-overlay');
-  const modal   = document.getElementById('fiche-modal-content');
-  overlay.style.display = 'block';
-  modal.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Chargement...</div>';
-
-  try {
-    const rP = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,created_at&id=eq.${id}&apikey=${ANON}`, { headers: { apikey: ANON } });
-    const profiles = await rP.json();
-    const p = profiles[0] || {};
-
-    const rA = await fetch(`${SUPA}/rest/v1/purchases?select=id,prono_id,amount,status,created_at&user_id=eq.${id}&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON } });
-    const purchases = await rA.json();
-
-    let pronosMap = {};
-    if ((purchases||[]).length > 0) {
-      const pronoIds = [...new Set(purchases.map(a => a.prono_id))];
-      const rPr = await fetch(`${SUPA}/rest/v1/pronos?select=id,game,sport,match_date,tipster_id&id=in.(${pronoIds.join(',')})&apikey=${ANON}`, { headers: { apikey: ANON } });
-      const pronos = await rPr.json();
-      (pronos||[]).forEach(pr => pronosMap[pr.id] = pr);
-      const tipsterIds = [...new Set(Object.values(pronosMap).map(pr => pr.tipster_id).filter(Boolean))];
-      if (tipsterIds.length > 0) {
-        const rT = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name&id=in.(${tipsterIds.join(',')})&apikey=${ANON}`, { headers: { apikey: ANON } });
-        const tipsters = await rT.json();
-        const tMap = {};
-        (tipsters||[]).forEach(t => tMap[t.id] = t.first_name + ' ' + t.last_name);
-        Object.values(pronosMap).forEach(pr => pr.tipsterName = tMap[pr.tipster_id] || '—');
+async function openFicheUser(id){
+  const ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA='https://haezbgglpghjrgdpmcrj.supabase.co';
+  const overlay=document.getElementById('fiche-modal-overlay');
+  const modal=document.getElementById('fiche-modal-content');
+  overlay.style.display='block';
+  modal.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Chargement...</div>';
+  try{
+    const rP=await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,created_at&id=eq.${id}&apikey=${ANON}`,{headers:{apikey:ANON}});
+    const profiles=await rP.json(); const p=profiles[0]||{};
+    const rA=await fetch(`${SUPA}/rest/v1/purchases?select=id,prono_id,amount,status,created_at&user_id=eq.${id}&order=created_at.desc&apikey=${ANON}`,{headers:{apikey:ANON}});
+    const purchases=await rA.json();
+    let pronosMap={};
+    if((purchases||[]).length>0){
+      const pronoIds=[...new Set(purchases.map(a=>a.prono_id))];
+      const rPr=await fetch(`${SUPA}/rest/v1/pronos?select=id,game,sport,match_date,tipster_id&id=in.(${pronoIds.join(',')})&apikey=${ANON}`,{headers:{apikey:ANON}});
+      const pronos=await rPr.json(); (pronos||[]).forEach(pr=>pronosMap[pr.id]=pr);
+      const tipsterIds=[...new Set(Object.values(pronosMap).map(pr=>pr.tipster_id).filter(Boolean))];
+      if(tipsterIds.length>0){
+        const rT=await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name&id=in.(${tipsterIds.join(',')})&apikey=${ANON}`,{headers:{apikey:ANON}});
+        const tipsters=await rT.json(); const tMap={};
+        (tipsters||[]).forEach(t=>tMap[t.id]=t.first_name+' '+t.last_name);
+        Object.values(pronosMap).forEach(pr=>pr.tipsterName=tMap[pr.tipster_id]||'—');
       }
     }
-
-    const totalDepense   = (purchases||[]).reduce((s,a) => s + parseFloat(a.amount||0), 0);
-    const totalRembourse = (purchases||[]).filter(a => a.status==='lost'||a.status==='cancelled').reduce((s,a) => s + parseFloat(a.amount||0), 0);
-    const totalWon       = (purchases||[]).filter(a => a.status==='won').length;
-
-    modal.innerHTML = `
+    const totalDepense=(purchases||[]).reduce((s,a)=>s+parseFloat(a.amount||0),0);
+    const totalRembourse=(purchases||[]).filter(a=>a.status==='lost'||a.status==='cancelled').reduce((s,a)=>s+parseFloat(a.amount||0),0);
+    const totalWon=(purchases||[]).filter(a=>a.status==='won').length;
+    const badge={won:'<span class="badge badge-won">✓ Gagné</span>',lost:'<span class="badge badge-lost">✕ Perdu</span>',cancelled:'<span class="badge badge-cancelled">⊘ Annulé</span>',pending:'<span class="badge badge-pending">⏳ En attente</span>'};
+    modal.innerHTML=`
       <h2 style="margin-bottom:4px">${p.first_name} ${p.last_name}</h2>
       <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">Membre depuis ${formatDate(p.created_at?.split('T')[0])}</div>
       <div class="stats-grid">
@@ -862,20 +1137,14 @@ async function openFicheUser(id) {
         💰 Solde : <strong>${formatEuros(p.balance||0)}</strong> · ⏳ En attente : <strong>${formatEuros(p.pending||0)}</strong>
       </div>
       <h3 style="margin-bottom:var(--space-md)">Historique des achats</h3>
-      ${(purchases||[]).length === 0 ? '<p style="color:var(--text-muted)">Aucun achat.</p>' : `
+      ${(purchases||[]).length===0?'<p style="color:var(--text-muted)">Aucun achat.</p>':`
         <div style="display:flex;flex-direction:column;gap:8px;max-height:350px;overflow-y:auto">
-          ${(purchases||[]).map(a => {
-            const pr = pronosMap[a.prono_id] || {};
-            const badge = { won:'<span class="badge badge-won">✓ Gagné</span>', lost:'<span class="badge badge-lost">✕ Perdu</span>', cancelled:'<span class="badge badge-cancelled">⊘ Annulé</span>', pending:'<span class="badge badge-pending">⏳ En attente</span>' };
-            return `<div style="background:var(--bg-soft);border-radius:var(--radius-sm);padding:10px 14px;font-size:0.85rem">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <strong>${pr.game||'—'}</strong>${badge[a.status]||''}
-              </div>
-              <div style="color:var(--text-muted);margin-top:2px">${pr.sport||'—'} · ${formatDate(pr.match_date)} · par ${pr.tipsterName||'—'} · <strong>${formatEuros(a.amount)}</strong></div>
-            </div>`;
-          }).join('')}
+          ${(purchases||[]).map(a=>{const pr=pronosMap[a.prono_id]||{};return`<div style="background:var(--bg-soft);border-radius:var(--radius-sm);padding:10px 14px;font-size:0.85rem">
+            <div style="display:flex;justify-content:space-between;align-items:center"><strong>${pr.game||'—'}</strong>${badge[a.status]||''}</div>
+            <div style="color:var(--text-muted);margin-top:2px">${pr.sport||'—'} · ${formatDate(pr.match_date)} · par ${pr.tipsterName||'—'} · <strong>${formatEuros(a.amount)}</strong></div>
+          </div>`;}).join('')}
         </div>`}`;
-  } catch(e) {
-    modal.innerHTML = `<div style="color:var(--error)">Erreur de chargement.</div>`;
-  }
+  }catch(e){modal.innerHTML=`<div style="color:var(--error)">Erreur de chargement.</div>`;}
 }
+
+
