@@ -48,6 +48,7 @@ const adminState = {
   pronosFilter: 'pending',
   tipsterSearch: '',
   userSearch: '',
+  userSortDir: 0,  // 0 = aucun tri, 1 = croissant, -1 = décroissant
 };
 
 // ── Init ──────────────────────────────────────────────────────
@@ -157,6 +158,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     .in('role', ['user', 'moderator'])
     .order('created_at', { ascending: false });
 
+  // Charger le nombre d'achats par utilisateur
+  const ANON_U = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const rPurchCount = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/purchases?select=user_id&apikey=' + ANON_U, {
+    headers: { 'apikey': ANON_U, 'Authorization': 'Bearer ' + ANON_U }
+  });
+  const allPurchasesCount = await rPurchCount.json();
+  const purchaseCountMap = {};
+  if (Array.isArray(allPurchasesCount)) {
+    allPurchasesCount.forEach(p => {
+      purchaseCountMap[p.user_id] = (purchaseCountMap[p.user_id] || 0) + 1;
+    });
+  }
+
   if (users && users.length > 0) {
     adminState.users = users.map(u => ({
       ...u,
@@ -166,6 +180,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       pending: parseFloat(u.pending) || 0,
       spent:   0,
       joined:  u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '—',
+      achats:  purchaseCountMap[u.id] || 0,
     }));
   } else {
     adminState.users = [];
@@ -568,6 +583,7 @@ function renderUsers(c) {
 
   // Première fois : construire la structure complète
   if (!document.getElementById('users-rows')) {
+    const sortArrow = () => adminState.userSortDir === 1 ? ' ↑' : adminState.userSortDir === -1 ? ' ↓' : ' ⇅';
     c.innerHTML = `
       <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:var(--space-xl)">
         <div class="stat-card"><div class="stat-card__label">👤 Utilisateurs</div><div class="stat-card__value">${adminState.users.length}</div><div class="stat-card__sub">inscrits</div></div>
@@ -580,8 +596,10 @@ function renderUsers(c) {
           oninput="adminState.userSearch=this.value;renderUserRows()" />
       </div>
       <div class="pronos-table" style="${mobile?'padding:0':''}">
-        ${!mobile ? `<div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
-          <span>Utilisateur</span><span>Solde dispo</span><span>En attente</span><span>Inscrit</span><span>Rôle</span>
+        ${!mobile ? `<div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr">
+          <span>Utilisateur</span>
+          <span id="achats-sort-header" onclick="toggleUserSort()" style="cursor:pointer;user-select:none">Achats<span id="achats-sort-arrow"> ⇅</span></span>
+          <span>Solde dispo</span><span>En attente</span><span>Inscrit</span><span>Actions</span>
         </div>` : ''}
         <div id="users-rows"></div>
       </div>
@@ -591,14 +609,34 @@ function renderUsers(c) {
   renderUserRows();
 }
 
+function toggleUserSort() {
+  // Cycle: 0 (aucun) → -1 (décroissant) → 1 (croissant) → -1 ...
+  if (adminState.userSortDir === 0 || adminState.userSortDir === 1) {
+    adminState.userSortDir = -1;
+  } else {
+    adminState.userSortDir = 1;
+  }
+  // Mettre à jour la flèche dans le header
+  const arrow = document.getElementById('achats-sort-arrow');
+  if (arrow) arrow.textContent = adminState.userSortDir === 1 ? ' ↑' : ' ↓';
+  renderUserRows();
+}
+
 function renderUserRows() {
   const mobile = isMobile();
   const container = document.getElementById('users-rows');
   if (!container) return;
 
-  const filtered = adminState.users.filter(u =>
+  let filtered = adminState.users.filter(u =>
     (u.first_name || '').toLowerCase().includes(adminState.userSearch.toLowerCase())
   );
+
+  // Tri par nombre d'achats si actif
+  if (adminState.userSortDir !== 0) {
+    filtered = [...filtered].sort((a, b) =>
+      adminState.userSortDir === -1 ? b.achats - a.achats : a.achats - b.achats
+    );
+  }
 
   if (!filtered.length) {
     container.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🔍</div><h3>Aucun utilisateur trouvé</h3><p>Essayez un autre prénom.</p></div>`;
@@ -611,6 +649,8 @@ function renderUserRows() {
     : `<button onclick="setModerator('${u.id}','moderator')" style="font-size:0.72rem;padding:2px 8px;border:1px solid var(--border);border-radius:var(--radius-full);background:none;color:var(--text-muted);cursor:pointer">+ Modo</button>`;
 
   container.innerHTML = filtered.map(u => {
+    const voirBtn = `<button class="btn-icon" onclick="openFicheUser('${u.id}')">👁</button>`;
+
     if (mobile) return `
       <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
@@ -618,24 +658,26 @@ function renderUserRows() {
             <div class="prono-title">${u.name}</div>
             <div class="prono-meta">${u.email}</div>
           </div>
-          <div>${roleBtn(u)}</div>
+          <div style="display:flex;gap:6px;align-items:center">${voirBtn}${roleBtn(u)}</div>
         </div>
         <div style="display:flex;gap:var(--space-lg);font-size:0.82rem;color:var(--text-muted);flex-wrap:wrap">
+          <span>Achats : <strong style="color:var(--text-dark)">${u.achats}</strong></span>
           <span>Solde : <strong style="color:var(--blue)">${formatEuros(u.balance)}</strong></span>
           <span>Attente : <strong style="color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</strong></span>
           <span>Inscrit : ${u.joined}</span>
         </div>
       </div>`;
     return `
-      <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
+      <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr">
         <div>
           <div class="prono-title">${u.name}</div>
           <div class="prono-meta">${u.email}</div>
         </div>
+        <div style="font-weight:700">${u.achats}</div>
         <div style="font-weight:700;color:var(--blue)">${formatEuros(u.balance)}</div>
         <div style="font-weight:600;color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</div>
         <div style="font-size:0.8rem;color:var(--text-muted)">${u.joined}</div>
-        <div>${roleBtn(u)}</div>
+        <div style="display:flex;gap:6px;align-items:center">${voirBtn}${roleBtn(u)}</div>
       </div>`;
   }).join('');
 }
