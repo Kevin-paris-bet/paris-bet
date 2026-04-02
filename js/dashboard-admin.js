@@ -320,12 +320,45 @@ function getFilteredPronos() {
 function renderPronosTable(pronos, compact) {
   if (!pronos.length) return `<div class="empty-state"><div class="empty-state__icon">✅</div><h3>Aucun pronostic ici</h3><p>Essayez un autre filtre.</p></div>`;
 
+  const isMobile = window.innerWidth <= 768;
+
   const statusBadge = {
     pending:   `<span class="badge badge-pending">⏳ En attente</span>`,
     won:       `<span class="badge badge-won">✓ Gagné</span>`,
     lost:      `<span class="badge badge-lost">✕ Perdu</span>`,
     cancelled: `<span class="badge badge-cancelled">⊘ Annulé</span>`,
   };
+
+  if (isMobile) {
+    return `
+      <div class="pronos-table" style="padding:0">
+        ${pronos.map(p => {
+          const actionBtns = !compact && p.status === 'pending'
+            ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px">
+                 <button class="btn-validate btn-validate--won"   onclick="validateProno('${p.id}','won')">✓ Gagné</button>
+                 <button class="btn-validate btn-validate--lost"  onclick="validateProno('${p.id}','lost')">✕ Perdu</button>
+                 <button class="btn-validate btn-validate--cancel" onclick="validateProno('${p.id}','cancelled')">⊘</button>
+               </div>`
+            : compact ? '' : `<span style="font-size:0.75rem;color:var(--text-muted)">Validé</span>`;
+          return `
+          <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
+              <div>
+                <div class="prono-title">${p.game}</div>
+                <div class="prono-meta">${p.sport} · ${p.match_date || p.date || '—'}</div>
+              </div>
+              ${statusBadge[p.status] || ''}
+            </div>
+            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px;display:flex;gap:var(--space-md);flex-wrap:wrap">
+              <span>Tipster : <strong style="color:var(--text-dark)">${p.tipsterName || '—'}</strong></span>
+              <span>Cote : <strong style="color:var(--blue)">${p.cote ? parseFloat(p.cote).toFixed(2) : '—'}</strong></span>
+              <span>👥 ${p.buyers} · ${formatEuros(p.revenue)}</span>
+            </div>
+            ${actionBtns}
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
 
   return `
     <div class="pronos-table">

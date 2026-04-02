@@ -52,7 +52,7 @@ function navigateTo(page) {
 
 // ── Charger les pronos depuis Supabase ────────────────────────
 async function loadPronos() {
-  const rP = await fetch(`${SUPA}/rest/v1/pronos?select=id,tipster_id,game,sport,match_date,price,status,buyers,cote&order=created_at.desc&apikey=${ANON}`, {
+  const rP = await fetch(`${SUPA}/rest/v1/pronos?select=id,tipster_id,game,sport,match_date,price,status,buyers,cote,content&order=created_at.desc&apikey=${ANON}`, {
     headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
   });
   const pronos = await rP.json();
@@ -108,9 +108,10 @@ function renderPronos(c) {
               </div>
               ${statusBadge[p.status] || ''}
             </div>
-            <div style="display:flex;align-items:center;gap:var(--space-md);margin-bottom:10px;font-size:0.82rem;color:var(--text-muted)">
+            <div style="display:flex;align-items:center;gap:var(--space-md);margin-bottom:8px;font-size:0.82rem;color:var(--text-muted)">
               <span>Cote : <strong style="color:var(--blue)">${p.cote ? parseFloat(p.cote).toFixed(2) : '—'}</strong></span>
             </div>
+            ${p.content ? `<div style="font-size:0.82rem;color:var(--text-muted);line-height:1.5;margin-bottom:10px;padding:8px 10px;background:var(--bg-soft);border-radius:var(--radius-sm)">${p.content}</div>` : ''}
             ${actionBtns}
           </div>`;
         }
@@ -120,6 +121,7 @@ function renderPronos(c) {
           <div>
             <div class="prono-title">${p.game}</div>
             <div class="prono-meta">${p.sport || ''} · ${p.match_date || '—'}</div>
+            ${p.content ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;line-height:1.4">${p.content}</div>` : ''}
           </div>
           <div style="font-size:0.85rem;font-weight:600;color:var(--blue)">${p.cote ? parseFloat(p.cote).toFixed(2) : '—'}</div>
           <div>${statusBadge[p.status] || ''}</div>
