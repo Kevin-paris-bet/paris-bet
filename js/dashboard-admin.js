@@ -440,55 +440,38 @@ async function validateProno(id, status) {
 //  PAGE — GESTION DES TIPSTERS
 // ══════════════════════════════════════════════════════════════
 function renderTipsters(c) {
-  const isMobile = window.innerWidth <= 768;
-  const rows = adminState.tipsters.map(t => {
-    if (isMobile) {
-      return `
-        <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);${t.suspended?'opacity:0.55':''}">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
-            <div>
-              <div class="prono-title">${t.name}</div>
-              <div class="prono-meta">${t.email}</div>
-              ${t.pseudo ? `<a href="https://payperwin.co/${t.pseudo}" target="_blank" style="font-size:0.75rem;color:var(--blue)">@${t.pseudo} →</a>` : ''}
-              ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
-            </div>
-            <button class="btn-icon ${t.suspended?'':'danger'}" onclick="toggleSuspend('${t.id}')">${t.suspended ? '✓' : '⛔'}</button>
-          </div>
-          <div style="display:flex;gap:var(--space-md);flex-wrap:wrap;font-size:0.82rem;color:var(--text-muted)">
-            <span>Pronos : <strong>${t.pronos}</strong></span>
-            <span>Win Rate : <strong style="color:${t.winRate>=60?'var(--success)':'var(--warning)'}">${t.winRate}%</strong></span>
-            <span>Solde : <strong style="color:var(--blue)">${formatEuros(t.balance)}</strong></span>
-            <span>RIB : ${t.ribSaved ? '✓' : '✕'}</span>
-          </div>
-        </div>`;
-    }
-    return `
-      <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px;${t.suspended?'opacity:0.55':''}">
-        <div>
-          <div class="prono-title">${t.name}</div>
-          <div class="prono-meta">${t.email}</div>
-          ${t.pseudo ? `<div><a href="https://payperwin.co/${t.pseudo}" target="_blank" style="font-size:0.75rem;color:var(--blue)">@${t.pseudo} →</a></div>` : ''}
-          ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
-        </div>
-        <div style="font-weight:600">${t.pronos}</div>
-        <div style="font-weight:700;color:${t.winRate>=60?'var(--success)':'var(--warning)'}">${t.winRate}%</div>
-        <div class="prono-price">${formatEuros(t.balance)}</div>
-        <div>${t.ribSaved ? `<span class="badge badge-won" style="font-size:0.7rem">✓ Enregistré</span>` : `<span class="badge badge-lost" style="font-size:0.7rem">✕ Manquant</span>`}</div>
-        <div class="table-actions">
-          <button class="btn-icon ${t.suspended?'':'danger'}" onclick="toggleSuspend('${t.id}')">${t.suspended ? '✓' : '⛔'}</button>
-        </div>
-      </div>`;
-  }).join('');
-
   c.innerHTML = `
     <div class="section-header">
       <div><h2>Tipsters</h2><p>${adminState.tipsters.length} tipster(s) inscrits</p></div>
     </div>
-    <div class="pronos-table" style="${isMobile ? 'padding:0' : ''}">
-      ${!isMobile ? `<div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px">
+
+    <div class="pronos-table">
+      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px">
         <span>Tipster</span><span>Pronos</span><span>Win Rate</span><span>Solde</span><span>RIB</span><span>Actions</span>
-      </div>` : ''}
-      ${rows}
+      </div>
+      ${adminState.tipsters.map(t => `
+        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px;${t.suspended?'opacity:0.55':''}">
+          <div>
+            <div class="prono-title">${t.name}</div>
+            <div class="prono-meta">${t.email}</div>
+            ${t.pseudo ? `<div><a href="https://payperwin.co/${t.pseudo}" target="_blank" style="font-size:0.75rem;color:var(--blue)">@${t.pseudo} →</a></div>` : ''}
+            ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
+          </div>
+          <div style="font-weight:600">${t.pronos}</div>
+          <div style="font-weight:700;color:${t.winRate>=60?'var(--success)':'var(--warning)'}">${t.winRate}%</div>
+          <div class="prono-price">${formatEuros(t.balance)}</div>
+          <div>
+            ${t.ribSaved
+              ? `<span class="badge badge-won" style="font-size:0.7rem">✓ Enregistré</span>`
+              : `<span class="badge badge-lost" style="font-size:0.7rem">✕ Manquant</span>`}
+          </div>
+          <div class="table-actions">
+            <button class="btn-icon ${t.suspended?'':'danger'}" title="${t.suspended?'Réactiver':'Suspendre'}"
+              onclick="toggleSuspend('${t.id}')">
+              ${t.suspended ? '✓' : '⛔'}
+            </button>
+          </div>
+        </div>`).join('')}
     </div>
   `;
 }
@@ -518,44 +501,7 @@ async function toggleSuspend(id) {
 //  PAGE — GESTION DES UTILISATEURS
 // ══════════════════════════════════════════════════════════════
 function renderUsers(c) {
-  const isMobile = window.innerWidth <= 768;
   const totalBalance = adminState.users.reduce((s,u) => s + u.balance + u.pending, 0);
-
-  const rows = adminState.users.map(u => {
-    const roleBtn = u.role === 'moderator'
-      ? `<span style="font-size:0.72rem;padding:2px 8px;border-radius:var(--radius-full);background:var(--warning-pale,#fff8e1);color:var(--warning);font-weight:600">⚖️ Modo</span>
-         <button onclick="setModerator('${u.id}','user')" style="margin-left:4px;font-size:0.7rem;padding:2px 6px;border:1px solid var(--border);border-radius:var(--radius-sm);background:none;color:var(--text-muted);cursor:pointer">Retirer</button>`
-      : `<button onclick="setModerator('${u.id}','moderator')" style="font-size:0.72rem;padding:2px 8px;border:1px solid var(--border);border-radius:var(--radius-full);background:none;color:var(--text-muted);cursor:pointer">+ Modo</button>`;
-
-    if (isMobile) {
-      return `
-        <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
-            <div>
-              <div class="prono-title">${u.name}</div>
-              <div class="prono-meta">${u.email}</div>
-            </div>
-            <div>${roleBtn}</div>
-          </div>
-          <div style="display:flex;gap:var(--space-md);flex-wrap:wrap;font-size:0.82rem;color:var(--text-muted)">
-            <span>Solde : <strong style="color:var(--blue)">${formatEuros(u.balance)}</strong></span>
-            <span>Attente : <strong style="color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</strong></span>
-            <span>Inscrit : ${u.joined}</span>
-          </div>
-        </div>`;
-    }
-    return `
-      <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
-        <div>
-          <div class="prono-title">${u.name}</div>
-          <div class="prono-meta">${u.email}</div>
-        </div>
-        <div style="font-weight:700;color:var(--blue)">${formatEuros(u.balance)}</div>
-        <div style="font-weight:600;color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</div>
-        <div style="font-size:0.8rem;color:var(--text-muted)">${u.joined}</div>
-        <div>${roleBtn}</div>
-      </div>`;
-  }).join('');
 
   c.innerHTML = `
     <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:var(--space-xl)">
@@ -575,11 +521,28 @@ function renderUsers(c) {
         <div class="stat-card__sub">pronos non validés</div>
       </div>
     </div>
-    <div class="pronos-table" style="${isMobile ? 'padding:0' : ''}">
-      ${!isMobile ? `<div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
+
+    <div class="pronos-table">
+      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
         <span>Utilisateur</span><span>Solde dispo</span><span>En attente</span><span>Inscrit</span><span>Rôle</span>
-      </div>` : ''}
-      ${rows}
+      </div>
+      ${adminState.users.map(u => `
+        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
+          <div>
+            <div class="prono-title">${u.name}</div>
+            <div class="prono-meta">${u.email}</div>
+          </div>
+          <div style="font-weight:700;color:var(--blue)">${formatEuros(u.balance)}</div>
+          <div style="font-weight:600;color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</div>
+          <div style="font-size:0.8rem;color:var(--text-muted)">${u.joined}</div>
+          <div>
+            ${u.role === 'moderator'
+              ? `<span style="font-size:0.75rem;padding:3px 10px;border-radius:var(--radius-full);background:var(--warning-pale,#fff8e1);color:var(--warning);font-weight:600">⚖️ Modérateur</span>
+                 <button onclick="setModerator('${u.id}','user')" style="margin-left:6px;font-size:0.72rem;padding:2px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:none;color:var(--text-muted);cursor:pointer">Retirer</button>`
+              : `<button onclick="setModerator('${u.id}','moderator')" style="font-size:0.75rem;padding:3px 10px;border:1px solid var(--border);border-radius:var(--radius-full);background:none;color:var(--text-muted);cursor:pointer">+ Modérateur</button>`
+            }
+          </div>
+        </div>`).join('')}
     </div>
   `;
 }
@@ -614,60 +577,6 @@ async function renderVirements(c) {
   const pending = Array.isArray(tipsters) ? tipsters.filter(t => parseFloat(t.balance) >= minPayout) : [];
   const totalPending = pending.reduce((s,t) => s + parseFloat(t.balance), 0);
 
-  const isMobile = window.innerWidth <= 768;
-
-  const pendingRows = pending.length === 0
-    ? `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">✅ Aucun virement en attente.</div>`
-    : pending.map(t => {
-        if (isMobile) {
-          return `
-            <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
-                <div>
-                  <div class="prono-title">${t.first_name} ${t.last_name}</div>
-                  <div class="prono-meta" style="word-break:break-all">${t.rib_iban || '⚠️ RIB non renseigné'}</div>
-                </div>
-                <div style="font-weight:700;color:var(--blue);white-space:nowrap">${formatEuros(parseFloat(t.balance))}</div>
-              </div>
-              <button class="btn btn-primary btn--sm" onclick="markVirementDone('${t.id}','${t.first_name} ${t.last_name}',${parseFloat(t.balance)})">✓ Effectué</button>
-            </div>`;
-        }
-        return `
-          <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 120px">
-            <div>
-              <div class="prono-title">${t.first_name} ${t.last_name}</div>
-              <div class="prono-meta">Virement hebdomadaire</div>
-            </div>
-            <div style="font-weight:700;font-size:1.05rem;color:var(--blue)">${formatEuros(parseFloat(t.balance))}</div>
-            <div style="font-size:0.82rem;color:var(--text-muted)">${t.rib_iban ? t.rib_iban + (t.rib_bic ? ' / ' + t.rib_bic : '') : '⚠️ Non renseigné'}</div>
-            <div><button class="btn btn-primary btn--sm" onclick="markVirementDone('${t.id}','${t.first_name} ${t.last_name}',${parseFloat(t.balance)})">✓ Effectué</button></div>
-          </div>`;
-      }).join('');
-
-  const histoRows = !Array.isArray(payouts) || payouts.length === 0
-    ? `<div style="text-align:center;padding:var(--space-xl);color:var(--text-muted);font-size:0.88rem">Aucun virement effectué pour l'instant.</div>`
-    : payouts.map(v => {
-        if (isMobile) {
-          return `
-            <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px">
-              <div>
-                <div class="prono-title">${tipstersMap[v.tipster_id] || '—'}</div>
-                <div class="prono-meta">${new Date(v.created_at).toLocaleDateString('fr-FR')}</div>
-              </div>
-              <div style="font-weight:700;color:var(--success)">+${formatEuros(v.amount)}</div>
-            </div>`;
-        }
-        return `
-          <div class="table-row" style="grid-template-columns:2fr 1fr 1fr">
-            <div>
-              <div class="prono-title">${tipstersMap[v.tipster_id] || '—'}</div>
-              <div class="prono-meta">Virement effectué</div>
-            </div>
-            <div style="font-weight:700;color:var(--success)">+${formatEuros(v.amount)}</div>
-            <div style="font-size:0.82rem;color:var(--text-muted)">${new Date(v.created_at).toLocaleDateString('fr-FR')}</div>
-          </div>`;
-      }).join('');
-
   c.innerHTML = `
     ${pending.length > 0 ? `
       <div style="background:var(--warning-pale);border:1px solid var(--warning);border-radius:var(--radius-lg);padding:var(--space-lg);margin-bottom:var(--space-xl);display:flex;gap:var(--space-md);align-items:center">
@@ -677,17 +586,48 @@ async function renderVirements(c) {
           <div style="font-size:0.85rem;color:var(--text-muted);margin-top:3px">Total : <strong>${formatEuros(totalPending)}</strong> à virer</div>
         </div>
       </div>` : ''}
+
     <div class="section-header">
       <div><h2>À effectuer</h2><p>Tipsters avec solde ≥ ${minPayout}€</p></div>
     </div>
-    <div class="pronos-table" style="margin-bottom:var(--space-xl);${isMobile?'padding:0':''}">
-      ${!isMobile ? `<div class="table-header" style="grid-template-columns:2fr 1fr 1fr 120px"><span>Tipster</span><span>Solde</span><span>RIB</span><span>Action</span></div>` : ''}
-      ${pendingRows}
+    <div class="pronos-table" style="margin-bottom:var(--space-xl)">
+      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 120px">
+        <span>Tipster</span><span>Solde</span><span>RIB</span><span>Action</span>
+      </div>
+      ${pending.length === 0
+        ? `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">✅ Aucun virement en attente.</div>`
+        : pending.map(t => `
+          <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 120px">
+            <div>
+              <div class="prono-title">${t.first_name} ${t.last_name}</div>
+              <div class="prono-meta">Virement hebdomadaire</div>
+            </div>
+            <div style="font-weight:700;font-size:1.05rem;color:var(--blue)">${formatEuros(parseFloat(t.balance))}</div>
+            <div style="font-size:0.82rem;color:var(--text-muted)">${t.rib_iban ? t.rib_iban + (t.rib_bic ? ' / ' + t.rib_bic : '') : '⚠️ Non renseigné'}</div>
+            <div>
+              <button class="btn btn-primary btn--sm" onclick="markVirementDone('${t.id}','${t.first_name} ${t.last_name}',${parseFloat(t.balance)})">
+                ✓ Effectué
+              </button>
+            </div>
+          </div>`).join('')}
     </div>
+
     <div class="section-header"><div><h2>Historique des virements</h2></div></div>
-    <div class="pronos-table" style="${isMobile?'padding:0':''}">
-      ${!isMobile ? `<div class="table-header" style="grid-template-columns:2fr 1fr 1fr"><span>Tipster</span><span>Montant</span><span>Date</span></div>` : ''}
-      ${histoRows}
+    <div class="pronos-table">
+      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr">
+        <span>Tipster</span><span>Montant</span><span>Date</span>
+      </div>
+      ${!Array.isArray(payouts) || payouts.length === 0
+        ? `<div style="text-align:center;padding:var(--space-xl);color:var(--text-muted);font-size:0.88rem">Aucun virement effectué pour l'instant.</div>`
+        : payouts.map(v => `
+          <div class="table-row" style="grid-template-columns:2fr 1fr 1fr">
+            <div>
+              <div class="prono-title">${tipstersMap[v.tipster_id] || '—'}</div>
+              <div class="prono-meta">Virement effectué</div>
+            </div>
+            <div style="font-weight:700;color:var(--success)">+${formatEuros(v.amount)}</div>
+            <div style="font-size:0.82rem;color:var(--text-muted)">${new Date(v.created_at).toLocaleDateString('fr-FR')}</div>
+          </div>`).join('')}
     </div>
   `;
 }
@@ -794,285 +734,148 @@ function toggleSidebar() {
   if (overlay) overlay.classList.toggle('show');
 }
 
-
+// ── Stubs pour rubriques supplémentaires (finances, explorer, feedback) ──
+// Ces fonctions sont définies dans les fichiers JS additionnels chargés après
+function renderFinances(c) { c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>'; }
+function renderExplorerTipsters(c) { c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>'; }
+function renderPageFeedbackAdmin(c) { c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>'; }
 
 // ══════════════════════════════════════════════════════════════
-//  PAGE — FINANCES
+//  MODALES — FICHES DÉTAILLÉES
 // ══════════════════════════════════════════════════════════════
-async function renderFinances(c) {
-  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
-  c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>';
-  try {
-    const [rP, rA] = await Promise.all([
-      fetch(`${SUPA}/rest/v1/pronos?select=id,status,price,buyers,tipster_id&apikey=${ANON}`, { headers: { apikey: ANON, Authorization: 'Bearer ' + ANON } }),
-      fetch(`${SUPA}/rest/v1/purchases?select=prono_id,amount,status&apikey=${ANON}`, { headers: { apikey: ANON, Authorization: 'Bearer ' + ANON } }),
-    ]);
-    const pronos = await rP.json();
-    const achats = await rA.json();
-    const won = Array.isArray(achats) ? achats.filter(a => a.status === 'won') : [];
-    const totalWon = won.reduce((s, a) => s + parseFloat(a.amount || 0), 0);
-    const commission = totalWon * CONFIG.finance.commissionRate;
-    const tipsterPart = totalWon * (1 - CONFIG.finance.commissionRate);
-    const pending = Array.isArray(achats) ? achats.filter(a => a.status === 'pending') : [];
-    const totalPending = pending.reduce((s, a) => s + parseFloat(a.amount || 0), 0);
-
-    c.innerHTML = `
-      <div class="section-header"><div><h2>Finances & Commissions</h2><p>Vue d'ensemble des flux financiers</p></div></div>
-      <div class="stats-grid" style="margin-bottom:var(--space-xl)">
-        <div class="stat-card stat-card--blue">
-          <div class="stat-card__label">💰 Total encaissé</div>
-          <div class="stat-card__value">${formatEuros(totalWon)}</div>
-          <div class="stat-card__sub">sur pronos gagnants</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card__label">🏆 Commission PayPerWin</div>
-          <div class="stat-card__value">${formatEuros(commission)}</div>
-          <div class="stat-card__sub">${CONFIG.finance.commissionRate * 100}% des gains</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card__label">📊 Part tipsters</div>
-          <div class="stat-card__value">${formatEuros(tipsterPart)}</div>
-          <div class="stat-card__sub">${(1 - CONFIG.finance.commissionRate) * 100}% reversés</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card__label">⏳ En attente</div>
-          <div class="stat-card__value">${formatEuros(totalPending)}</div>
-          <div class="stat-card__sub">pronos non validés</div>
-        </div>
-      </div>`;
-  } catch(e) {
-    c.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur : ${e.message}</div>`;
+function closeFicheModal(e) {
+  if (!e || e.target === document.getElementById('fiche-modal-overlay')) {
+    document.getElementById('fiche-modal-overlay').style.display = 'none';
   }
 }
 
-// ══════════════════════════════════════════════════════════════
-//  PAGE — EXPLORER TIPSTERS
-// ══════════════════════════════════════════════════════════════
-async function renderExplorerTipsters(container, publicUrlBase) {
-  container.innerHTML = `
-    <div class="section-header"><div><h2>Explorer les tipsters</h2><p>Chargement...</p></div></div>
-    <div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>`;
-  try {
-    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-    const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
-    const [rT, rP] = await Promise.all([
-      fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,pseudo,avatar_url&role=eq.tipster&apikey=${ANON}`, { headers: { apikey: ANON, Authorization: 'Bearer ' + ANON } }),
-      fetch(`${SUPA}/rest/v1/pronos?select=tipster_id,status,buyers,cote&apikey=${ANON}`, { headers: { apikey: ANON, Authorization: 'Bearer ' + ANON } }),
-    ]);
-    const tipsters = await rT.json();
-    const pronos = await rP.json();
-    const stats = {};
-    for (const t of tipsters) {
-      const my = pronos.filter(p => p.tipster_id === t.id);
-      const won = my.filter(p => p.status === 'won').length;
-      const lost = my.filter(p => p.status === 'lost').length;
-      const finished = won + lost;
-      const winRate = finished > 0 ? Math.round(won / finished * 100) : null;
-      const withCote = my.filter(p => (p.status === 'won' || p.status === 'lost') && p.cote && parseFloat(p.cote) > 1);
-      const avgCote = withCote.length > 0 ? Math.round(withCote.reduce((s, p) => s + parseFloat(p.cote), 0) / withCote.length * 100) / 100 : null;
-      const score = winRate !== null ? winRate * (avgCote !== null ? avgCote : 1) * Math.log10(finished + 1) : null;
-      stats[t.id] = { won, lost, total: my.length, totalAcheteurs: my.reduce((s, p) => s + (parseInt(p.buyers) || 0), 0), winRate, avgCote, score };
-    }
-    let sortCol = 'score', sortDir = -1, filterVal = '';
-    function sortedFiltered() {
-      return tipsters.filter(t => (t.pseudo || '').toLowerCase().includes(filterVal.toLowerCase()))
-        .sort((a, b) => {
-          const sa = stats[a.id][sortCol], sb = stats[b.id][sortCol];
-          if (sa === null && sb === null) return 0;
-          if (sa === null) return 1; if (sb === null) return -1;
-          return (sb - sa) * sortDir * -1;
-        });
-    }
-    function setSortCol(col) { if (sortCol === col) sortDir *= -1; else { sortCol = col; sortDir = -1; } renderList(); }
-    function arrowHtml(col) {
-      if (sortCol !== col) return `<span style="color:var(--text-muted);font-size:0.7rem;margin-left:3px">⇅</span>`;
-      return sortDir === -1 ? `<span style="font-size:0.7rem;margin-left:3px">↓</span>` : `<span style="font-size:0.7rem;margin-left:3px">↑</span>`;
-    }
-    function renderList() {
-      ['total','totalAcheteurs','winRate','avgCote','score'].forEach(col => {
-        const el = document.getElementById('sort-btn-' + col);
-        if (el) { el.style.borderColor = sortCol === col ? 'var(--blue)' : ''; el.style.color = sortCol === col ? 'var(--blue)' : ''; }
-        const arr = document.getElementById('sort-arr-' + col);
-        if (arr) arr.innerHTML = arrowHtml(col);
-      });
-      const listEl = document.getElementById('tipsters-list');
-      const list = sortedFiltered();
-      if (!list.length) { listEl.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun tipster trouvé.</div>`; return; }
-      listEl.innerHTML = list.map((t, i) => {
-        const s = stats[t.id];
-        const pseudo = t.pseudo || (t.first_name + ' ' + t.last_name);
-        const avatarHtml = t.avatar_url
-          ? `<img src="${t.avatar_url}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
-          : `<div style="width:44px;height:44px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;flex-shrink:0">${pseudo[0]?.toUpperCase()}</div>`;
-        const winRateHtml = s.winRate !== null ? `<span style="font-weight:800;font-size:1rem;color:${s.winRate>=60?'var(--success)':'var(--warning)'}">${s.winRate}%</span>` : `<span style="color:var(--text-muted);font-size:0.85rem">—</span>`;
-        const coteHtml = s.avgCote !== null ? `<span style="font-weight:800;font-size:1rem;color:var(--blue)">${s.avgCote.toFixed(2).replace('.',',')}</span>` : `<span style="color:var(--text-muted);font-size:0.85rem">—</span>`;
-        const rankColor = i===0?'#FFD700':i===1?'#C0C0C0':i===2?'#CD7F32':'var(--text-muted)';
-        const href = t.pseudo ? publicUrlBase + t.pseudo : '#';
-        return `<a href="${href}" target="_blank" style="text-decoration:none">
-          <div class="tipster-explorer-card">
-            <div style="display:flex;align-items:center;gap:12px;min-width:0">
-              <div style="font-size:0.85rem;font-weight:700;color:${rankColor};min-width:20px;text-align:center">${i+1}</div>
-              ${avatarHtml}
-              <div style="font-weight:700;font-size:0.95rem;color:var(--text-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@${pseudo}</div>
-            </div>
-            <div class="tipster-explorer-stats">
-              <div class="tipster-explorer-stat"><div class="tipster-explorer-stat__label">Pronos</div><div class="tipster-explorer-stat__value">${s.total}</div></div>
-              <div class="tipster-explorer-stat"><div class="tipster-explorer-stat__label">Acheteurs</div><div class="tipster-explorer-stat__value">${s.totalAcheteurs}</div></div>
-              <div class="tipster-explorer-stat"><div class="tipster-explorer-stat__label">Win Rate</div><div class="tipster-explorer-stat__value">${winRateHtml}</div></div>
-              <div class="tipster-explorer-stat"><div class="tipster-explorer-stat__label">Cote moy.</div><div class="tipster-explorer-stat__value">${coteHtml}</div></div>
-            </div>
-          </div></a>`;
-      }).join('');
-    }
-    const sortBtns = ['total','totalAcheteurs','winRate','avgCote','score'].map(col => {
-      const labels = {total:'Pronos',totalAcheteurs:'Acheteurs',winRate:'Win Rate',avgCote:'Cote moy.',score:'🏆 Score'};
-      return `<button id="sort-btn-${col}" class="btn btn-outline" style="font-size:0.78rem;padding:6px 12px" onclick="document.setSortCol('${col}')">${labels[col]} <span id="sort-arr-${col}"></span></button>`;
-    }).join('');
-    const scoreInfoBtn = `<div style="position:relative;display:inline-block">
-      <button onclick="document.toggleScoreInfo()" style="width:20px;height:20px;border-radius:50%;border:1.5px solid var(--blue);background:none;color:var(--blue);font-size:0.72rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center">i</button>
-      <div id="score-info-popover" style="display:none;position:absolute;top:28px;left:50%;transform:translateX(-50%);width:260px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md);font-size:0.8rem;color:var(--text-body);line-height:1.6;box-shadow:var(--shadow-md);z-index:100">
-        <strong style="color:var(--text-dark);display:block;margin-bottom:6px">🏆 Comment fonctionne le Score ?</strong>
-        Le Score récompense les tipsters qui gagnent souvent, sur des cotes élevées, et sur la durée.<br><br>
-        Un tipster avec 1 seul prono gagné n'aura jamais un bon score, même s'il est à 100%.
-      </div></div>`;
-    container.innerHTML = `
-      <div class="section-header"><div><h2>Explorer les tipsters</h2><p>${tipsters.length} tipsters inscrits</p></div></div>
-      <div class="tipster-search-wrap"><span class="input-icon">🔍</span><input class="input" id="tipster-search" type="text" placeholder="Rechercher par pseudo..." oninput="document.tipsterFilter(this.value)" /></div>
-      <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md);flex-wrap:wrap;align-items:center;">${sortBtns}${scoreInfoBtn}</div>
-      <div id="tipsters-list"></div>`;
-    document.tipsterFilter = (val) => { filterVal = val; renderList(); };
-    document.setSortCol = setSortCol;
-    document.toggleScoreInfo = () => { const p = document.getElementById('score-info-popover'); if (p) p.style.display = p.style.display === 'none' ? 'block' : 'none'; };
-    renderList();
-  } catch(e) {
-    container.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur : ${e.message}</div>`;
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-//  PAGE — FEEDBACK & CHANGELOG (ADMIN)
-// ══════════════════════════════════════════════════════════════
-async function renderPageFeedbackAdmin(container) {
+async function openFicheTipster(id) {
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
   const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
-  container.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>';
-  const [rFB, rCL] = await Promise.all([
-    fetch(`${SUPA}/rest/v1/feedback?select=*&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON, Authorization: 'Bearer ' + ANON } }),
-    fetch(`${SUPA}/rest/v1/changelog?select=*&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON, Authorization: 'Bearer ' + ANON } }),
-  ]);
-  const feedbacks = await rFB.json().catch(() => []);
-  const changelog = await rCL.json().catch(() => []);
-  const statutColors = { nouveau:'var(--blue)', 'en cours':'var(--warning)', résolu:'var(--success)' };
-  const catIcons = { suggestion:'💡', bug:'🐛', autre:'💬' };
-  function fmtDate(str) { return new Date(str).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' }); }
-  const initiales = (pseudo) => { const parts = (pseudo||'?').trim().split(/[\s-]+/); return ((parts[0]?.[0]||'')+(parts[1]?.[0]||parts[0]?.[1]||'')).toUpperCase(); };
-  const feedbackRows = Array.isArray(feedbacks) && feedbacks.length > 0
-    ? feedbacks.map(f => {
-        const ini = initiales(f.pseudo||'?');
-        const avatarColor = f.role==='tipster' ? 'var(--blue-xpale);color:var(--blue)' : 'var(--success-pale);color:var(--success)';
-        return `<div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:var(--space-sm)">
-            <div style="width:36px;height:36px;border-radius:50%;background:${avatarColor};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.82rem;flex-shrink:0">${ini}</div>
-            <div style="flex:1;min-width:0">
-              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-                <span style="font-weight:700;font-size:0.95rem;color:var(--text-dark)">${f.pseudo||'—'}</span>
-                <span style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap">${fmtDate(f.created_at)}</span>
-              </div>
-              <div style="font-size:0.78rem;color:var(--text-muted)">${f.role||''} · ${f.email||''}</div>
-            </div>
-          </div>
-          <div style="margin-bottom:var(--space-sm)">
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">
-              <div style="font-size:0.78rem;color:var(--text-muted)">${catIcons[f.categorie]||'💬'} ${f.categorie||''}</div>
-              <select style="font-size:0.75rem;padding:3px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:${statutColors[f.statut]||'var(--blue)'};cursor:pointer" onchange="updateFeedbackStatut('${f.id}',this.value)">
-                <option value="nouveau" ${f.statut==='nouveau'?'selected':''}>🔵 Nouveau</option>
-                <option value="en cours" ${f.statut==='en cours'?'selected':''}>🟡 En cours</option>
-                <option value="résolu" ${f.statut==='résolu'?'selected':''}>🟢 Résolu</option>
-              </select>
-            </div>
-            <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px">${f.titre}</div>
-            <div style="font-size:0.85rem;color:var(--text-muted);line-height:1.6">${f.description}</div>
-          </div>
-        </div>`;
-      }).join('')
-    : '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun feedback reçu.</div>';
+  const overlay = document.getElementById('fiche-modal-overlay');
+  const modal   = document.getElementById('fiche-modal-content');
+  overlay.style.display = 'block';
+  modal.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Chargement...</div>';
 
-  const changelogRows = Array.isArray(changelog) && changelog.length > 0
-    ? changelog.map(e => `
-      <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;flex-wrap:wrap">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:0.72rem;padding:2px 10px;border-radius:var(--radius-full);background:var(--blue-xpale);color:var(--blue);font-weight:600;white-space:nowrap">${e.type}</span>
-            <span style="font-size:0.75rem;color:var(--text-muted)">${fmtDate(e.created_at)}</span>
-          </div>
-          <button onclick="deleteChangelog('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--error);font-size:0.95rem;padding:2px">🗑</button>
-        </div>
-        <div style="font-weight:700;color:var(--text-dark);margin-bottom:3px;word-break:break-word">${e.titre}</div>
-        <div style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;word-break:break-word">${e.description}</div>
-      </div>`).join('')
-    : '<div style="text-align:center;padding:var(--space-xl);color:var(--text-muted)">Aucune entrée changelog.</div>';
+  try {
+    const rP = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,rib_iban,rib_bic,rib_name,created_at&id=eq.${id}&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const profiles = await rP.json();
+    const p = profiles[0] || {};
 
-  container.innerHTML = `
-    <div class="section-header" style="margin-bottom:var(--space-md)">
-      <div><h2>💬 Feedbacks reçus</h2><p>${Array.isArray(feedbacks)?feedbacks.length:0} feedback(s)</p></div>
-      <button class="btn btn-outline" onclick="exportFeedbackCSV()">⬇ Exporter CSV</button>
-    </div>
-    <div class="pronos-table" style="padding:0;margin-bottom:var(--space-2xl)">${feedbackRows}</div>
-    <div class="section-header" style="margin-bottom:var(--space-md)"><div><h2>📣 Changelog</h2><p>Annonces visibles par tous</p></div></div>
-    <div class="pronos-table" style="padding:var(--space-lg);margin-bottom:var(--space-lg)">
-      <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-dark);margin-bottom:var(--space-md)">+ Publier une nouveauté</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-md);margin-bottom:var(--space-md)">
-        <div class="form-group"><label>Type</label><select class="input" id="cl-type" style="cursor:pointer"><option>Nouveau</option><option>Amélioration</option><option>Correction bug</option></select></div>
-        <div class="form-group"><label>Titre</label><input class="input" type="text" id="cl-titre" placeholder="Ex: Nouveau classement des tipsters" /></div>
+    const rPr = await fetch(`${SUPA}/rest/v1/pronos?select=id,game,sport,match_date,status,buyers,price,content,cote&tipster_id=eq.${id}&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const pronos = await rPr.json();
+
+    const pronoIds = (pronos||[]).map(p => p.id);
+    let totalCA = 0, totalComm = 0;
+    if (pronoIds.length > 0) {
+      const rPurch = await fetch(`${SUPA}/rest/v1/purchases?select=amount,status&prono_id=in.(${pronoIds.join(',')})&apikey=${ANON}`, { headers: { apikey: ANON } });
+      const purchases = await rPurch.json();
+      totalCA = (purchases||[]).reduce((s,p) => s + parseFloat(p.amount||0), 0);
+      totalComm = totalCA * 0.10;
+    }
+
+    const won  = (pronos||[]).filter(p => p.status === 'won').length;
+    const lost = (pronos||[]).filter(p => p.status === 'lost').length;
+    const wr   = (won+lost) > 0 ? Math.round(won/(won+lost)*100) : 0;
+
+    modal.innerHTML = `
+      <h2 style="margin-bottom:4px">${p.first_name} ${p.last_name}</h2>
+      <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">Membre depuis ${formatDate(p.created_at?.split('T')[0])}</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-card__label">Pronos</div><div class="stat-card__value">${(pronos||[]).length}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Win Rate</div><div class="stat-card__value" style="color:var(--success)">${wr}%</div></div>
+        <div class="stat-card"><div class="stat-card__label">CA Total</div><div class="stat-card__value">${formatEuros(totalCA)}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Mes 10%</div><div class="stat-card__value" style="color:var(--success)">${formatEuros(totalComm)}</div></div>
       </div>
-      <div class="form-group"><label>Description</label><textarea class="input" id="cl-description" placeholder="Décrivez la nouveauté..." style="min-height:80px;resize:vertical"></textarea></div>
-      <button class="btn btn-primary" onclick="publishChangelog()" style="margin-top:var(--space-sm)">📣 Publier</button>
-    </div>
-    <div class="pronos-table" style="padding:0">${changelogRows}</div>`;
+      <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-lg);font-size:0.85rem">
+        <strong>🏦 RIB</strong><br>
+        Titulaire : ${p.rib_name || '—'}<br>
+        IBAN : ${p.rib_iban || '—'}<br>
+        BIC : ${p.rib_bic || '—'}<br>
+        Solde : <strong>${formatEuros(p.balance||0)}</strong> · En attente : <strong>${formatEuros(p.pending||0)}</strong>
+      </div>
+      <h3 style="margin-bottom:var(--space-md)">Historique des pronos</h3>
+      ${(pronos||[]).length === 0 ? '<p style="color:var(--text-muted)">Aucun prono.</p>' : `
+        <div style="display:flex;flex-direction:column;gap:8px;max-height:350px;overflow-y:auto">
+          ${(pronos||[]).map(pr => {
+            const badge = { won:'<span class="badge badge-won">✓ Gagné</span>', lost:'<span class="badge badge-lost">✕ Perdu</span>', cancelled:'<span class="badge badge-cancelled">⊘ Annulé</span>', pending:'<span class="badge badge-pending">⏳ En attente</span>' };
+            return `<div style="background:var(--bg-soft);border-radius:var(--radius-sm);padding:10px 14px;font-size:0.85rem">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <strong>${pr.game}</strong>${badge[pr.status]||''}
+              </div>
+              <div style="color:var(--text-muted);margin-top:2px">${pr.sport} · ${formatDate(pr.match_date)} · 👥 ${pr.buyers||0} · ${formatEuros(pr.price)}${pr.cote ? ` · 📊 ${parseFloat(pr.cote).toFixed(2).replace('.',',')}` : ''}</div>
+              ${pr.content ? `<div style="margin-top:4px;font-style:italic;color:var(--text-muted)">📋 ${pr.content}</div>` : ''}
+            </div>`;
+          }).join('')}
+        </div>`}`;
+  } catch(e) {
+    modal.innerHTML = `<div style="color:var(--error)">Erreur de chargement.</div>`;
+  }
 }
 
-async function updateFeedbackStatut(id, statut) {
+async function openFicheUser(id) {
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-  await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/feedback?id=eq.${id}`, {
-    method: 'PATCH', headers: { 'Content-Type': 'application/json', apikey: ANON, Authorization: 'Bearer ' + ANON }, body: JSON.stringify({ statut })
-  });
-  showToast('Statut mis à jour ✓', 'success');
-}
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  const overlay = document.getElementById('fiche-modal-overlay');
+  const modal   = document.getElementById('fiche-modal-content');
+  overlay.style.display = 'block';
+  modal.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Chargement...</div>';
 
-async function publishChangelog() {
-  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-  const type = document.getElementById('cl-type')?.value;
-  const titre = document.getElementById('cl-titre')?.value.trim();
-  const desc = document.getElementById('cl-description')?.value.trim();
-  if (!titre || !desc) { showToast('Veuillez remplir le titre et la description.', 'error'); return; }
-  const r = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/changelog', {
-    method: 'POST', headers: { 'Content-Type': 'application/json', apikey: ANON, Authorization: 'Bearer ' + ANON, Prefer: 'return=minimal' },
-    body: JSON.stringify({ type, titre, description: desc })
-  });
-  if (r.ok || r.status === 201) { showToast('Nouveauté publiée ! ✓', 'success'); navigateTo('feedback'); }
-  else showToast('Erreur lors de la publication', 'error');
-}
+  try {
+    const rP = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,created_at&id=eq.${id}&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const profiles = await rP.json();
+    const p = profiles[0] || {};
 
-async function deleteChangelog(id) {
-  if (!confirm('Supprimer cette entrée ?')) return;
-  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-  await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/changelog?id=eq.${id}`, {
-    method: 'DELETE', headers: { apikey: ANON, Authorization: 'Bearer ' + ANON }
-  });
-  showToast('Entrée supprimée.', 'success');
-  navigateTo('feedback');
-}
+    const rA = await fetch(`${SUPA}/rest/v1/purchases?select=id,prono_id,amount,status,created_at&user_id=eq.${id}&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const purchases = await rA.json();
 
-function exportFeedbackCSV() {
-  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-  fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/feedback?select=*&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON, Authorization: 'Bearer ' + ANON } })
-    .then(r => r.json()).then(data => {
-      if (!Array.isArray(data) || !data.length) { showToast('Aucun feedback à exporter.', 'info'); return; }
-      const headers = ['Date','Rôle','Pseudo','Email','Catégorie','Titre','Description','Statut'];
-      const rows = data.map(f => [new Date(f.created_at).toLocaleString('fr-FR'), f.role||'', f.pseudo||'', f.email||'', f.categorie||'', f.titre||'', (f.description||'').replace(/"/g,'""'), f.statut||''].map(v => `"${v}"`).join(','));
-      const csv = [headers.join(','), ...rows].join('\n');
-      const blob = new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8;' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'feedbacks-payperwin.csv'; a.click();
-    });
+    let pronosMap = {};
+    if ((purchases||[]).length > 0) {
+      const pronoIds = [...new Set(purchases.map(a => a.prono_id))];
+      const rPr = await fetch(`${SUPA}/rest/v1/pronos?select=id,game,sport,match_date,tipster_id&id=in.(${pronoIds.join(',')})&apikey=${ANON}`, { headers: { apikey: ANON } });
+      const pronos = await rPr.json();
+      (pronos||[]).forEach(pr => pronosMap[pr.id] = pr);
+      const tipsterIds = [...new Set(Object.values(pronosMap).map(pr => pr.tipster_id).filter(Boolean))];
+      if (tipsterIds.length > 0) {
+        const rT = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name&id=in.(${tipsterIds.join(',')})&apikey=${ANON}`, { headers: { apikey: ANON } });
+        const tipsters = await rT.json();
+        const tMap = {};
+        (tipsters||[]).forEach(t => tMap[t.id] = t.first_name + ' ' + t.last_name);
+        Object.values(pronosMap).forEach(pr => pr.tipsterName = tMap[pr.tipster_id] || '—');
+      }
+    }
+
+    const totalDepense   = (purchases||[]).reduce((s,a) => s + parseFloat(a.amount||0), 0);
+    const totalRembourse = (purchases||[]).filter(a => a.status==='lost'||a.status==='cancelled').reduce((s,a) => s + parseFloat(a.amount||0), 0);
+    const totalWon       = (purchases||[]).filter(a => a.status==='won').length;
+
+    modal.innerHTML = `
+      <h2 style="margin-bottom:4px">${p.first_name} ${p.last_name}</h2>
+      <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">Membre depuis ${formatDate(p.created_at?.split('T')[0])}</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-card__label">Achats</div><div class="stat-card__value">${(purchases||[]).length}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Total dépensé</div><div class="stat-card__value">${formatEuros(totalDepense)}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Remboursés</div><div class="stat-card__value" style="color:var(--success)">${formatEuros(totalRembourse)}</div></div>
+        <div class="stat-card"><div class="stat-card__label">Pronos gagnés</div><div class="stat-card__value" style="color:var(--primary)">${totalWon}</div></div>
+      </div>
+      <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-lg);font-size:0.85rem">
+        💰 Solde : <strong>${formatEuros(p.balance||0)}</strong> · ⏳ En attente : <strong>${formatEuros(p.pending||0)}</strong>
+      </div>
+      <h3 style="margin-bottom:var(--space-md)">Historique des achats</h3>
+      ${(purchases||[]).length === 0 ? '<p style="color:var(--text-muted)">Aucun achat.</p>' : `
+        <div style="display:flex;flex-direction:column;gap:8px;max-height:350px;overflow-y:auto">
+          ${(purchases||[]).map(a => {
+            const pr = pronosMap[a.prono_id] || {};
+            const badge = { won:'<span class="badge badge-won">✓ Gagné</span>', lost:'<span class="badge badge-lost">✕ Perdu</span>', cancelled:'<span class="badge badge-cancelled">⊘ Annulé</span>', pending:'<span class="badge badge-pending">⏳ En attente</span>' };
+            return `<div style="background:var(--bg-soft);border-radius:var(--radius-sm);padding:10px 14px;font-size:0.85rem">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <strong>${pr.game||'—'}</strong>${badge[a.status]||''}
+              </div>
+              <div style="color:var(--text-muted);margin-top:2px">${pr.sport||'—'} · ${formatDate(pr.match_date)} · par ${pr.tipsterName||'—'} · <strong>${formatEuros(a.amount)}</strong></div>
+            </div>`;
+          }).join('')}
+        </div>`}`;
+  } catch(e) {
+    modal.innerHTML = `<div style="color:var(--error)">Erreur de chargement.</div>`;
+  }
 }
