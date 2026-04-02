@@ -52,31 +52,12 @@ function navigateTo(page) {
 
 // ── Charger les pronos depuis Supabase ────────────────────────
 async function loadPronos() {
-  const rP = await fetch(`${SUPA}/rest/v1/pronos?select=id,tipster_id,game,sport,match_date,price,status,buyers&order=created_at.desc&apikey=${ANON}`, {
+  const rP = await fetch(`${SUPA}/rest/v1/pronos?select=id,tipster_id,game,sport,match_date,price,status,buyers,cote&order=created_at.desc&apikey=${ANON}`, {
     headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
   });
   const pronos = await rP.json();
 
-  const rT = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,pseudo&role=eq.tipster&apikey=${ANON}`, {
-    headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
-  });
-  const tipsters = await rT.json();
-  const tMap = {};
-  if (Array.isArray(tipsters)) tipsters.forEach(t => {
-    tMap[t.id] = t.pseudo || (t.first_name + ' ' + t.last_name);
-  });
-
-  // Charger les achats pour calculer le revenue
-  const rA = await fetch(`${SUPA}/rest/v1/purchases?select=prono_id,amount&apikey=${ANON}`, {
-    headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
-  });
-  const achats = await rA.json();
-
-  modState.pronos = Array.isArray(pronos) ? pronos.map(p => {
-    const myAchats = Array.isArray(achats) ? achats.filter(a => a.prono_id === p.id) : [];
-    const revenue = myAchats.reduce((s, a) => s + parseFloat(a.amount || 0), 0);
-    return { ...p, tipsterName: tMap[p.tipster_id] || '—', revenue };
-  }) : [];
+  modState.pronos = Array.isArray(pronos) ? pronos : [];
 
   // Badge en attente
   const pending = modState.pronos.filter(p => p.status === 'pending').length;
@@ -107,15 +88,14 @@ function renderPronos(c) {
 
   const rows = filtered.length
     ? filtered.map(p => `
-      <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 160px">
+      <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 160px">
         <div>
           <div class="prono-title">${p.game}</div>
           <div class="prono-meta">${p.sport || ''} · ${p.match_date || '—'}</div>
         </div>
-        <div style="font-size:0.85rem;color:var(--text-muted)">${p.tipsterName}</div>
-        <div class="buyers-count"><span>👥</span>${p.buyers || 0}</div>
-        <div class="prono-price">${formatEuros(p.revenue)}</div>
+        <div style="font-size:0.85rem;color:var(--text-muted)">${p.cote ? parseFloat(p.cote).toFixed(2) : '—'}</div>
         <div>${statusBadge[p.status] || ''}</div>
+        <div style="font-size:0.85rem;color:var(--text-muted)">${p.match_date || '—'}</div>
         <div>
           ${p.status === 'pending' ? `
             <div style="display:flex;gap:4px;flex-wrap:wrap">
@@ -142,8 +122,8 @@ function renderPronos(c) {
     </div>
 
     <div class="pronos-table">
-      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 160px">
-        <span>Match</span><span>Tipster</span><span>Acheteurs</span><span>Montant</span><span>Statut</span><span>Action</span>
+      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 160px">
+        <span>Match</span><span>Cote</span><span>Statut</span><span>Date</span><span>Action</span>
       </div>
       ${rows}
     </div>

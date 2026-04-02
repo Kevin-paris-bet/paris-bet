@@ -329,17 +329,18 @@ function renderPronosTable(pronos, compact) {
 
   return `
     <div class="pronos-table">
-      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr ${compact?'0':'140px'}">
-        <span>Match</span><span>Tipster</span><span>Acheteurs</span><span>Montant</span><span>Statut</span>
+      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr ${compact?'0':'140px'}">
+        <span>Match</span><span>Tipster</span><span>Cote</span><span>Acheteurs</span><span>Montant</span><span>Statut</span>
         ${compact ? '' : '<span>Action</span>'}
       </div>
       ${pronos.map(p => `
-        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr ${compact?'0':'140px'}">
+        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr ${compact?'0':'140px'}">
           <div>
             <div class="prono-title">${p.game}</div>
             <div class="prono-meta">${p.sport} · ${p.match_date || p.date || "—"}</div>
           </div>
           <div style="font-size:0.85rem;color:var(--text-muted)">${p.tipsterName || "—"}</div>
+          <div style="font-size:0.85rem;font-weight:600;color:var(--blue)">${p.cote ? parseFloat(p.cote).toFixed(2) : '—'}</div>
           <div class="buyers-count"><span>👥</span>${p.buyers}</div>
           <div class="prono-price">${formatEuros(p.revenue)}</div>
           <div>${statusBadge[p.status]||''}</div>
