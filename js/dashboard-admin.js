@@ -1380,35 +1380,52 @@ async function renderPageFeedbackAdmin(container) {
   }
 
   const feedbackRows = Array.isArray(feedbacks) && feedbacks.length > 0
-    ? feedbacks.map(f => `
+    ? feedbacks.map(f => {
+        const initials = (f.pseudo||'?').slice(0,2).toUpperCase();
+        const avatarBg = f.role === 'tipster' ? 'var(--blue-xpale)' : 'var(--success-pale)';
+        const avatarColor = f.role === 'tipster' ? 'var(--blue)' : 'var(--success)';
+        return `
       <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);flex-wrap:wrap;margin-bottom:var(--space-sm)">
-          <div style="display:flex;align-items:center;gap:var(--space-sm);flex-wrap:wrap">
-            <span style="font-size:0.72rem;padding:2px 8px;border-radius:var(--radius-full);background:var(--bg-soft);color:var(--text-muted);font-weight:600">${f.role || '—'}</span>
-            <span style="font-weight:700;color:var(--text-dark)">${f.pseudo || '—'}</span>
-            <span style="font-size:0.78rem;color:var(--text-muted)">${f.email || '—'}</span>
+        <!-- Header : avatar + nom + date -->
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);margin-bottom:var(--space-md);padding-bottom:var(--space-sm);border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0">
+            <div style="width:36px;height:36px;border-radius:50%;background:${avatarBg};color:${avatarColor};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0">${initials}</div>
+            <div style="min-width:0">
+              <div style="font-weight:700;font-size:0.92rem;color:var(--text-dark)">${f.pseudo || '—'}</div>
+              <div style="font-size:0.75rem;color:var(--text-muted)">${f.role || ''} · ${f.email || ''}</div>
+            </div>
           </div>
-          <span style="font-size:0.75rem;color:var(--text-muted)">${formatDate(f.created_at)}</span>
+          <div style="font-size:0.75rem;color:var(--text-muted);flex-shrink:0">${formatDate(f.created_at)}</div>
         </div>
-        <div style="margin-bottom:var(--space-sm)">
-          <div style="font-weight:600;color:var(--text-dark);margin-bottom:4px">${catIcons[f.categorie] || '💬'} ${f.titre}</div>
-          <div style="font-size:0.85rem;color:var(--text-muted);line-height:1.6">${f.description}</div>
+        <!-- Corps : catégorie + titre + statut sur même ligne, puis description -->
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-sm);margin-bottom:6px">
+          <div>
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:2px">${catIcons[f.categorie] || '💬'} ${f.categorie||''}</div>
+            <div style="font-weight:700;font-size:0.95rem;color:var(--text-dark)">${f.titre}</div>
+          </div>
+          <select style="font-size:0.75rem;padding:4px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:${statutColors[f.statut]||'var(--blue)'};cursor:pointer;flex-shrink:0" onchange="updateFeedbackStatut('${f.id}', this.value)">
+            <option value="nouveau" ${f.statut==='nouveau'?'selected':''}>🔵 Nouveau</option>
+            <option value="en cours" ${f.statut==='en cours'?'selected':''}>🟡 En cours</option>
+            <option value="résolu" ${f.statut==='résolu'?'selected':''}>🟢 Résolu</option>
+          </select>
         </div>
-        <select style="font-size:0.78rem;padding:4px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);color:${statutColors[f.statut]||'var(--blue)'};cursor:pointer" onchange="updateFeedbackStatut('${f.id}', this.value)">
-          <option value="nouveau" ${f.statut==='nouveau'?'selected':''}>🔵 Nouveau</option>
-          <option value="en cours" ${f.statut==='en cours'?'selected':''}>🟡 En cours</option>
-          <option value="résolu" ${f.statut==='résolu'?'selected':''}>🟢 Résolu</option>
-        </select>
-      </div>`).join('')
+        <div style="font-size:0.85rem;color:var(--text-muted);line-height:1.6">${f.description}</div>
+      </div>`;
+      }).join('')
     : `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun feedback reçu pour l'instant.</div>`;
 
   const changelogRows = Array.isArray(changelog) && changelog.length > 0
     ? changelog.map(e => `
-      <div style="display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);font-size:0.85rem">
-        <div style="color:var(--text-muted);font-size:0.75rem;min-width:80px">${formatDate(e.created_at)}</div>
-        <span style="font-size:0.72rem;padding:2px 8px;border-radius:var(--radius-full);background:var(--blue-pale);color:var(--blue);white-space:nowrap">${e.type}</span>
-        <div style="flex:1"><strong>${e.titre}</strong> — <span style="color:var(--text-muted)">${e.description}</span></div>
-        <button onclick="deleteChangelog('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--error);font-size:1rem;padding:4px">🗑</button>
+      <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-sm);margin-bottom:6px;flex-wrap:nowrap">
+          <div style="display:flex;align-items:center;gap:var(--space-sm);flex-wrap:nowrap;min-width:0">
+            <span style="font-size:0.72rem;padding:2px 10px;border-radius:var(--radius-full);background:var(--blue-xpale);color:var(--blue);font-weight:600;white-space:nowrap;flex-shrink:0">${e.type}</span>
+            <span style="font-size:0.75rem;color:var(--text-muted);white-space:nowrap;flex-shrink:0">${formatDate(e.created_at)}</span>
+          </div>
+          <button onclick="deleteChangelog('${e.id}')" style="background:none;border:none;cursor:pointer;color:var(--error);font-size:0.95rem;padding:2px;flex-shrink:0">🗑</button>
+        </div>
+        <div style="font-weight:700;font-size:0.9rem;color:var(--text-dark);margin-bottom:4px;word-break:break-word">${e.titre}</div>
+        <div style="font-size:0.85rem;color:var(--text-muted);line-height:1.6;word-break:break-word">${e.description}</div>
       </div>`).join('')
     : `<div style="text-align:center;padding:var(--space-xl);color:var(--text-muted)">Aucune entrée changelog.</div>`;
 
