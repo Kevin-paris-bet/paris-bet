@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
     const urlP = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
-    urlP.searchParams.set('select', 'id,game,sport,match_date,content,price,status,buyers,tipster_id,created_at');
+    urlP.searchParams.set('select', 'id,game,sport,match_date,content,price,status,buyers,tipster_id,created_at,cote');
     urlP.searchParams.set('order', 'created_at.desc');
     urlP.searchParams.set('apikey', ANON);
     const rp = await fetch(urlP.toString());
@@ -754,4 +754,12 @@ async function setModerator(userId, newRole) {
   } catch(e) {
     showToast('Erreur : ' + e.message, 'error');
   }
+}
+
+// ── Sidebar mobile ────────────────────────────────────────────
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  if (sidebar) sidebar.classList.toggle('open');
+  if (overlay) overlay.classList.toggle('show');
 }
