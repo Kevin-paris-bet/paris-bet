@@ -142,11 +142,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     adminState.tipsters = [];
   }
 
-  // Charger les vrais utilisateurs
+  // Charger les vrais utilisateurs (+ modérateurs)
   const { data: users } = await sb
     .from('profiles_with_email')
     .select('*')
-    .eq('role', 'user')
+    .in('role', ['user', 'moderator'])
     .order('created_at', { ascending: false });
 
   if (users && users.length > 0) {
