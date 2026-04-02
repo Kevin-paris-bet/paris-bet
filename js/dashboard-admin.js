@@ -329,18 +329,11 @@ function renderPronosTable(pronos, compact) {
     cancelled: `<span class="badge badge-cancelled">⊘ Annulé</span>`,
   };
 
+  // ── Rendu mobile : cards ──────────────────────────────────
   if (isMobile) {
     return `
       <div class="pronos-table" style="padding:0">
-        ${pronos.map(p => {
-          const actionBtns = !compact && p.status === 'pending'
-            ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:8px">
-                 <button class="btn-validate btn-validate--won"   onclick="validateProno('${p.id}','won')">✓ Gagné</button>
-                 <button class="btn-validate btn-validate--lost"  onclick="validateProno('${p.id}','lost')">✕ Perdu</button>
-                 <button class="btn-validate btn-validate--cancel" onclick="validateProno('${p.id}','cancelled')">⊘</button>
-               </div>`
-            : compact ? '' : `<span style="font-size:0.75rem;color:var(--text-muted)">Validé</span>`;
-          return `
+        ${pronos.map(p => `
           <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
               <div>
@@ -349,17 +342,23 @@ function renderPronosTable(pronos, compact) {
               </div>
               ${statusBadge[p.status] || ''}
             </div>
-            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:6px;display:flex;gap:var(--space-md);flex-wrap:wrap">
+            ${p.content ? `<div style="font-size:0.82rem;color:var(--text-muted);line-height:1.5;margin-bottom:8px;padding:8px 10px;background:var(--bg-soft);border-radius:var(--radius-sm)">${p.content}</div>` : ''}
+            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;display:flex;gap:var(--space-md);flex-wrap:wrap">
               <span>Tipster : <strong style="color:var(--text-dark)">${p.tipsterName || '—'}</strong></span>
               <span>Cote : <strong style="color:var(--blue)">${p.cote ? parseFloat(p.cote).toFixed(2) : '—'}</strong></span>
               <span>👥 ${p.buyers} · ${formatEuros(p.revenue)}</span>
             </div>
-            ${actionBtns}
-          </div>`;
-        }).join('')}
+            ${!compact && p.status === 'pending' ? `
+              <div style="display:flex;gap:4px;flex-wrap:wrap">
+                <button class="btn-validate btn-validate--won"   onclick="validateProno('${p.id}','won')">✓ Gagné</button>
+                <button class="btn-validate btn-validate--lost"  onclick="validateProno('${p.id}','lost')">✕ Perdu</button>
+                <button class="btn-validate btn-validate--cancel" onclick="validateProno('${p.id}','cancelled')">⊘</button>
+              </div>` : (!compact ? `<span style="font-size:0.75rem;color:var(--text-light)">Validé</span>` : '')}
+          </div>`).join('')}
       </div>`;
   }
 
+  // ── Rendu desktop : tableau ───────────────────────────────
   return `
     <div class="pronos-table">
       <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr ${compact?'0':'140px'}">
@@ -371,6 +370,7 @@ function renderPronosTable(pronos, compact) {
           <div>
             <div class="prono-title">${p.game}</div>
             <div class="prono-meta">${p.sport} · ${p.match_date || p.date || "—"}</div>
+            ${p.content ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;line-height:1.4">${p.content}</div>` : ''}
           </div>
           <div style="font-size:0.85rem;color:var(--text-muted)">${p.tipsterName || "—"}</div>
           <div style="font-size:0.85rem;font-weight:600;color:var(--blue)">${p.cote ? parseFloat(p.cote).toFixed(2) : '—'}</div>
@@ -742,20 +742,16 @@ async function setModerator(userId, newRole) {
   try {
     const r = await fetch(`${SUPA}/rest/v1/profiles?id=eq.${userId}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON, 'Prefer': 'return=minimal' },
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
       body: JSON.stringify({ role: newRole })
     });
-    if (!r.ok) {
-      const errText = await r.text();
-      console.error('setModerator error:', r.status, errText);
-      throw new Error(`HTTP ${r.status} — ${errText}`);
-    }
+    if (!r.ok) throw new Error('Erreur serveur');
+    // Mettre à jour localement
     const u = adminState.users.find(u => u.id === userId);
     if (u) u.role = newRole;
     showToast(`Rôle mis à jour : ${label} ✓`, 'success');
     navigateTo('users');
   } catch(e) {
-    console.error('setModerator catch:', e);
     showToast('Erreur : ' + e.message, 'error');
   }
 }
