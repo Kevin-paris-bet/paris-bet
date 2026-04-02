@@ -708,16 +708,20 @@ async function setModerator(userId, newRole) {
   try {
     const r = await fetch(`${SUPA}/rest/v1/profiles?id=eq.${userId}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON, 'Prefer': 'return=minimal' },
       body: JSON.stringify({ role: newRole })
     });
-    if (!r.ok) throw new Error('Erreur serveur');
-    // Mettre à jour localement
+    if (!r.ok) {
+      const errText = await r.text();
+      console.error('setModerator error:', r.status, errText);
+      throw new Error(`HTTP ${r.status} — ${errText}`);
+    }
     const u = adminState.users.find(u => u.id === userId);
     if (u) u.role = newRole;
     showToast(`Rôle mis à jour : ${label} ✓`, 'success');
     navigateTo('users');
   } catch(e) {
+    console.error('setModerator catch:', e);
     showToast('Erreur : ' + e.message, 'error');
   }
 }
