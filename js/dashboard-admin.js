@@ -872,24 +872,39 @@ async function loadFinances() {
     const el2 = document.getElementById('fin-total-comm'); if(el2) el2.textContent = formatEuros(totalCA*0.1);
     const el3 = document.getElementById('fin-total-net'); if(el3) el3.textContent = formatEuros(totalCA*0.9);
     if (!tipsters.length) { table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucune vente sur cette période.</div>`; return; }
-    table.innerHTML = `
-      <div class="pronos-table">
-        <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr">
-          <span>Tipster</span><span>Pronos</span><span>Win Rate</span><span>Acheteurs</span><span>CA Total</span><span style="color:var(--success)">Mes 10%</span><span>Net Tipster</span>
-        </div>
-        ${tipsters.sort((a,b)=>b.ca-a.ca).map(t => {
-          const wr = (t.won+t.lost)>0 ? Math.round(t.won/(t.won+t.lost)*100) : 0;
-          return `<div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr">
-            <div><div class="prono-title">${t.name}</div><div class="prono-meta">${t.won}W · ${t.lost}L · ${t.cancelled} annulés</div></div>
-            <div style="font-weight:600">${t.pronos}</div>
-            <div style="color:${wr>=60?'var(--success)':'var(--text-muted)'};font-weight:600">${wr}%</div>
-            <div>👥 ${t.acheteurs}</div>
-            <div style="font-weight:700;color:var(--primary)">${formatEuros(t.ca)}</div>
-            <div style="font-weight:700;color:var(--success)">${formatEuros(t.ca*0.1)}</div>
-            <div style="font-weight:600">${formatEuros(t.ca*0.9)}</div>
-          </div>`;
-        }).join('')}
-      </div>`;
+    const mob = isMobile();
+    table.innerHTML = mob
+      ? `<div style="display:flex;flex-direction:column;gap:8px">
+          ${tipsters.sort((a,b)=>b.ca-a.ca).map(t => {
+            const wr = (t.won+t.lost)>0 ? Math.round(t.won/(t.won+t.lost)*100) : 0;
+            return `<div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg)">
+              <div class="prono-title" style="margin-bottom:4px">${t.name}</div>
+              <div class="prono-meta" style="margin-bottom:8px">${t.won}W · ${t.lost}L · ${t.cancelled} annulés · Win Rate : <strong style="color:${wr>=60?'var(--success)':'var(--text-muted)'}">${wr}%</strong></div>
+              <div style="display:flex;gap:var(--space-lg);flex-wrap:wrap;font-size:0.85rem">
+                <span>CA : <strong style="color:var(--primary)">${formatEuros(t.ca)}</strong></span>
+                <span>Commission : <strong style="color:var(--success)">${formatEuros(t.ca*0.1)}</strong></span>
+                <span>Net tipster : <strong>${formatEuros(t.ca*0.9)}</strong></span>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>`
+      : `<div class="pronos-table">
+          <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr">
+            <span>Tipster</span><span>Pronos</span><span>Win Rate</span><span>Acheteurs</span><span>CA Total</span><span style="color:var(--success)">Mes 10%</span><span>Net Tipster</span>
+          </div>
+          ${tipsters.sort((a,b)=>b.ca-a.ca).map(t => {
+            const wr = (t.won+t.lost)>0 ? Math.round(t.won/(t.won+t.lost)*100) : 0;
+            return `<div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr">
+              <div><div class="prono-title">${t.name}</div><div class="prono-meta">${t.won}W · ${t.lost}L · ${t.cancelled} annulés</div></div>
+              <div style="font-weight:600">${t.pronos}</div>
+              <div style="color:${wr>=60?'var(--success)':'var(--text-muted)'};font-weight:600">${wr}%</div>
+              <div>👥 ${t.acheteurs}</div>
+              <div style="font-weight:700;color:var(--primary)">${formatEuros(t.ca)}</div>
+              <div style="font-weight:700;color:var(--success)">${formatEuros(t.ca*0.1)}</div>
+              <div style="font-weight:600">${formatEuros(t.ca*0.9)}</div>
+            </div>`;
+          }).join('')}
+        </div>`;
   } catch(e) {
     table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur : ${e.message}</div>`;
   }
