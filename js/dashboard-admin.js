@@ -968,15 +968,24 @@ async function loadFinances() {
     const profilesMap = {};
     (profiles || []).forEach(p => profilesMap[p.id] = p.first_name + ' ' + p.last_name);
     const tipsterStats = {};
+    // Stocker aussi le détail prono par prono pour la modale
+    const tipsterPronoDetails = {};
     pronos.forEach(prono => {
       const tid = prono.tipster_id; if (!tid) return;
       if (!tipsterStats[tid]) tipsterStats[tid] = { name: profilesMap[tid]||'—', pronos:0, won:0, lost:0, cancelled:0, ca:0, acheteurs:0 };
+      if (!tipsterPronoDetails[tid]) tipsterPronoDetails[tid] = [];
       const s = tipsterStats[tid]; s.pronos++;
       if (prono.status==='won') s.won++; else if (prono.status==='lost') s.lost++; else if (prono.status==='cancelled') s.cancelled++;
       const pPurchases = (purchases||[]).filter(p => p.prono_id === prono.id);
-      s.ca += pPurchases.reduce((sum, p) => sum + parseFloat(p.amount||0), 0);
+      const pronoCA = pPurchases.reduce((sum, p) => sum + parseFloat(p.amount||0), 0);
+      s.ca += pronoCA;
       s.acheteurs += prono.buyers||0;
+      tipsterPronoDetails[tid].push({ ...prono, pronoCA, acheteurs: prono.buyers||0 });
     });
+    // Exposer sur window pour la modale
+    window._finPronoDetails = tipsterPronoDetails;
+    window._finProfilesMap  = profilesMap;
+
     const tipsters = Object.values(tipsterStats).filter(s => s.ca > 0);
     const totalCA = tipsters.reduce((s,t) => s+t.ca, 0);
     const el1 = document.getElementById('fin-total-ca'); if(el1) el1.textContent = formatEuros(totalCA);
@@ -984,13 +993,24 @@ async function loadFinances() {
     const el3 = document.getElementById('fin-total-net'); if(el3) el3.textContent = formatEuros(totalCA*0.9);
     if (!tipsters.length) { table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucune vente sur cette période.</div>`; return; }
     const mob = isMobile();
+
+    const statusBadgeFin = {
+      won:       `<span class="badge badge-won" style="font-size:0.72rem">✓ Gagné</span>`,
+      lost:      `<span class="badge badge-lost" style="font-size:0.72rem">✕ Perdu</span>`,
+      cancelled: `<span class="badge badge-cancelled" style="font-size:0.72rem">⊘ Annulé</span>`,
+    };
+
+    const rowStyle = `cursor:pointer;transition:background .12s`;
+    const hoverScript = `onmouseover="this.style.background='var(--bg-soft)'" onmouseout="this.style.background=''"`;
+
     table.innerHTML = mob
       ? `<div class="pronos-table" style="padding:0">
           ${tipsters.sort((a,b)=>b.ca-a.ca).map(t => {
             const wr = (t.won+t.lost)>0 ? Math.round(t.won/(t.won+t.lost)*100) : 0;
-            return `<div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
+            const tid = Object.keys(tipsterPronoDetails).find(k => tipsterStats[k] === t) || '';
+            return `<div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);${rowStyle}" ${hoverScript} onclick="openFicheFinances('${tid}')">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-                <span class="prono-title">${t.name}</span>
+                <span class="prono-title">${t.name} <span style="font-size:0.75rem;color:var(--blue)">📋</span></span>
                 <span style="font-weight:700;color:var(--primary)">${formatEuros(t.ca)}</span>
               </div>
               <div class="prono-meta">${t.won}W · ${t.lost}L · <span style="color:${wr>=60?'var(--success)':'var(--warning)'};font-weight:600">${wr}%</span></div>
@@ -1007,8 +1027,12 @@ async function loadFinances() {
           </div>
           ${tipsters.sort((a,b)=>b.ca-a.ca).map(t => {
             const wr = (t.won+t.lost)>0 ? Math.round(t.won/(t.won+t.lost)*100) : 0;
-            return `<div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr">
-              <div><div class="prono-title">${t.name}</div><div class="prono-meta">${t.won}W · ${t.lost}L · ${t.cancelled} annulés</div></div>
+            const tid = Object.keys(tipsterPronoDetails).find(k => tipsterStats[k] === t) || '';
+            return `<div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr;${rowStyle}" ${hoverScript} onclick="openFicheFinances('${tid}')">
+              <div>
+                <div class="prono-title">${t.name} <span style="font-size:0.75rem;color:var(--blue)">📋</span></div>
+                <div class="prono-meta">${t.won}W · ${t.lost}L · ${t.cancelled} annulés</div>
+              </div>
               <div style="font-weight:600">${t.pronos}</div>
               <div style="color:${wr>=60?'var(--success)':'var(--text-muted)'};font-weight:600">${wr}%</div>
               <div>👥 ${t.acheteurs}</div>
@@ -1375,5 +1399,99 @@ function toggleDepositsPanel() {
   const open = panel.style.display === 'none' || panel.style.display === '';
   panel.style.display = open ? 'block' : 'none';
   if (bloc) bloc.style.borderColor = open ? 'var(--blue)' : 'transparent';
+}
+
+// ══════════════════════════════════════════════════════════════
+//  MODALE — DÉTAIL FINANCES PAR TIPSTER
+// ══════════════════════════════════════════════════════════════
+function openFicheFinances(tipsterId) {
+  const overlay = document.getElementById('fiche-modal-overlay');
+  const modal   = document.getElementById('fiche-modal-content');
+  if (!overlay || !modal) return;
+
+  const details = (window._finPronoDetails || {})[tipsterId] || [];
+  const name    = (window._finProfilesMap  || {})[tipsterId] || 'Tipster';
+
+  if (!details.length) {
+    modal.innerHTML = '<p style="color:var(--text-muted)">Aucun prono détaillé disponible.</p>';
+    overlay.style.display = 'block';
+    return;
+  }
+
+  const sorted = [...details].sort((a,b) => new Date(b.match_date||0) - new Date(a.match_date||0));
+  const totalCA      = sorted.reduce((s,p) => s + p.pronoCA, 0);
+  const totalComm    = totalCA * 0.1;
+  const totalTipster = totalCA * 0.9;
+
+  const statusBadge = {
+    won:       '<span class=\"badge badge-won\" style=\"font-size:0.72rem\">✓ Gagné</span>',
+    lost:      '<span class=\"badge badge-lost\" style=\"font-size:0.72rem\">✕ Perdu</span>',
+    cancelled: '<span class=\"badge badge-cancelled\" style=\"font-size:0.72rem\">⊘ Annulé</span>',
+  };
+
+  const mob = isMobile();
+
+  const rows = sorted.map(p => {
+    const comm = p.status === 'won' ? p.pronoCA * 0.1 : 0;
+    const net  = p.status === 'won' ? p.pronoCA * 0.9 : 0;
+    const caColor = p.pronoCA > 0 ? 'var(--blue)' : 'var(--text-muted)';
+    if (mob) return (
+      '<div style="padding:10px 14px;border-bottom:1px solid var(--border)">' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px">' +
+          '<strong style="font-size:0.88rem;color:var(--text-dark)">' + p.game + '</strong>' +
+          (statusBadge[p.status] || '') +
+        '</div>' +
+        '<div class="prono-meta">' + (p.sport||'—') + ' · ' + formatDate(p.match_date) + '</div>' +
+        '<div style="display:flex;gap:12px;font-size:0.82rem;margin-top:6px;flex-wrap:wrap">' +
+          '<span>👥 <strong>' + p.acheteurs + '</strong></span>' +
+          '<span>CA : <strong style="color:' + caColor + '">' + formatEuros(p.pronoCA) + '</strong></span>' +
+          (p.status === 'won' ? '<span style="color:var(--success)">Comm : +' + formatEuros(comm) + '</span>' : '') +
+          (p.status === 'won' ? '<span style="color:var(--text-muted)">Tipster : ' + formatEuros(net) + '</span>' : '') +
+        '</div>' +
+      '</div>'
+    );
+    return (
+      '<div style="display:grid;grid-template-columns:2.5fr 0.8fr 0.8fr 1fr 1fr 1fr;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)">' +
+        '<div>' +
+          '<div style="font-weight:600;font-size:0.88rem;color:var(--text-dark)">' + p.game + '</div>' +
+          '<div class="prono-meta">' + (p.sport||'—') + ' · ' + formatDate(p.match_date) + '</div>' +
+        '</div>' +
+        '<div>' + (statusBadge[p.status] || '—') + '</div>' +
+        '<div style="font-size:0.85rem">👥 ' + p.acheteurs + '</div>' +
+        '<div style="font-weight:700;color:' + caColor + '">' + formatEuros(p.pronoCA) + '</div>' +
+        '<div style="font-weight:700;color:var(--success)">' + (p.status==='won' ? '+'+formatEuros(comm) : '—') + '</div>' +
+        '<div style="color:var(--text-muted)">' + (p.status==='won' ? formatEuros(net) : '—') + '</div>' +
+      '</div>'
+    );
+  }).join('');
+
+  const header = mob ? '' : (
+    '<div style="display:grid;grid-template-columns:2.5fr 0.8fr 0.8fr 1fr 1fr 1fr;gap:8px;padding:8px 14px;font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);border-bottom:2px solid var(--border)">' +
+      '<span>Match</span><span>Statut</span><span>Acheteurs</span><span>CA</span><span style="color:var(--success)">Ma comm (10%)</span><span>Net tipster</span>' +
+    '</div>'
+  );
+
+  modal.innerHTML =
+    '<h2 style="margin-bottom:4px">' + name + '</h2>' +
+    '<div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">' + sorted.length + ' prono(s) terminé(s)</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-sm);margin-bottom:var(--space-lg)">' +
+      '<div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 14px">' +
+        '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:4px">CA Total</div>' +
+        '<div style="font-size:1.2rem;font-weight:800;color:var(--text-dark)">' + formatEuros(totalCA) + '</div>' +
+      '</div>' +
+      '<div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 14px">' +
+        '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:4px">Ma comm (10%)</div>' +
+        '<div style="font-size:1.2rem;font-weight:800;color:var(--success)">' + formatEuros(totalComm) + '</div>' +
+      '</div>' +
+      '<div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 14px">' +
+        '<div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:4px">Net tipster</div>' +
+        '<div style="font-size:1.2rem;font-weight:800;color:var(--text-dark)">' + formatEuros(totalTipster) + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div style="max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-md)">' +
+      header + rows +
+    '</div>';
+
+  overlay.style.display = 'block';
 }
 
