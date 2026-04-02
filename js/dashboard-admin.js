@@ -103,9 +103,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Charger les vrais tipsters
   const { data: tipsters } = await sb
     .from('profiles_with_email')
-    .select('id,first_name,last_name,pseudo,email,balance,pending,rib_iban,rib_bic,rib_name,avatar_url,created_at')
+    .select('*')
     .eq('role', 'tipster')
     .order('created_at', { ascending: false });
+
+  // Récupérer les pseudos depuis profiles directement
+  const ANON_PS = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const rPS = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id,pseudo&role=eq.tipster&apikey=' + ANON_PS, {
+    headers: { 'apikey': ANON_PS, 'Authorization': 'Bearer ' + ANON_PS }
+  });
+  const pseudos = await rPS.json();
+  const pseudoMap = {};
+  if (Array.isArray(pseudos)) pseudos.forEach(p => { pseudoMap[p.id] = p.pseudo; });
 
   if (tipsters && tipsters.length > 0) {
     const ANON2 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
@@ -124,6 +133,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const finished = tp.filter(s => s === 'won' || s === 'lost').length;
       return {
         ...t,
+        pseudo:   pseudoMap[t.id] || t.pseudo || null,
         name:     t.first_name + ' ' + t.last_name,
         email:    t.email || '—',
         pronos:   tp.length,
