@@ -1273,50 +1273,89 @@ async function openFicheUser(id){
   overlay.style.display='block';
   modal.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Chargement...</div>';
   try{
-    const rP=await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,created_at&id=eq.${id}&apikey=${ANON}`,{headers:{apikey:ANON}});
+    // Profil (avec total_deposits)
+    const rP=await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,total_deposits,created_at&id=eq.${id}&apikey=${ANON}`,{headers:{apikey:ANON,'Authorization':'Bearer '+ANON}});
     const profiles=await rP.json(); const p=profiles[0]||{};
-    const rA=await fetch(`${SUPA}/rest/v1/purchases?select=id,prono_id,amount,status,created_at&user_id=eq.${id}&order=created_at.desc&apikey=${ANON}`,{headers:{apikey:ANON}});
+
+    // Achats
+    const rA=await fetch(`${SUPA}/rest/v1/purchases?select=id,prono_id,amount,status,created_at&user_id=eq.${id}&order=created_at.desc&apikey=${ANON}`,{headers:{apikey:ANON,'Authorization':'Bearer '+ANON}});
     const purchases=await rA.json();
+
+    // Historique des dépôts
+    const rD=await fetch(`${SUPA}/rest/v1/deposits?select=id,amount,method,created_at&user_id=eq.${id}&order=created_at.desc&apikey=${ANON}`,{headers:{apikey:ANON,'Authorization':'Bearer '+ANON}});
+    const deposits=await rD.json();
+
     let pronosMap={};
     if((purchases||[]).length>0){
       const pronoIds=[...new Set(purchases.map(a=>a.prono_id))];
-      const rPr=await fetch(`${SUPA}/rest/v1/pronos?select=id,game,sport,match_date,tipster_id&id=in.(${pronoIds.join(',')})&apikey=${ANON}`,{headers:{apikey:ANON}});
+      const rPr=await fetch(`${SUPA}/rest/v1/pronos?select=id,game,sport,match_date,tipster_id&id=in.(${pronoIds.join(',')})&apikey=${ANON}`,{headers:{apikey:ANON,'Authorization':'Bearer '+ANON}});
       const pronos=await rPr.json(); (pronos||[]).forEach(pr=>pronosMap[pr.id]=pr);
       const tipsterIds=[...new Set(Object.values(pronosMap).map(pr=>pr.tipster_id).filter(Boolean))];
       if(tipsterIds.length>0){
-        const rT=await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name&id=in.(${tipsterIds.join(',')})&apikey=${ANON}`,{headers:{apikey:ANON}});
+        const rT=await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name&id=in.(${tipsterIds.join(',')})&apikey=${ANON}`,{headers:{apikey:ANON,'Authorization':'Bearer '+ANON}});
         const tipsters=await rT.json(); const tMap={};
         (tipsters||[]).forEach(t=>tMap[t.id]=t.first_name+' '+t.last_name);
         Object.values(pronosMap).forEach(pr=>pr.tipsterName=tMap[pr.tipster_id]||'—');
       }
     }
-    const totalDepense=(purchases||[]).reduce((s,a)=>s+parseFloat(a.amount||0),0);
+    const totalDeposits=parseFloat(p.total_deposits||0);
     const totalRembourse=(purchases||[]).filter(a=>a.status==='lost'||a.status==='cancelled').reduce((s,a)=>s+parseFloat(a.amount||0),0);
     const totalWon=(purchases||[]).filter(a=>a.status==='won').length;
     const badge={won:'<span class="badge badge-won">✓ Gagné</span>',lost:'<span class="badge badge-lost">✕ Perdu</span>',cancelled:'<span class="badge badge-cancelled">⊘ Annulé</span>',pending:'<span class="badge badge-pending">⏳ En attente</span>'};
+
+    // Méthode de paiement — label et icône
+    const methodLabel={card:'💳 CB',paypal:'🅿 PayPal',crypto:'₿ Crypto'};
+    const depositsHtml=Array.isArray(deposits)&&deposits.length>0
+      ?`<div style="display:flex;flex-direction:column;gap:6px;max-height:220px;overflow-y:auto;margin-top:var(--space-sm)">
+          <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);padding:0 4px;margin-bottom:2px">
+            <span>Date</span><span>Moyen</span><span>Montant</span>
+          </div>
+          ${deposits.map(d=>`<div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:8px;background:var(--bg-soft);border-radius:var(--radius-sm);padding:8px 10px;font-size:0.83rem;align-items:center">
+            <span style="color:var(--text-muted)">${new Date(d.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})}</span>
+            <span>${methodLabel[d.method]||d.method||'—'}</span>
+            <span style="font-weight:700;color:var(--blue)">${formatEuros(parseFloat(d.amount||0))}</span>
+          </div>`).join('')}
+        </div>`
+      :'<div style="font-size:0.85rem;color:var(--text-muted);margin-top:var(--space-sm)">Aucun dépôt enregistré.</div>';
+
     modal.innerHTML=`
       <h2 style="margin-bottom:4px">${p.first_name} ${p.last_name}</h2>
       <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">Membre depuis ${formatDate(p.created_at?.split('T')[0])}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-sm);margin-bottom:var(--space-lg)">
+
+        <!-- Bloc 1 : Achats -->
         <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 14px">
           <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:4px">Achats</div>
           <div style="font-size:1.3rem;font-weight:800;color:var(--text-dark)">${(purchases||[]).length}</div>
         </div>
-        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 14px">
-          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:4px">Total dépensé</div>
-          <div style="font-size:1.3rem;font-weight:800;color:var(--text-dark)">${formatEuros(totalDepense)}</div>
+
+        <!-- Bloc 2 : Total dépôts (cliquable) -->
+        <div id="deposits-bloc" onclick="toggleDepositsPanel()" style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 14px;cursor:pointer;border:1px solid transparent;transition:border-color .15s" onmouseover="this.style.borderColor='var(--blue)'" onmouseout="this.style.borderColor='transparent'">
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:4px">Total dépôts 📋</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--blue)">${formatEuros(totalDeposits)}</div>
         </div>
+
+        <!-- Bloc 3 : Solde actuel -->
+        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 14px">
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:4px">Solde actuel</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--text-dark)">${formatEuros(p.balance||0)}</div>
+        </div>
+
+        <!-- Bloc 4 : Remboursés -->
         <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 14px">
           <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:4px">Remboursés</div>
-          <div style="font-size:1.3rem;font-weight:800;color:var(--success)">${formatEuros(totalRembourse)}</div>
-        </div>
-        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 14px">
-          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:4px">Pronos gagnés</div>
-          <div style="font-size:1.3rem;font-weight:800;color:var(--blue)">${totalWon}</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--text-dark)">${formatEuros(totalRembourse)}</div>
         </div>
       </div>
+
+      <!-- Panneau dépôts (masqué par défaut) -->
+      <div id="deposits-panel" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md);margin-top:calc(-1 * var(--space-sm));margin-bottom:var(--space-lg)">
+        <div style="font-size:0.82rem;font-weight:700;color:var(--text-dark);margin-bottom:4px">📋 Historique des dépôts</div>
+        ${depositsHtml}
+      </div>
+
       <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-lg);font-size:0.85rem">
-        💰 Solde : <strong>${formatEuros(p.balance||0)}</strong> · ⏳ En attente : <strong>${formatEuros(p.pending||0)}</strong>
+        ⏳ En attente : <strong>${formatEuros(p.pending||0)}</strong> · 🏆 Pronos gagnés : <strong style="color:var(--blue)">${totalWon}</strong>
       </div>
       <h3 style="margin-bottom:var(--space-md)">Historique des achats</h3>
       ${(purchases||[]).length===0?'<p style="color:var(--text-muted)">Aucun achat.</p>':`
@@ -1329,4 +1368,12 @@ async function openFicheUser(id){
   }catch(e){modal.innerHTML=`<div style="color:var(--error)">Erreur de chargement.</div>`;}
 }
 
+function toggleDepositsPanel() {
+  const panel = document.getElementById('deposits-panel');
+  const bloc  = document.getElementById('deposits-bloc');
+  if (!panel) return;
+  const open = panel.style.display === 'none' || panel.style.display === '';
+  panel.style.display = open ? 'block' : 'none';
+  if (bloc) bloc.style.borderColor = open ? 'var(--blue)' : 'transparent';
+}
 
