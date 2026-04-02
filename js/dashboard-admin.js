@@ -1,14 +1,3 @@
-// ── Mobile helper ────────────────────────────────────────────
-function isMobile() { return window.innerWidth < 900; }
-
-// ── Sidebar mobile ───────────────────────────────────────────
-function toggleSidebar() {
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.getElementById('sidebar-overlay');
-  sidebar.classList.toggle('open');
-  overlay.classList.toggle('show');
-}
-
 /**
  * ============================================================
  *  PARIS-BET — JS PANEL ADMIN (dashboard-admin.js)
@@ -16,7 +5,7 @@ function toggleSidebar() {
  */
 
 // ── Données de démo ───────────────────────────────────────────
-const MOCK_ADMIN = { firstName: 'Admin', lastName: 'PayPerWin' };
+const MOCK_ADMIN = { firstName: 'Admin', lastName: 'Paris-Bet' };
 
 const MOCK_PRONOS_ADMIN = [
   { id:1, tipster:'Alexis Martin', game:'PSG vs Marseille',    sport:'⚽ Ligue 1', date:'15/03/2026', price:5.00,  buyers:47, status:'pending',   revenue:235.00 },
@@ -139,37 +128,36 @@ document.addEventListener('DOMContentLoaded', async () => {
       const finished = tp.filter(s => s === 'won' || s === 'lost').length;
       return {
         ...t,
-        name:      t.pseudo || (t.first_name + ' ' + t.last_name),
-        email:     t.email || '—',
-        pronos:    tp.length,
-        winRate:   finished > 0 ? Math.round(won / finished * 100) : 0,
-        balance:   parseFloat(t.balance) || 0,
-        ribSaved:  !!(t.rib_iban),
-        ribOk:     !!(t.rib_iban),
+        name:     t.first_name + ' ' + t.last_name,
+        email:    t.email || '—',
+        pronos:   tp.length,
+        winRate:  finished > 0 ? Math.round(won / finished * 100) : 0,
+        balance:  parseFloat(t.balance) || 0,
+        ribSaved: !!(t.rib_iban),
+        ribOk:    !!(t.rib_iban),
         suspended: false,
-        avatarUrl: t.avatar_url || '',
       };
     });
   } else {
     adminState.tipsters = [];
   }
 
-  // Charger les vrais utilisateurs
+  // Charger les vrais utilisateurs (+ modérateurs)
   const { data: users } = await sb
     .from('profiles_with_email')
     .select('*')
-    .eq('role', 'user')
+    .in('role', ['user', 'moderator'])
     .order('created_at', { ascending: false });
 
   if (users && users.length > 0) {
     adminState.users = users.map(u => ({
       ...u,
-      name:          u.first_name + ' ' + u.last_name,
-      email:         u.email || '—',
-      balance:       parseFloat(u.balance) || 0,
-      pending:       parseFloat(u.pending) || 0,
-      totalDeposits: parseFloat(u.total_deposits) || 0,
-      joined:        u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '—',
+      name:    u.first_name + ' ' + u.last_name,
+      email:   u.email || '—',
+      balance: parseFloat(u.balance) || 0,
+      pending: parseFloat(u.pending) || 0,
+      spent:   0,
+      joined:  u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '—',
     }));
   } else {
     adminState.users = [];
@@ -182,11 +170,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // ── Navigation ────────────────────────────────────────────────
 function navigateTo(page) {
-  // Fermer la sidebar sur mobile
-  const sidebar = document.querySelector('.sidebar');
-  const overlay = document.getElementById('sidebar-overlay');
-  if (sidebar) sidebar.classList.remove('open');
-  if (overlay) overlay.classList.remove('show');
   adminState.activePage = page;
   document.querySelectorAll('.sidebar__link').forEach(l =>
     l.classList.toggle('active', l.dataset.page === page)
@@ -197,8 +180,6 @@ function navigateTo(page) {
     tipsters:  'Gestion des tipsters',
     users:     'Gestion des utilisateurs',
     virements: 'Virements',
-    finances:  'Finances & Commissions',
-    explorer:  'Explorer les tipsters',
   };
   document.getElementById('topbar-title').textContent = titles[page] || 'Admin';
   const content = document.getElementById('page-content');
@@ -208,8 +189,6 @@ function navigateTo(page) {
   if (page === 'tipsters')  renderTipsters(content);
   if (page === 'users')     renderUsers(content);
   if (page === 'virements') renderVirements(content);
-  if (page === 'finances')  renderFinances(content);
-  if (page === 'explorer')  renderExplorerTipsters(content, 'https://payperwin.co/');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -355,43 +334,25 @@ function renderPronosTable(pronos, compact) {
         ${compact ? '' : '<span>Action</span>'}
       </div>
       ${pronos.map(p => `
-        ${isMobile() ? `
-        <div class="admin-card">
-          <div class="admin-card__title">
-            <div class="prono-title">${p.game}</div>
-            <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
-            ${p.content ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:3px;font-style:italic">📋 ${p.content}</div>` : ''}
-          </div>
-          <div class="admin-card__grid">
-            <div class="admin-card__field"><div class="admin-card__label">Tipster</div><div>${p.tipsterName || "—"}</div></div>
-            <div class="admin-card__field"><div class="admin-card__label">Acheteurs</div><div>👥 ${p.buyers}</div></div>
-            <div class="admin-card__field"><div class="admin-card__label">Montant</div><div class="prono-price">${formatEuros(p.revenue)}</div></div>
-            <div class="admin-card__field"><div class="admin-card__label">Statut</div><div>${statusBadge[p.status]||''}</div></div>
-          </div>
-          ${compact ? '' : p.status === 'pending' ? `
-          <div class="admin-card__actions">
-            <button class="btn-validate btn-validate--won"   onclick="validateProno('${p.id}','won')">✓ Gagné</button>
-            <button class="btn-validate btn-validate--lost"  onclick="validateProno('${p.id}','lost')">✕ Perdu</button>
-            <button class="btn-validate btn-validate--cancel" onclick="validateProno('${p.id}','cancelled')">⊘</button>
-          </div>` : ''}
-        </div>` : `
         <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr ${compact?'0':'140px'}">
           <div>
             <div class="prono-title">${p.game}</div>
-            <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
-            ${p.content ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:3px;font-style:italic">📋 ${p.content}</div>` : ''}
+            <div class="prono-meta">${p.sport} · ${p.match_date || p.date || "—"}</div>
           </div>
           <div style="font-size:0.85rem;color:var(--text-muted)">${p.tipsterName || "—"}</div>
           <div class="buyers-count"><span>👥</span>${p.buyers}</div>
           <div class="prono-price">${formatEuros(p.revenue)}</div>
           <div>${statusBadge[p.status]||''}</div>
-          ${compact ? '' : `<div>${p.status === 'pending' ? `
-            <div style="display:flex;gap:4px;flex-wrap:wrap">
-              <button class="btn-validate btn-validate--won"   onclick="validateProno('${p.id}','won')">✓ Gagné</button>
-              <button class="btn-validate btn-validate--lost"  onclick="validateProno('${p.id}','lost')">✕ Perdu</button>
-              <button class="btn-validate btn-validate--cancel" onclick="validateProno('${p.id}','cancelled')">⊘</button>
-            </div>` : `<span style="font-size:0.75rem;color:var(--text-light)">Validé</span>`}</div>`}
-        </div>`}`).join('')}
+          ${compact ? '' : `
+            <div>
+              ${p.status === 'pending' ? `
+                <div style="display:flex;gap:4px;flex-wrap:wrap">
+                  <button class="btn-validate btn-validate--won"   onclick="validateProno('${p.id}','won')">✓ Gagné</button>
+                  <button class="btn-validate btn-validate--lost"  onclick="validateProno('${p.id}','lost')">✕ Perdu</button>
+                  <button class="btn-validate btn-validate--cancel" onclick="validateProno('${p.id}','cancelled')">⊘</button>
+                </div>` : `<span style="font-size:0.75rem;color:var(--text-light)">Validé</span>`}
+            </div>`}
+        </div>`).join('')}
     </div>`;
 }
 
@@ -436,28 +397,15 @@ async function validateProno(id, status) {
         // Créditer le tipster
         await sb.from('profiles').update({ balance: currentBalance + tipsterShare }).eq('id', p.tipster_id);
 
-        // Remettre pending à 0 pour chaque acheteur
-        for (const achat of purchases) {
-          const { data: userProfile } = await sb.from('profiles').select('pending').eq('id', achat.user_id).single();
-          const currentPending = parseFloat(userProfile?.pending || 0);
-          const newPending = Math.max(0, currentPending - parseFloat(achat.amount || 0));
-          await sb.from('profiles').update({ pending: newPending }).eq('id', achat.user_id);
-        }
-
         // Mettre à jour les achats en "won"
         await sb.from('purchases').update({ status: 'won' }).eq('prono_id', p.id);
 
       } else {
-        // Rembourser chaque acheteur + remettre pending à 0
+        // Rembourser chaque acheteur
         for (const achat of purchases) {
-          const { data: userProfile } = await sb.from('profiles').select('balance, pending').eq('id', achat.user_id).single();
+          const { data: userProfile } = await sb.from('profiles').select('balance').eq('id', achat.user_id).single();
           const currentBalance = parseFloat(userProfile?.balance || 0);
-          const currentPending = parseFloat(userProfile?.pending || 0);
-          const amount = parseFloat(achat.amount || 0);
-          await sb.from('profiles').update({
-            balance: currentBalance + amount,
-            pending: Math.max(0, currentPending - amount)
-          }).eq('id', achat.user_id);
+          await sb.from('profiles').update({ balance: currentBalance + parseFloat(achat.amount || 0) }).eq('id', achat.user_id);
         }
         // Mettre à jour les achats
         await sb.from('purchases').update({ status }).eq('prono_id', p.id);
@@ -488,51 +436,27 @@ function renderTipsters(c) {
         <span>Tipster</span><span>Pronos</span><span>Win Rate</span><span>Solde</span><span>RIB</span><span>Actions</span>
       </div>
       ${adminState.tipsters.map(t => `
-        ${isMobile() ? `
-        <div class="admin-card" style="${t.suspended?'opacity:0.55':''}">
-          <div class="admin-card__title" style="display:flex;align-items:center;gap:10px">
-            ${t.avatarUrl
-              ? `<img src="${t.avatarUrl}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
-              : `<div style="width:38px;height:38px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;flex-shrink:0">${t.name[0]?.toUpperCase()}</div>`
-            }
-            <div>
-              <div class="prono-title"><a href="${t.pseudo ? 'https://payperwin.co/' + t.pseudo : 'https://payperwin.co/pages/tipster-public.html?id=' + t.id}" target="_blank" style="color:var(--primary);text-decoration:none;font-weight:700">${t.name} 🔗</a></div>
-              <div class="prono-meta">${t.email}</div>
-              ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
-            </div>
-          </div>
-          <div class="admin-card__grid">
-            <div class="admin-card__field"><div class="admin-card__label">Pronos</div><div style="font-weight:600">${t.pronos}</div></div>
-            <div class="admin-card__field"><div class="admin-card__label">Win Rate</div><div style="font-weight:700;color:${t.winRate>=60?'var(--success)':'var(--warning)'}">${t.winRate}%</div></div>
-            <div class="admin-card__field"><div class="admin-card__label">Solde</div><div class="prono-price">${formatEuros(t.balance)}</div></div>
-            <div class="admin-card__field"><div class="admin-card__label">RIB</div><div>${t.ribSaved ? `<span class="badge badge-won" style="font-size:0.7rem">✓ Enregistré</span>` : `<span class="badge badge-lost" style="font-size:0.7rem">✕ Manquant</span>`}</div></div>
-          </div>
-          <div class="admin-card__actions" style="justify-content:flex-end">
-            <button class="btn-icon" onclick="openFicheTipster('${t.id}')">👁</button>
-            <button class="btn-icon ${t.suspended?'':'danger'}" onclick="toggleSuspend('${t.id}')">${t.suspended ? '✓' : '⛔'}</button>
-          </div>
-        </div>` : `
         <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px;${t.suspended?'opacity:0.55':''}">
-          <div style="display:flex;align-items:center;gap:10px">
-            ${t.avatarUrl
-              ? `<img src="${t.avatarUrl}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
-              : `<div style="width:36px;height:36px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.9rem;flex-shrink:0">${t.name[0]?.toUpperCase()}</div>`
-            }
-            <div>
-              <div class="prono-title"><a href="${t.pseudo ? 'https://payperwin.co/' + t.pseudo : 'https://payperwin.co/pages/tipster-public.html?id=' + t.id}" target="_blank" style="color:var(--primary);text-decoration:none;font-weight:700">${t.name} 🔗</a></div>
-              <div class="prono-meta">${t.email}</div>
-              ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
-            </div>
+          <div>
+            <div class="prono-title">${t.name}</div>
+            <div class="prono-meta">${t.email}</div>
+            ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
           </div>
           <div style="font-weight:600">${t.pronos}</div>
           <div style="font-weight:700;color:${t.winRate>=60?'var(--success)':'var(--warning)'}">${t.winRate}%</div>
           <div class="prono-price">${formatEuros(t.balance)}</div>
-          <div>${t.ribSaved ? `<span class="badge badge-won" style="font-size:0.7rem">✓ Enregistré</span>` : `<span class="badge badge-lost" style="font-size:0.7rem">✕ Manquant</span>`}</div>
-          <div class="table-actions">
-            <button class="btn-icon" onclick="openFicheTipster('${t.id}')">👁</button>
-            <button class="btn-icon ${t.suspended?'':'danger'}" onclick="toggleSuspend('${t.id}')">${t.suspended ? '✓' : '⛔'}</button>
+          <div>
+            ${t.ribSaved
+              ? `<span class="badge badge-won" style="font-size:0.7rem">✓ Enregistré</span>`
+              : `<span class="badge badge-lost" style="font-size:0.7rem">✕ Manquant</span>`}
           </div>
-        </div>`}`).join('')}
+          <div class="table-actions">
+            <button class="btn-icon ${t.suspended?'':'danger'}" title="${t.suspended?'Réactiver':'Suspendre'}"
+              onclick="toggleSuspend('${t.id}')">
+              ${t.suspended ? '✓' : '⛔'}
+            </button>
+          </div>
+        </div>`).join('')}
     </div>
   `;
 }
@@ -562,25 +486,19 @@ async function toggleSuspend(id) {
 //  PAGE — GESTION DES UTILISATEURS
 // ══════════════════════════════════════════════════════════════
 function renderUsers(c) {
-  const totalBalance  = adminState.users.reduce((s,u) => s + u.balance + u.pending, 0);
-  const totalDeposits = adminState.users.reduce((s,u) => s + u.totalDeposits, 0);
+  const totalBalance = adminState.users.reduce((s,u) => s + u.balance + u.pending, 0);
 
   c.innerHTML = `
-    <div class="stats-grid">
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:var(--space-xl)">
       <div class="stat-card">
         <div class="stat-card__label">👤 Utilisateurs</div>
         <div class="stat-card__value">${adminState.users.length}</div>
         <div class="stat-card__sub">inscrits</div>
       </div>
       <div class="stat-card">
-        <div class="stat-card__label">💳 Total dépôts</div>
-        <div class="stat-card__value" style="color:var(--success)">${formatEuros(totalDeposits)}</div>
-        <div class="stat-card__sub">recharges cumulées</div>
-      </div>
-      <div class="stat-card">
         <div class="stat-card__label">💰 Soldes cumulés</div>
         <div class="stat-card__value">${formatEuros(totalBalance)}</div>
-        <div class="stat-card__sub">disponible + attente</div>
+        <div class="stat-card__sub">dépôts + attentes</div>
       </div>
       <div class="stat-card">
         <div class="stat-card__label">⏳ En attente</div>
@@ -590,37 +508,26 @@ function renderUsers(c) {
     </div>
 
     <div class="pronos-table">
-      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 60px">
-        <span>Utilisateur</span><span>Solde dispo</span><span>En attente</span><span>Total dépôts</span><span>Inscrit</span><span></span>
+      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
+        <span>Utilisateur</span><span>Solde dispo</span><span>En attente</span><span>Inscrit</span><span>Rôle</span>
       </div>
       ${adminState.users.map(u => `
-        ${isMobile() ? `
-        <div class="admin-card">
-          <div class="admin-card__title">
-            <div class="prono-title">${u.name}</div>
-            <div class="prono-meta">${u.email}</div>
-          </div>
-          <div class="admin-card__grid">
-            <div class="admin-card__field"><div class="admin-card__label">Solde dispo</div><div style="font-weight:700;color:var(--blue)">${formatEuros(u.balance)}</div></div>
-            <div class="admin-card__field"><div class="admin-card__label">En attente</div><div style="font-weight:600;color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</div></div>
-            <div class="admin-card__field"><div class="admin-card__label">Total dépôts</div><div style="font-weight:700;color:var(--success)">${u.totalDeposits > 0 ? formatEuros(u.totalDeposits) : '—'}</div></div>
-            <div class="admin-card__field"><div class="admin-card__label">Inscrit</div><div style="font-size:0.85rem;color:var(--text-muted)">${u.joined}</div></div>
-          </div>
-          <div class="admin-card__actions" style="justify-content:flex-end">
-            <button class="btn-icon" onclick="openFicheUser('${u.id}')">👁</button>
-          </div>
-        </div>` : `
-        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 60px">
+        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
           <div>
             <div class="prono-title">${u.name}</div>
             <div class="prono-meta">${u.email}</div>
           </div>
           <div style="font-weight:700;color:var(--blue)">${formatEuros(u.balance)}</div>
           <div style="font-weight:600;color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</div>
-          <div style="font-weight:700;color:var(--success)">${u.totalDeposits > 0 ? formatEuros(u.totalDeposits) : '—'}</div>
           <div style="font-size:0.8rem;color:var(--text-muted)">${u.joined}</div>
-          <div><button class="btn-icon" onclick="openFicheUser('${u.id}')">👁</button></div>
-        </div>`}`).join('')}
+          <div>
+            ${u.role === 'moderator'
+              ? `<span style="font-size:0.75rem;padding:3px 10px;border-radius:var(--radius-full);background:var(--warning-pale,#fff8e1);color:var(--warning);font-weight:600">⚖️ Modérateur</span>
+                 <button onclick="setModerator('${u.id}','user')" style="margin-left:6px;font-size:0.72rem;padding:2px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:none;color:var(--text-muted);cursor:pointer">Retirer</button>`
+              : `<button onclick="setModerator('${u.id}','moderator')" style="font-size:0.75rem;padding:3px 10px;border:1px solid var(--border);border-radius:var(--radius-full);background:none;color:var(--text-muted);cursor:pointer;hover:background:var(--bg-soft)">+ Modérateur</button>`
+            }
+          </div>
+        </div>`).join('')}
     </div>
   `;
 }
@@ -775,384 +682,6 @@ function renderSidebar() {
 function renderTopbar() {}
 
 // ── Utilitaires ───────────────────────────────────────────────
-// ══════════════════════════════════════════════════════════════
-//  PAGE — FINANCES & COMMISSIONS
-// ══════════════════════════════════════════════════════════════
-async function renderFinances(container) {
-  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
-
-  container.innerHTML = `
-    <div class="section-header">
-      <div><h2>Finances & Commissions</h2><p>Revenus par tipster sur les pronos terminés</p></div>
-    </div>
-
-    <!-- Filtres date -->
-    <div style="display:flex;gap:var(--space-md);align-items:flex-end;margin-bottom:var(--space-lg);flex-wrap:wrap">
-      <div class="form-group" style="margin:0">
-        <label style="font-size:0.8rem;color:var(--text-muted)">Date début (match)</label>
-        <input class="input" type="date" id="fin-date-from" style="width:160px" />
-      </div>
-      <div class="form-group" style="margin:0">
-        <label style="font-size:0.8rem;color:var(--text-muted)">Date fin (match)</label>
-        <input class="input" type="date" id="fin-date-to" style="width:160px" />
-      </div>
-      <button class="btn btn-primary" onclick="loadFinances()">Filtrer</button>
-      <button class="btn btn-outline" onclick="
-        document.getElementById('fin-date-from').value='';
-        document.getElementById('fin-date-to').value='';
-        loadFinances();
-      ">Tout afficher</button>
-    </div>
-
-    <!-- Totaux globaux -->
-    <div class="stats-grid stats-grid--3" id="fin-totals">
-      <div class="stat-card"><div class="stat-card__label">CA Total</div><div class="stat-card__value" id="fin-total-ca">—</div></div>
-      <div class="stat-card"><div class="stat-card__label">Mes commissions (10%)</div><div class="stat-card__value" id="fin-total-comm" style="color:var(--success)">—</div></div>
-      <div class="stat-card"><div class="stat-card__label">Versé aux tipsters (90%)</div><div class="stat-card__value" id="fin-total-net">—</div></div>
-    </div>
-
-    <!-- Tableau par tipster -->
-    <div id="fin-table">
-      <div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>
-    </div>
-  `;
-
-  loadFinances();
-}
-
-async function loadFinances() {
-  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
-
-  const dateFrom = document.getElementById('fin-date-from')?.value || '';
-  const dateTo   = document.getElementById('fin-date-to')?.value   || '';
-  const table    = document.getElementById('fin-table');
-  if (!table) return;
-
-  table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>`;
-
-  try {
-    // 1. Charger les pronos terminés (won/lost/cancelled)
-    const urlP = new URL(SUPA + '/rest/v1/pronos');
-    urlP.searchParams.set('select', 'id,game,sport,match_date,status,tipster_id,buyers');
-    urlP.searchParams.set('status', 'in.(won,lost,cancelled)');
-    if (dateFrom) urlP.searchParams.set('match_date', 'gte.' + dateFrom);
-    if (dateTo)   urlP.searchParams.append('match_date', 'lte.' + dateTo);
-    urlP.searchParams.set('apikey', ANON);
-    const rP = await fetch(urlP.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
-    const pronos = await rP.json();
-
-    if (!Array.isArray(pronos) || pronos.length === 0) {
-      table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun prono terminé sur cette période.</div>`;
-      document.getElementById('fin-total-ca').textContent   = '0 €';
-      document.getElementById('fin-total-comm').textContent = '0 €';
-      document.getElementById('fin-total-net').textContent  = '0 €';
-      return;
-    }
-
-    // 2. Charger les purchases des pronos terminés (won uniquement = CA réel)
-    const pronoIds = pronos.map(p => p.id);
-    const urlPurch = new URL(SUPA + '/rest/v1/purchases');
-    urlPurch.searchParams.set('select', 'prono_id,amount,status');
-    urlPurch.searchParams.set('prono_id', 'in.(' + pronoIds.join(',') + ')');
-    urlPurch.searchParams.set('apikey', ANON);
-    const rPurch = await fetch(urlPurch.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
-    const purchases = await rPurch.json();
-
-    // 3. Charger les profils tipsters
-    const tipsterIds = [...new Set(pronos.map(p => p.tipster_id).filter(Boolean))];
-    const urlProf = new URL(SUPA + '/rest/v1/profiles');
-    urlProf.searchParams.set('select', 'id,first_name,last_name');
-    urlProf.searchParams.set('id', 'in.(' + tipsterIds.join(',') + ')');
-    urlProf.searchParams.set('apikey', ANON);
-    const rProf = await fetch(urlProf.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
-    const profiles = await rProf.json();
-    const profilesMap = {};
-    (profiles || []).forEach(p => profilesMap[p.id] = p.first_name + ' ' + p.last_name);
-
-    // 4. Calculer par tipster
-    const tipsterStats = {};
-    pronos.forEach(prono => {
-      const tid = prono.tipster_id;
-      if (!tid) return;
-      if (!tipsterStats[tid]) {
-        tipsterStats[tid] = {
-          name: profilesMap[tid] || '—',
-          pronos: 0, won: 0, lost: 0, cancelled: 0,
-          ca: 0, commission: 0, net: 0,
-          acheteurs: 0,
-        };
-      }
-      const s = tipsterStats[tid];
-      s.pronos++;
-      if (prono.status === 'won') s.won++;
-      else if (prono.status === 'lost') s.lost++;
-      else if (prono.status === 'cancelled') s.cancelled++;
-
-      // CA = somme des purchases de ce prono
-      const pPurchases = (purchases || []).filter(p => p.prono_id === prono.id);
-      const pronoCA = pPurchases.reduce((sum, p) => sum + parseFloat(p.amount || 0), 0);
-      s.ca += pronoCA;
-      s.acheteurs += prono.buyers || 0;
-    });
-
-    // Calculer commissions et net
-    Object.values(tipsterStats).forEach(s => {
-      s.commission = s.ca * 0.10;
-      s.net = s.ca * 0.90;
-    });
-
-    // Filtrer tipsters avec CA > 0
-    const tipsters = Object.values(tipsterStats).filter(s => s.ca > 0);
-
-    if (tipsters.length === 0) {
-      table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucune vente sur cette période.</div>`;
-      document.getElementById('fin-total-ca').textContent   = '0 €';
-      document.getElementById('fin-total-comm').textContent = '0 €';
-      document.getElementById('fin-total-net').textContent  = '0 €';
-      return;
-    }
-
-    // Totaux globaux
-    const totalCA   = tipsters.reduce((s, t) => s + t.ca, 0);
-    const totalComm = totalCA * 0.10;
-    const totalNet  = totalCA * 0.90;
-    document.getElementById('fin-total-ca').textContent   = formatEuros(totalCA);
-    document.getElementById('fin-total-comm').textContent = formatEuros(totalComm);
-    document.getElementById('fin-total-net').textContent  = formatEuros(totalNet);
-
-    // Tableau
-    table.innerHTML = `
-      <div class="pronos-table">
-        <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr">
-          <span>Tipster</span>
-          <span>Pronos</span>
-          <span>Win Rate</span>
-          <span>Acheteurs</span>
-          <span>CA Total</span>
-          <span style="color:var(--success)">Mes 10%</span>
-          <span>Net Tipster</span>
-        </div>
-        ${tipsters.sort((a,b) => b.ca - a.ca).map(t => {
-          const winRate = (t.won + t.lost) > 0 ? Math.round(t.won / (t.won + t.lost) * 100) : 0;
-          return `
-          ${isMobile() ? `
-          <div class="admin-card">
-            <div class="admin-card__title">
-              <div class="prono-title">${t.name}</div>
-              <div class="prono-meta">${t.won}W · ${t.lost}L · ${t.cancelled} annulés</div>
-            </div>
-            <div class="admin-card__grid">
-              <div class="admin-card__field"><div class="admin-card__label">Pronos vendus</div><div style="font-weight:600">${t.pronos}</div></div>
-              <div class="admin-card__field"><div class="admin-card__label">Win Rate</div><div style="color:${winRate >= 60 ? 'var(--success)' : 'var(--text-muted)'};font-weight:600">${winRate}%</div></div>
-              <div class="admin-card__field"><div class="admin-card__label">Acheteurs</div><div>👥 ${t.acheteurs}</div></div>
-              <div class="admin-card__field"><div class="admin-card__label">CA Total</div><div style="font-weight:700;color:var(--primary)">${formatEuros(t.ca)}</div></div>
-              <div class="admin-card__field"><div class="admin-card__label">Commission</div><div style="font-weight:700;color:var(--success)">${formatEuros(t.commission)}</div></div>
-              <div class="admin-card__field"><div class="admin-card__label">Versé tipster</div><div style="font-weight:600">${formatEuros(t.net)}</div></div>
-            </div>
-          </div>` : `
-          <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr">
-            <div>
-              <div class="prono-title">${t.name}</div>
-              <div class="prono-meta">${t.won}W · ${t.lost}L · ${t.cancelled} annulés</div>
-            </div>
-            <div style="font-weight:600">${t.pronos}</div>
-            <div style="color:${winRate >= 60 ? 'var(--success)' : 'var(--text-muted)'};font-weight:600">${winRate}%</div>
-            <div>👥 ${t.acheteurs}</div>
-            <div style="font-weight:700;color:var(--primary)">${formatEuros(t.ca)}</div>
-            <div style="font-weight:700;color:var(--success)">${formatEuros(t.commission)}</div>
-            <div style="font-weight:600">${formatEuros(t.net)}</div>
-          </div>`}`;
-        }).join('')}
-      </div>
-    `;
-
-  } catch(e) {
-    console.error('Erreur finances:', e);
-    table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur de chargement.</div>`;
-  }
-}
-
-// ══════════════════════════════════════════════════════════════
-//  MODALES — FICHES DÉTAILLÉES
-// ══════════════════════════════════════════════════════════════
-function closeFicheModal(e) {
-  if (!e || e.target === document.getElementById('fiche-modal-overlay')) {
-    document.getElementById('fiche-modal-overlay').style.display = 'none';
-  }
-}
-
-async function openFicheTipster(id) {
-  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
-  const overlay = document.getElementById('fiche-modal-overlay');
-  const modal   = document.getElementById('fiche-modal-content');
-  overlay.style.display = 'block';
-  modal.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Chargement...</div>';
-
-  try {
-    // Profil
-    const rP = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,rib_iban,rib_bic,rib_name,created_at&id=eq.${id}&apikey=${ANON}`, { headers: { apikey: ANON } });
-    const profiles = await rP.json();
-    const p = profiles[0] || {};
-
-    // Pronos
-    const rPr = await fetch(`${SUPA}/rest/v1/pronos?select=id,game,sport,match_date,status,buyers,price,content,cote&tipster_id=eq.${id}&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON } });
-    const pronos = await rPr.json();
-
-    // Stats financières
-    const pronoIds = (pronos||[]).map(p => p.id);
-    let totalCA = 0, totalComm = 0;
-    if (pronoIds.length > 0) {
-      const rPurch = await fetch(`${SUPA}/rest/v1/purchases?select=amount,status&prono_id=in.(${pronoIds.join(',')})&apikey=${ANON}`, { headers: { apikey: ANON } });
-      const purchases = await rPurch.json();
-      totalCA = (purchases||[]).reduce((s,p) => s + parseFloat(p.amount||0), 0);
-      totalComm = totalCA * 0.10;
-    }
-
-    const won  = (pronos||[]).filter(p => p.status === 'won').length;
-    const lost = (pronos||[]).filter(p => p.status === 'lost').length;
-    const wr   = (won+lost) > 0 ? Math.round(won/(won+lost)*100) : 0;
-
-    modal.innerHTML = `
-      <h2 style="margin-bottom:4px">${p.first_name} ${p.last_name}</h2>
-      <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">
-        Membre depuis ${formatDate(p.created_at?.split('T')[0])}
-      </div>
-
-      <!-- Stats rapides -->
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-card__label">Pronos</div><div class="stat-card__value">${(pronos||[]).length}</div></div>
-        <div class="stat-card"><div class="stat-card__label">Win Rate</div><div class="stat-card__value" style="color:var(--success)">${wr}%</div></div>
-        <div class="stat-card"><div class="stat-card__label">CA Total</div><div class="stat-card__value">${formatEuros(totalCA)}</div></div>
-        <div class="stat-card"><div class="stat-card__label">Mes 10%</div><div class="stat-card__value" style="color:var(--success)">${formatEuros(totalComm)}</div></div>
-      </div>
-
-      <!-- Infos bancaires -->
-      <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-lg);font-size:0.85rem">
-        <strong>🏦 RIB</strong><br>
-        Titulaire : ${p.rib_name || '—'}<br>
-        IBAN : ${p.rib_iban || '—'}<br>
-        BIC : ${p.rib_bic || '—'}<br>
-        Solde disponible : <strong>${formatEuros(p.balance||0)}</strong> · En attente : <strong>${formatEuros(p.pending||0)}</strong>
-      </div>
-
-      <!-- Liste des pronos -->
-      <h3 style="margin-bottom:var(--space-md)">Historique des pronos</h3>
-      ${(pronos||[]).length === 0 ? '<p style="color:var(--text-muted)">Aucun prono.</p>' : `
-        <div style="display:flex;flex-direction:column;gap:8px;max-height:350px;overflow-y:auto">
-          ${(pronos||[]).map(pr => {
-            const badge = { won:'<span class="badge badge-won">✓ Gagné</span>', lost:'<span class="badge badge-lost">✕ Perdu</span>', cancelled:'<span class="badge badge-cancelled">⊘ Annulé</span>', pending:'<span class="badge badge-pending">⏳ En attente</span>' };
-            return `<div style="background:var(--bg-soft);border-radius:var(--radius-sm);padding:10px 14px;font-size:0.85rem">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <strong>${pr.game}</strong>
-                ${badge[pr.status]||''}
-              </div>
-              <div style="color:var(--text-muted);margin-top:2px">${pr.sport} · ${formatDate(pr.match_date)} · 👥 ${pr.buyers||0} · ${formatEuros(pr.price)}${pr.cote ? ` · 📊 ${parseFloat(pr.cote).toFixed(2).replace('.',',')}` : ''}</div>
-              ${pr.content ? `<div style="margin-top:4px;font-style:italic;color:var(--text-muted)">📋 ${pr.content}</div>` : ''}
-            </div>`;
-          }).join('')}
-        </div>
-      `}
-    `;
-  } catch(e) {
-    modal.innerHTML = `<div style="color:var(--error)">Erreur de chargement.</div>`;
-  }
-}
-
-async function openFicheUser(id) {
-  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
-  const overlay = document.getElementById('fiche-modal-overlay');
-  const modal   = document.getElementById('fiche-modal-content');
-  overlay.style.display = 'block';
-  modal.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Chargement...</div>';
-
-  try {
-    // Profil
-    const rP = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,created_at&id=eq.${id}&apikey=${ANON}`, { headers: { apikey: ANON } });
-    const profiles = await rP.json();
-    const p = profiles[0] || {};
-
-    // Achats
-    const rA = await fetch(`${SUPA}/rest/v1/purchases?select=id,prono_id,amount,status,created_at&user_id=eq.${id}&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON } });
-    const purchases = await rA.json();
-
-    // Pronos associés
-    let pronosMap = {};
-    if ((purchases||[]).length > 0) {
-      const pronoIds = [...new Set(purchases.map(a => a.prono_id))];
-      const rPr = await fetch(`${SUPA}/rest/v1/pronos?select=id,game,sport,match_date,tipster_id&id=in.(${pronoIds.join(',')})&apikey=${ANON}`, { headers: { apikey: ANON } });
-      const pronos = await rPr.json();
-      (pronos||[]).forEach(pr => pronosMap[pr.id] = pr);
-
-      // Noms tipsters
-      const tipsterIds = [...new Set(Object.values(pronosMap).map(pr => pr.tipster_id).filter(Boolean))];
-      if (tipsterIds.length > 0) {
-        const rT = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name&id=in.(${tipsterIds.join(',')})&apikey=${ANON}`, { headers: { apikey: ANON } });
-        const tipsters = await rT.json();
-        const tMap = {};
-        (tipsters||[]).forEach(t => tMap[t.id] = t.first_name + ' ' + t.last_name);
-        Object.values(pronosMap).forEach(pr => pr.tipsterName = tMap[pr.tipster_id] || '—');
-      }
-    }
-
-    const totalDepense   = (purchases||[]).reduce((s,a) => s + parseFloat(a.amount||0), 0);
-    const totalRembourse = (purchases||[]).filter(a => a.status === 'lost' || a.status === 'cancelled').reduce((s,a) => s + parseFloat(a.amount||0), 0);
-    const totalWon       = (purchases||[]).filter(a => a.status === 'won').length;
-
-    modal.innerHTML = `
-      <h2 style="margin-bottom:4px">${p.first_name} ${p.last_name}</h2>
-      <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">
-        Membre depuis ${formatDate(p.created_at?.split('T')[0])}
-      </div>
-
-      <!-- Stats rapides -->
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-card__label">Achats</div><div class="stat-card__value">${(purchases||[]).length}</div></div>
-        <div class="stat-card"><div class="stat-card__label">Total dépensé</div><div class="stat-card__value">${formatEuros(totalDepense)}</div></div>
-        <div class="stat-card"><div class="stat-card__label">Remboursés</div><div class="stat-card__value" style="color:var(--success)">${formatEuros(totalRembourse)}</div></div>
-        <div class="stat-card"><div class="stat-card__label">Pronos gagnés</div><div class="stat-card__value" style="color:var(--primary)">${totalWon}</div></div>
-      </div>
-
-      <!-- Solde -->
-      <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-lg);font-size:0.85rem">
-        💰 Solde disponible : <strong>${formatEuros(p.balance||0)}</strong> · ⏳ En attente : <strong>${formatEuros(p.pending||0)}</strong>
-      </div>
-
-      <!-- Historique achats -->
-      <h3 style="margin-bottom:var(--space-md)">Historique des achats</h3>
-      ${(purchases||[]).length === 0 ? '<p style="color:var(--text-muted)">Aucun achat.</p>' : `
-        <div style="display:flex;flex-direction:column;gap:8px;max-height:350px;overflow-y:auto">
-          ${(purchases||[]).map(a => {
-            const pr = pronosMap[a.prono_id] || {};
-            const badge = { won:'<span class="badge badge-won">✓ Gagné</span>', lost:'<span class="badge badge-lost">✕ Perdu</span>', cancelled:'<span class="badge badge-cancelled">⊘ Annulé</span>', pending:'<span class="badge badge-pending">⏳ En attente</span>' };
-            return `<div style="background:var(--bg-soft);border-radius:var(--radius-sm);padding:10px 14px;font-size:0.85rem">
-              <div style="display:flex;justify-content:space-between;align-items:center">
-                <strong>${pr.game || '—'}</strong>
-                ${badge[a.status]||''}
-              </div>
-              <div style="color:var(--text-muted);margin-top:2px">
-                ${pr.sport||'—'} · ${formatDate(pr.match_date)} · par ${pr.tipsterName||'—'} · <strong>${formatEuros(a.amount)}</strong>
-              </div>
-            </div>`;
-          }).join('')}
-        </div>
-      `}
-    `;
-  } catch(e) {
-    modal.innerHTML = `<div style="color:var(--error)">Erreur de chargement.</div>`;
-  }
-}
-
-function formatDate(str) {
-  if (!str) return "—";
-  const match = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (match) return `${match[3]}/${match[2]}/${match[1].slice(2)}`;
-  return str;
-}
-
 function formatEuros(n) {
   return n % 1 === 0
     ? Math.round(n).toLocaleString('fr-FR') + ' €'
@@ -1169,187 +698,26 @@ function showToast(message, type = 'info') {
   document.body.appendChild(t);
   setTimeout(() => t?.remove(), 3500);
 }
-async function renderExplorerTipsters(container, publicUrlBase) {
-  container.innerHTML = `
-    <div class="section-header">
-      <div><h2>Explorer les tipsters</h2><p>Chargement...</p></div>
-    </div>
-    <div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>`;
 
+// ── Attribuer / Retirer le rôle modérateur ────────────────────
+async function setModerator(userId, newRole) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  const label = newRole === 'moderator' ? 'modérateur' : 'utilisateur';
+  if (!confirm(`Changer le rôle de cet utilisateur en ${label} ?`)) return;
   try {
-    const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
-    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-
-    const [rT, rP] = await Promise.all([
-      fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,pseudo,avatar_url&role=eq.tipster&apikey=${ANON}`),
-      fetch(`${SUPA}/rest/v1/pronos?select=tipster_id,status,buyers,cote&apikey=${ANON}`)
-    ]);
-    const tipsters = await rT.json();
-    const pronos   = await rP.json();
-
-    const stats = {};
-    for (const t of tipsters) {
-      const my    = pronos.filter(p => p.tipster_id === t.id);
-      const won   = my.filter(p => p.status === 'won').length;
-      const lost  = my.filter(p => p.status === 'lost').length;
-      const total = my.length;
-      const totalAcheteurs = my.reduce((s,p) => s + (parseInt(p.buyers)||0), 0);
-      const finished = won + lost;
-      const winRate  = finished > 0 ? Math.round(won / finished * 100) : null;
-
-      const withCote = my.filter(p => (p.status==='won'||p.status==='lost') && p.cote && parseFloat(p.cote) > 1);
-      const avgCote  = withCote.length > 0
-        ? Math.round(withCote.reduce((s,p) => s + parseFloat(p.cote), 0) / withCote.length * 100) / 100
-        : null;
-
-      const score = winRate !== null ? winRate * (avgCote !== null ? avgCote : 1) : null;
-      stats[t.id] = { won, lost, total, totalAcheteurs, winRate, avgCote, score };
-    }
-
-    let sortCol  = 'score';
-    let sortDir  = -1;
-    let filterVal = '';
-
-    function sortedFiltered() {
-      return tipsters
-        .filter(t => (t.pseudo||'').toLowerCase().includes(filterVal.toLowerCase()))
-        .sort((a, b) => {
-          const sa = stats[a.id][sortCol];
-          const sb = stats[b.id][sortCol];
-          if (sa === null && sb === null) return 0;
-          if (sa === null) return 1;
-          if (sb === null) return -1;
-          return (sb - sa) * sortDir * -1;
-        });
-    }
-
-    function setSortCol(col) {
-      if (sortCol === col) { sortDir *= -1; } else { sortCol = col; sortDir = -1; }
-      renderList();
-    }
-
-    function arrowHtml(col) {
-      if (sortCol !== col) return `<span style="color:var(--text-muted);font-size:0.7rem;margin-left:3px">⇅</span>`;
-      return sortDir === -1
-        ? `<span style="font-size:0.7rem;margin-left:3px">↓</span>`
-        : `<span style="font-size:0.7rem;margin-left:3px">↑</span>`;
-    }
-
-    function renderList() {
-      ['total','totalAcheteurs','winRate','avgCote','score'].forEach(col => {
-        const el = document.getElementById('sort-btn-' + col);
-        if (el) {
-          el.style.borderColor = sortCol === col ? 'var(--blue)' : '';
-          el.style.color = sortCol === col ? 'var(--blue)' : '';
-        }
-        const arr = document.getElementById('sort-arr-' + col);
-        if (arr) arr.innerHTML = arrowHtml(col);
-      });
-
-      const listEl = document.getElementById('tipsters-list');
-      const list = sortedFiltered();
-      if (!list.length) {
-        listEl.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun tipster trouvé.</div>`;
-        return;
-      }
-
-      listEl.innerHTML = list.map((t, i) => {
-        const s = stats[t.id];
-        const pseudo = t.pseudo || (t.first_name + ' ' + t.last_name);
-        const avatarHtml = t.avatar_url
-          ? `<img src="${t.avatar_url}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
-          : `<div style="width:44px;height:44px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1rem;flex-shrink:0">${pseudo[0]?.toUpperCase()}</div>`;
-        const winRateHtml = s.winRate !== null
-          ? `<span style="font-weight:800;font-size:1rem;color:${s.winRate>=60?'var(--success)':'var(--warning)'};">${s.winRate}%</span>`
-          : `<span style="color:var(--text-muted);font-size:0.85rem">—</span>`;
-        const coteHtml = s.avgCote !== null
-          ? `<span style="font-weight:800;font-size:1rem;color:var(--blue)">${s.avgCote.toFixed(2).replace('.',',')}</span>`
-          : `<span style="color:var(--text-muted);font-size:0.85rem">—</span>`;
-        const rankColor = i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : 'var(--text-muted)';
-        const href = t.pseudo
-          ? publicUrlBase + t.pseudo
-          : publicUrlBase.replace(/\/[^\/]*$/, '/tipster-public.html?id=' + t.id);
-
-        return `
-        <a href="${href}" target="_blank" style="text-decoration:none">
-          <div class="tipster-explorer-card">
-            <div style="display:flex;align-items:center;gap:12px;min-width:0">
-              <div style="font-size:0.85rem;font-weight:700;color:${rankColor};min-width:20px;text-align:center">${i+1}</div>
-              ${avatarHtml}
-              <div style="font-weight:700;font-size:0.95rem;color:var(--text-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">@${pseudo}</div>
-            </div>
-            <div class="tipster-explorer-stats">
-              <div class="tipster-explorer-stat">
-                <div class="tipster-explorer-stat__label">Pronos</div>
-                <div class="tipster-explorer-stat__value">${s.total}</div>
-              </div>
-              <div class="tipster-explorer-stat">
-                <div class="tipster-explorer-stat__label">Acheteurs</div>
-                <div class="tipster-explorer-stat__value">${s.totalAcheteurs}</div>
-              </div>
-              <div class="tipster-explorer-stat">
-                <div class="tipster-explorer-stat__label">Win Rate</div>
-                <div class="tipster-explorer-stat__value">${winRateHtml}</div>
-              </div>
-              <div class="tipster-explorer-stat">
-                <div class="tipster-explorer-stat__label">Cote moy.</div>
-                <div class="tipster-explorer-stat__value">${coteHtml}</div>
-              </div>
-            </div>
-          </div>
-        </a>`;
-      }).join('');
-    }
-
-    const sortBtns = ['total','totalAcheteurs','winRate','avgCote','score'].map(col => {
-      const labels = {total:'Pronos',totalAcheteurs:'Acheteurs',winRate:'Win Rate',avgCote:'Cote moy.',score:'🏆 Score'};
-      return `<button id="sort-btn-${col}" class="btn btn-outline" style="font-size:0.78rem;padding:6px 12px" onclick="document.setSortCol('${col}')">
-        ${labels[col]} <span id="sort-arr-${col}"></span>
-      </button>`;
-    }).join('');
-
-    const scoreInfoBtn = `
-      <div style="position:relative;display:inline-block">
-        <button onclick="document.toggleScoreInfo()" style="width:20px;height:20px;border-radius:50%;border:1.5px solid var(--blue);background:none;color:var(--blue);font-size:0.72rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">i</button>
-        <div id="score-info-popover" style="display:none;position:absolute;top:28px;left:50%;transform:translateX(-50%);width:260px;background:var(--white);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md);font-size:0.8rem;color:var(--text-body);line-height:1.6;box-shadow:var(--shadow-md);z-index:100">
-          <strong style="color:var(--text-dark);display:block;margin-bottom:6px">🏆 Comment fonctionne le Score ?</strong>
-          Le Score récompense les tipsters qui gagnent souvent, sur des cotes élevées, et sur la durée.<br><br>
-          Un tipster avec 1 seul prono gagné n'aura jamais un bon score, même s'il est à 100%.
-          <div style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:10px;height:10px;background:var(--white);border-left:1px solid var(--border);border-top:1px solid var(--border);transform:translateX(-50%) rotate(45deg)"></div>
-        </div>
-      </div>`;
-
-    container.innerHTML = `
-      <div class="section-header">
-        <div><h2>Explorer les tipsters</h2><p>${tipsters.length} tipsters inscrits</p></div>
-      </div>
-      <div class="tipster-search-wrap">
-        <span class="input-icon">🔍</span>
-        <input class="input" id="tipster-search" type="text" placeholder="Rechercher par pseudo..." oninput="document.tipsterFilter(this.value)" />
-      </div>
-      <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md);flex-wrap:wrap;align-items:center;">
-        ${sortBtns}
-        ${scoreInfoBtn}
-      </div>
-      <div id="tipsters-list"></div>`;
-
-    document.toggleScoreInfo = () => {
-      const p = document.getElementById('score-info-popover');
-      if (p) p.style.display = p.style.display === 'none' ? 'block' : 'none';
-    };
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('#score-info-popover') && !e.target.closest('[onclick*="toggleScoreInfo"]')) {
-        const p = document.getElementById('score-info-popover');
-        if (p) p.style.display = 'none';
-      }
-    }, { once: false });
-
-    document.tipsterFilter = (val) => { filterVal = val; renderList(); };
-    document.setSortCol = setSortCol;
-    renderList();
-
+    const r = await fetch(`${SUPA}/rest/v1/profiles?id=eq.${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+      body: JSON.stringify({ role: newRole })
+    });
+    if (!r.ok) throw new Error('Erreur serveur');
+    // Mettre à jour localement
+    const u = adminState.users.find(u => u.id === userId);
+    if (u) u.role = newRole;
+    showToast(`Rôle mis à jour : ${label} ✓`, 'success');
+    navigateTo('users');
   } catch(e) {
-    container.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur : ${e.message}</div>`;
-    console.error('renderExplorerTipsters:', e);
+    showToast('Erreur : ' + e.message, 'error');
   }
 }

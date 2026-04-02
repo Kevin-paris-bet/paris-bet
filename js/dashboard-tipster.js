@@ -197,6 +197,7 @@ function navigateTo(page) {
     stats:  'Mes statistiques',
     compte: 'Mon compte',
     explorer: 'Explorer les tipsters',
+    feedback: 'Feedback & Nouveautés',
   };
   document.getElementById('topbar-title').textContent = titles[page] || 'Dashboard';
 
@@ -210,6 +211,7 @@ function navigateTo(page) {
   if (page === 'stats')    renderPageStats(content);
   if (page === 'compte')   renderPageCompte(content);
   if (page === 'explorer') renderPageExplorer(content);
+  if (page === 'feedback')  renderPageFeedback(content, false);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1135,4 +1137,134 @@ function showToast(message, type = 'info') {
   });
   document.body.appendChild(toast);
   setTimeout(() => toast?.remove(), 3500);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE — FEEDBACK & NOUVEAUTÉS
+// ══════════════════════════════════════════════════════════════
+async function renderPageFeedback(container, isAdmin) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+
+  // Charger le changelog
+  const rCL = await fetch(`${SUPA}/rest/v1/changelog?select=*&order=created_at.desc&apikey=${ANON}`, {
+    headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
+  });
+  const changelog = await rCL.json().catch(() => []);
+
+  const badgeColors = {
+    'Nouveau':        { bg: 'var(--blue-pale)',    color: 'var(--blue)',    },
+    'Amélioration':   { bg: 'var(--success-pale)', color: 'var(--success)' },
+    'Correction bug': { bg: 'var(--error-pale)',   color: 'var(--error)'   },
+  };
+
+  const changelogHtml = Array.isArray(changelog) && changelog.length > 0
+    ? changelog.map(e => {
+        const bc = badgeColors[e.type] || badgeColors['Nouveau'];
+        const date = new Date(e.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' });
+        return `
+        <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:var(--space-sm);margin-bottom:6px;flex-wrap:wrap">
+            <span style="font-size:0.72rem;font-weight:700;padding:3px 10px;border-radius:var(--radius-full);background:${bc.bg};color:${bc.color}">${e.type}</span>
+            <span style="font-size:0.78rem;color:var(--text-muted)">${date}</span>
+          </div>
+          <div style="font-weight:700;color:var(--text-dark);margin-bottom:4px">${e.titre}</div>
+          <div style="font-size:0.88rem;color:var(--text-muted);line-height:1.6">${e.description}</div>
+        </div>`;
+      }).join('')
+    : `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucune nouveauté pour l'instant.</div>`;
+
+  container.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:var(--space-lg)">
+
+      <!-- Changelog -->
+      <div>
+        <div class="section-header"><div><h2>📣 Nouveautés</h2><p>Les dernières mises à jour de PayPerWin</p></div></div>
+        <div class="pronos-table" style="padding:0">
+          ${changelogHtml}
+        </div>
+      </div>
+
+      <!-- Formulaire feedback -->
+      <div>
+        <div class="section-header"><div><h2>💬 Votre avis</h2><p>Suggestions, bugs, idées — on lit tout</p></div></div>
+        <div class="pronos-table" style="padding:var(--space-lg);display:flex;flex-direction:column;gap:var(--space-md)">
+          <div class="form-group">
+            <label>Catégorie</label>
+            <select class="input" id="fb-categorie" style="cursor:pointer">
+              <option value="suggestion">💡 Suggestion</option>
+              <option value="bug">🐛 Bug</option>
+              <option value="autre">💬 Autre</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Titre <span style="color:var(--text-muted);font-weight:400">(résumé court)</span></label>
+            <input class="input" type="text" id="fb-titre" placeholder="Ex: Ajouter un filtre par sport" maxlength="100" />
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea class="input input-textarea" id="fb-description" placeholder="Décrivez votre idée ou le bug rencontré en détail..." style="min-height:120px"></textarea>
+          </div>
+          <button class="btn btn-primary" onclick="submitFeedback()" style="width:100%">
+            Envoyer mon feedback →
+          </button>
+          <div id="fb-success" style="display:none;background:var(--success-pale);border:1px solid var(--success);border-radius:var(--radius-md);padding:var(--space-md);font-size:0.88rem;color:var(--success);text-align:center">
+            ✓ Merci ! Votre feedback a bien été envoyé.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  `;
+}
+
+async function submitFeedback() {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+
+  const categorie   = document.getElementById('fb-categorie')?.value;
+  const titre       = document.getElementById('fb-titre')?.value.trim();
+  const description = document.getElementById('fb-description')?.value.trim();
+
+  if (!titre || !description) { showToast('Veuillez remplir le titre et la description.', 'error'); return; }
+
+  const btn = document.querySelector('[onclick="submitFeedback()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi...'; }
+
+  try {
+    const { data: { user } } = await sb.auth.getUser();
+
+    // Récupérer profil
+    let pseudo = '', email = '', role = '';
+    if (user) {
+      email = user.email;
+      const rP = await fetch(`${SUPA}/rest/v1/profiles?select=pseudo,first_name,last_name,role&id=eq.${user.id}&apikey=${ANON}`, {
+        headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }
+      });
+      const profiles = await rP.json();
+      if (Array.isArray(profiles) && profiles[0]) {
+        const p = profiles[0];
+        pseudo = p.pseudo || (p.first_name + ' ' + p.last_name);
+        role = p.role;
+      }
+    }
+
+    const r = await fetch(`${SUPA}/rest/v1/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON, 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ user_id: user?.id, role, pseudo, email, categorie, titre, description, statut: 'nouveau' })
+    });
+
+    if (r.ok || r.status === 201) {
+      document.getElementById('fb-success').style.display = 'block';
+      document.getElementById('fb-titre').value = '';
+      document.getElementById('fb-description').value = '';
+    } else {
+      throw new Error('Erreur serveur');
+    }
+  } catch(e) {
+    showToast('Erreur lors de l\'envoi : ' + e.message, 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Envoyer mon feedback →'; }
+  }
 }

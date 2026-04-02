@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PayPerWin — Panel Modérateur</title>
+  <link rel="stylesheet" href="../css/variables.css" />
+  <link rel="stylesheet" href="../css/components.css" />
+  <link rel="stylesheet" href="../css/dashboard.css" />
+  <link rel="stylesheet" href="../css/dashboard-admin.css" />
+  <script>if(localStorage.getItem("ppw-theme")==="dark")document.documentElement.setAttribute("data-theme","dark");</script>
+</head>
+<body>
+
+<div class="dashboard">
+
+  <!-- ── SIDEBAR ── -->
+  <aside class="sidebar">
+    <a href="../index.html" class="sidebar__logo">Pay<span>PerWin</span></a>
+
+    <div class="sidebar__user">
+      <div class="sidebar__avatar" id="sidebar-avatar" style="background:var(--warning)">MO</div>
+      <div class="sidebar__user-info">
+        <div class="sidebar__user-name" id="sidebar-name">Modérateur</div>
+        <div class="sidebar__user-role">
+          <span class="sidebar__role-badge" style="background:var(--warning-pale,#fff8e1);color:var(--warning)">⚖️ Modérateur</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="sidebar__nav">
+      <div class="sidebar__section-label">Modération</div>
+      <button class="sidebar__link active" data-page="pronos" onclick="navigateTo('pronos')">
+        <span class="sidebar__link-icon">⏳</span> Valider résultats
+        <span class="sidebar__link-badge" id="badge-pronos"></span>
+      </button>
+    </nav>
+
+    <div class="sidebar__bottom">
+      <button class="sidebar__link" id="theme-toggle" onclick="toggleTheme()" style="background:none;border:none;width:100%;text-align:left;cursor:pointer">
+        <span class="sidebar__link-icon" id="theme-icon">🌙</span>
+        <span id="theme-label">Mode sombre</span>
+        <span class="theme-toggle-switch"><span class="theme-toggle-knob"></span></span>
+      </button>
+      <a href="#" onclick="logout()" class="sidebar__link" style="color:var(--error)">
+        <span class="sidebar__link-icon">🚪</span> Se déconnecter
+      </a>
+    </div>
+  </aside>
+
+  <!-- Overlay sidebar mobile -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- ── CONTENU ── -->
+  <div class="main">
+    <div class="topbar">
+      <button class="topbar__menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="topbar__title" id="topbar-title">Valider les résultats</div>
+      <div class="topbar__right">
+        <div class="topbar__balance" style="background:var(--warning-pale,#fff8e1);color:var(--warning);border-color:rgba(255,165,0,0.2)">
+          ⚖️ Mode Modérateur
+        </div>
+      </div>
+    </div>
+    <div class="page-content" id="page-content"></div>
+  </div>
+
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="../js/supabase.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/dashboard-moderator.js"></script>
+</body>
+</html>
