@@ -86,26 +86,52 @@ function renderPronos(c) {
     cancelled: `<span class="badge badge-cancelled">⊘ Annulé</span>`,
   };
 
+  const isMobile = window.innerWidth <= 768;
+
   const rows = filtered.length
-    ? filtered.map(p => `
-      <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 160px">
-        <div>
-          <div class="prono-title">${p.game}</div>
-          <div class="prono-meta">${p.sport || ''} · ${p.match_date || '—'}</div>
-        </div>
-        <div style="font-size:0.85rem;color:var(--text-muted)">${p.cote ? parseFloat(p.cote).toFixed(2) : '—'}</div>
-        <div>${statusBadge[p.status] || ''}</div>
-        <div style="font-size:0.85rem;color:var(--text-muted)">${p.match_date || '—'}</div>
-        <div>
-          ${p.status === 'pending' ? `
-            <div style="display:flex;gap:4px;flex-wrap:wrap">
-              <button class="btn-validate btn-validate--won"   onclick="validateProno('${p.id}','won')">✓ Gagné</button>
-              <button class="btn-validate btn-validate--lost"  onclick="validateProno('${p.id}','lost')">✕ Perdu</button>
-              <button class="btn-validate btn-validate--cancel" onclick="validateProno('${p.id}','cancelled')">⊘</button>
-            </div>` : `<span style="font-size:0.75rem;color:var(--text-muted)">Validé</span>`}
-        </div>
-      </div>`).join('')
+    ? filtered.map(p => {
+        const actionBtns = p.status === 'pending'
+          ? `<div style="display:flex;gap:4px;flex-wrap:wrap">
+               <button class="btn-validate btn-validate--won"   onclick="validateProno('${p.id}','won')">✓ Gagné</button>
+               <button class="btn-validate btn-validate--lost"  onclick="validateProno('${p.id}','lost')">✕ Perdu</button>
+               <button class="btn-validate btn-validate--cancel" onclick="validateProno('${p.id}','cancelled')">⊘</button>
+             </div>`
+          : `<span style="font-size:0.75rem;color:var(--text-muted)">Validé</span>`;
+
+        if (isMobile) {
+          return `
+          <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
+              <div>
+                <div class="prono-title">${p.game}</div>
+                <div class="prono-meta">${p.sport || ''} · ${p.match_date || '—'}</div>
+              </div>
+              ${statusBadge[p.status] || ''}
+            </div>
+            <div style="display:flex;align-items:center;gap:var(--space-md);margin-bottom:10px;font-size:0.82rem;color:var(--text-muted)">
+              <span>Cote : <strong style="color:var(--blue)">${p.cote ? parseFloat(p.cote).toFixed(2) : '—'}</strong></span>
+            </div>
+            ${actionBtns}
+          </div>`;
+        }
+
+        return `
+        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 160px">
+          <div>
+            <div class="prono-title">${p.game}</div>
+            <div class="prono-meta">${p.sport || ''} · ${p.match_date || '—'}</div>
+          </div>
+          <div style="font-size:0.85rem;font-weight:600;color:var(--blue)">${p.cote ? parseFloat(p.cote).toFixed(2) : '—'}</div>
+          <div>${statusBadge[p.status] || ''}</div>
+          <div>${actionBtns}</div>
+        </div>`;
+      }).join('')
     : `<div class="empty-state"><div class="empty-state__icon">✅</div><h3>Aucun pronostic ici</h3><p>Essayez un autre filtre.</p></div>`;
+
+  const tableHeader = isMobile ? '' : `
+    <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 160px">
+      <span>Match</span><span>Cote</span><span>Statut</span><span>Action</span>
+    </div>`;
 
   c.innerHTML = `
     <div class="section-header">
@@ -121,10 +147,8 @@ function renderPronos(c) {
           onclick="setFilter('${f}')">${l}</button>`).join('')}
     </div>
 
-    <div class="pronos-table">
-      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 160px">
-        <span>Match</span><span>Cote</span><span>Statut</span><span>Date</span><span>Action</span>
-      </div>
+    <div class="pronos-table" style="${isMobile ? 'padding:0' : ''}">
+      ${tableHeader}
       ${rows}
     </div>
   `;
