@@ -440,38 +440,55 @@ async function validateProno(id, status) {
 //  PAGE — GESTION DES TIPSTERS
 // ══════════════════════════════════════════════════════════════
 function renderTipsters(c) {
+  const isMobile = window.innerWidth <= 768;
+  const rows = adminState.tipsters.map(t => {
+    if (isMobile) {
+      return `
+        <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);${t.suspended?'opacity:0.55':''}">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+            <div>
+              <div class="prono-title">${t.name}</div>
+              <div class="prono-meta">${t.email}</div>
+              ${t.pseudo ? `<a href="https://payperwin.co/${t.pseudo}" target="_blank" style="font-size:0.75rem;color:var(--blue)">@${t.pseudo} →</a>` : ''}
+              ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
+            </div>
+            <button class="btn-icon ${t.suspended?'':'danger'}" onclick="toggleSuspend('${t.id}')">${t.suspended ? '✓' : '⛔'}</button>
+          </div>
+          <div style="display:flex;gap:var(--space-md);flex-wrap:wrap;font-size:0.82rem;color:var(--text-muted)">
+            <span>Pronos : <strong>${t.pronos}</strong></span>
+            <span>Win Rate : <strong style="color:${t.winRate>=60?'var(--success)':'var(--warning)'}">${t.winRate}%</strong></span>
+            <span>Solde : <strong style="color:var(--blue)">${formatEuros(t.balance)}</strong></span>
+            <span>RIB : ${t.ribSaved ? '✓' : '✕'}</span>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px;${t.suspended?'opacity:0.55':''}">
+        <div>
+          <div class="prono-title">${t.name}</div>
+          <div class="prono-meta">${t.email}</div>
+          ${t.pseudo ? `<div><a href="https://payperwin.co/${t.pseudo}" target="_blank" style="font-size:0.75rem;color:var(--blue)">@${t.pseudo} →</a></div>` : ''}
+          ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
+        </div>
+        <div style="font-weight:600">${t.pronos}</div>
+        <div style="font-weight:700;color:${t.winRate>=60?'var(--success)':'var(--warning)'}">${t.winRate}%</div>
+        <div class="prono-price">${formatEuros(t.balance)}</div>
+        <div>${t.ribSaved ? `<span class="badge badge-won" style="font-size:0.7rem">✓ Enregistré</span>` : `<span class="badge badge-lost" style="font-size:0.7rem">✕ Manquant</span>`}</div>
+        <div class="table-actions">
+          <button class="btn-icon ${t.suspended?'':'danger'}" onclick="toggleSuspend('${t.id}')">${t.suspended ? '✓' : '⛔'}</button>
+        </div>
+      </div>`;
+  }).join('');
+
   c.innerHTML = `
     <div class="section-header">
       <div><h2>Tipsters</h2><p>${adminState.tipsters.length} tipster(s) inscrits</p></div>
     </div>
-
-    <div class="pronos-table">
-      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px">
+    <div class="pronos-table" style="${isMobile ? 'padding:0' : ''}">
+      ${!isMobile ? `<div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px">
         <span>Tipster</span><span>Pronos</span><span>Win Rate</span><span>Solde</span><span>RIB</span><span>Actions</span>
-      </div>
-      ${adminState.tipsters.map(t => `
-        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px;${t.suspended?'opacity:0.55':''}">
-          <div>
-            <div class="prono-title">${t.name}</div>
-            <div class="prono-meta">${t.email}</div>
-            ${t.pseudo ? `<div><a href="https://payperwin.co/${t.pseudo}" target="_blank" style="font-size:0.75rem;color:var(--blue)">@${t.pseudo} →</a></div>` : ''}
-            ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
-          </div>
-          <div style="font-weight:600">${t.pronos}</div>
-          <div style="font-weight:700;color:${t.winRate>=60?'var(--success)':'var(--warning)'}">${t.winRate}%</div>
-          <div class="prono-price">${formatEuros(t.balance)}</div>
-          <div>
-            ${t.ribSaved
-              ? `<span class="badge badge-won" style="font-size:0.7rem">✓ Enregistré</span>`
-              : `<span class="badge badge-lost" style="font-size:0.7rem">✕ Manquant</span>`}
-          </div>
-          <div class="table-actions">
-            <button class="btn-icon ${t.suspended?'':'danger'}" title="${t.suspended?'Réactiver':'Suspendre'}"
-              onclick="toggleSuspend('${t.id}')">
-              ${t.suspended ? '✓' : '⛔'}
-            </button>
-          </div>
-        </div>`).join('')}
+      </div>` : ''}
+      ${rows}
     </div>
   `;
 }
@@ -501,7 +518,44 @@ async function toggleSuspend(id) {
 //  PAGE — GESTION DES UTILISATEURS
 // ══════════════════════════════════════════════════════════════
 function renderUsers(c) {
+  const isMobile = window.innerWidth <= 768;
   const totalBalance = adminState.users.reduce((s,u) => s + u.balance + u.pending, 0);
+
+  const rows = adminState.users.map(u => {
+    const roleBtn = u.role === 'moderator'
+      ? `<span style="font-size:0.72rem;padding:2px 8px;border-radius:var(--radius-full);background:var(--warning-pale,#fff8e1);color:var(--warning);font-weight:600">⚖️ Modo</span>
+         <button onclick="setModerator('${u.id}','user')" style="margin-left:4px;font-size:0.7rem;padding:2px 6px;border:1px solid var(--border);border-radius:var(--radius-sm);background:none;color:var(--text-muted);cursor:pointer">Retirer</button>`
+      : `<button onclick="setModerator('${u.id}','moderator')" style="font-size:0.72rem;padding:2px 8px;border:1px solid var(--border);border-radius:var(--radius-full);background:none;color:var(--text-muted);cursor:pointer">+ Modo</button>`;
+
+    if (isMobile) {
+      return `
+        <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px">
+            <div>
+              <div class="prono-title">${u.name}</div>
+              <div class="prono-meta">${u.email}</div>
+            </div>
+            <div>${roleBtn}</div>
+          </div>
+          <div style="display:flex;gap:var(--space-md);flex-wrap:wrap;font-size:0.82rem;color:var(--text-muted)">
+            <span>Solde : <strong style="color:var(--blue)">${formatEuros(u.balance)}</strong></span>
+            <span>Attente : <strong style="color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</strong></span>
+            <span>Inscrit : ${u.joined}</span>
+          </div>
+        </div>`;
+    }
+    return `
+      <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
+        <div>
+          <div class="prono-title">${u.name}</div>
+          <div class="prono-meta">${u.email}</div>
+        </div>
+        <div style="font-weight:700;color:var(--blue)">${formatEuros(u.balance)}</div>
+        <div style="font-weight:600;color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</div>
+        <div style="font-size:0.8rem;color:var(--text-muted)">${u.joined}</div>
+        <div>${roleBtn}</div>
+      </div>`;
+  }).join('');
 
   c.innerHTML = `
     <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:var(--space-xl)">
@@ -521,28 +575,11 @@ function renderUsers(c) {
         <div class="stat-card__sub">pronos non validés</div>
       </div>
     </div>
-
-    <div class="pronos-table">
-      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
+    <div class="pronos-table" style="${isMobile ? 'padding:0' : ''}">
+      ${!isMobile ? `<div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
         <span>Utilisateur</span><span>Solde dispo</span><span>En attente</span><span>Inscrit</span><span>Rôle</span>
-      </div>
-      ${adminState.users.map(u => `
-        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr">
-          <div>
-            <div class="prono-title">${u.name}</div>
-            <div class="prono-meta">${u.email}</div>
-          </div>
-          <div style="font-weight:700;color:var(--blue)">${formatEuros(u.balance)}</div>
-          <div style="font-weight:600;color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</div>
-          <div style="font-size:0.8rem;color:var(--text-muted)">${u.joined}</div>
-          <div>
-            ${u.role === 'moderator'
-              ? `<span style="font-size:0.75rem;padding:3px 10px;border-radius:var(--radius-full);background:var(--warning-pale,#fff8e1);color:var(--warning);font-weight:600">⚖️ Modérateur</span>
-                 <button onclick="setModerator('${u.id}','user')" style="margin-left:6px;font-size:0.72rem;padding:2px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:none;color:var(--text-muted);cursor:pointer">Retirer</button>`
-              : `<button onclick="setModerator('${u.id}','moderator')" style="font-size:0.75rem;padding:3px 10px;border:1px solid var(--border);border-radius:var(--radius-full);background:none;color:var(--text-muted);cursor:pointer">+ Modérateur</button>`
-            }
-          </div>
-        </div>`).join('')}
+      </div>` : ''}
+      ${rows}
     </div>
   `;
 }
@@ -577,6 +614,60 @@ async function renderVirements(c) {
   const pending = Array.isArray(tipsters) ? tipsters.filter(t => parseFloat(t.balance) >= minPayout) : [];
   const totalPending = pending.reduce((s,t) => s + parseFloat(t.balance), 0);
 
+  const isMobile = window.innerWidth <= 768;
+
+  const pendingRows = pending.length === 0
+    ? `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">✅ Aucun virement en attente.</div>`
+    : pending.map(t => {
+        if (isMobile) {
+          return `
+            <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
+                <div>
+                  <div class="prono-title">${t.first_name} ${t.last_name}</div>
+                  <div class="prono-meta" style="word-break:break-all">${t.rib_iban || '⚠️ RIB non renseigné'}</div>
+                </div>
+                <div style="font-weight:700;color:var(--blue);white-space:nowrap">${formatEuros(parseFloat(t.balance))}</div>
+              </div>
+              <button class="btn btn-primary btn--sm" onclick="markVirementDone('${t.id}','${t.first_name} ${t.last_name}',${parseFloat(t.balance)})">✓ Effectué</button>
+            </div>`;
+        }
+        return `
+          <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 120px">
+            <div>
+              <div class="prono-title">${t.first_name} ${t.last_name}</div>
+              <div class="prono-meta">Virement hebdomadaire</div>
+            </div>
+            <div style="font-weight:700;font-size:1.05rem;color:var(--blue)">${formatEuros(parseFloat(t.balance))}</div>
+            <div style="font-size:0.82rem;color:var(--text-muted)">${t.rib_iban ? t.rib_iban + (t.rib_bic ? ' / ' + t.rib_bic : '') : '⚠️ Non renseigné'}</div>
+            <div><button class="btn btn-primary btn--sm" onclick="markVirementDone('${t.id}','${t.first_name} ${t.last_name}',${parseFloat(t.balance)})">✓ Effectué</button></div>
+          </div>`;
+      }).join('');
+
+  const histoRows = !Array.isArray(payouts) || payouts.length === 0
+    ? `<div style="text-align:center;padding:var(--space-xl);color:var(--text-muted);font-size:0.88rem">Aucun virement effectué pour l'instant.</div>`
+    : payouts.map(v => {
+        if (isMobile) {
+          return `
+            <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <div>
+                <div class="prono-title">${tipstersMap[v.tipster_id] || '—'}</div>
+                <div class="prono-meta">${new Date(v.created_at).toLocaleDateString('fr-FR')}</div>
+              </div>
+              <div style="font-weight:700;color:var(--success)">+${formatEuros(v.amount)}</div>
+            </div>`;
+        }
+        return `
+          <div class="table-row" style="grid-template-columns:2fr 1fr 1fr">
+            <div>
+              <div class="prono-title">${tipstersMap[v.tipster_id] || '—'}</div>
+              <div class="prono-meta">Virement effectué</div>
+            </div>
+            <div style="font-weight:700;color:var(--success)">+${formatEuros(v.amount)}</div>
+            <div style="font-size:0.82rem;color:var(--text-muted)">${new Date(v.created_at).toLocaleDateString('fr-FR')}</div>
+          </div>`;
+      }).join('');
+
   c.innerHTML = `
     ${pending.length > 0 ? `
       <div style="background:var(--warning-pale);border:1px solid var(--warning);border-radius:var(--radius-lg);padding:var(--space-lg);margin-bottom:var(--space-xl);display:flex;gap:var(--space-md);align-items:center">
@@ -586,48 +677,17 @@ async function renderVirements(c) {
           <div style="font-size:0.85rem;color:var(--text-muted);margin-top:3px">Total : <strong>${formatEuros(totalPending)}</strong> à virer</div>
         </div>
       </div>` : ''}
-
     <div class="section-header">
       <div><h2>À effectuer</h2><p>Tipsters avec solde ≥ ${minPayout}€</p></div>
     </div>
-    <div class="pronos-table" style="margin-bottom:var(--space-xl)">
-      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 120px">
-        <span>Tipster</span><span>Solde</span><span>RIB</span><span>Action</span>
-      </div>
-      ${pending.length === 0
-        ? `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">✅ Aucun virement en attente.</div>`
-        : pending.map(t => `
-          <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 120px">
-            <div>
-              <div class="prono-title">${t.first_name} ${t.last_name}</div>
-              <div class="prono-meta">Virement hebdomadaire</div>
-            </div>
-            <div style="font-weight:700;font-size:1.05rem;color:var(--blue)">${formatEuros(parseFloat(t.balance))}</div>
-            <div style="font-size:0.82rem;color:var(--text-muted)">${t.rib_iban ? t.rib_iban + (t.rib_bic ? ' / ' + t.rib_bic : '') : '⚠️ Non renseigné'}</div>
-            <div>
-              <button class="btn btn-primary btn--sm" onclick="markVirementDone('${t.id}','${t.first_name} ${t.last_name}',${parseFloat(t.balance)})">
-                ✓ Effectué
-              </button>
-            </div>
-          </div>`).join('')}
+    <div class="pronos-table" style="margin-bottom:var(--space-xl);${isMobile?'padding:0':''}">
+      ${!isMobile ? `<div class="table-header" style="grid-template-columns:2fr 1fr 1fr 120px"><span>Tipster</span><span>Solde</span><span>RIB</span><span>Action</span></div>` : ''}
+      ${pendingRows}
     </div>
-
     <div class="section-header"><div><h2>Historique des virements</h2></div></div>
-    <div class="pronos-table">
-      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr">
-        <span>Tipster</span><span>Montant</span><span>Date</span>
-      </div>
-      ${!Array.isArray(payouts) || payouts.length === 0
-        ? `<div style="text-align:center;padding:var(--space-xl);color:var(--text-muted);font-size:0.88rem">Aucun virement effectué pour l'instant.</div>`
-        : payouts.map(v => `
-          <div class="table-row" style="grid-template-columns:2fr 1fr 1fr">
-            <div>
-              <div class="prono-title">${tipstersMap[v.tipster_id] || '—'}</div>
-              <div class="prono-meta">Virement effectué</div>
-            </div>
-            <div style="font-weight:700;color:var(--success)">+${formatEuros(v.amount)}</div>
-            <div style="font-size:0.82rem;color:var(--text-muted)">${new Date(v.created_at).toLocaleDateString('fr-FR')}</div>
-          </div>`).join('')}
+    <div class="pronos-table" style="${isMobile?'padding:0':''}">
+      ${!isMobile ? `<div class="table-header" style="grid-template-columns:2fr 1fr 1fr"><span>Tipster</span><span>Montant</span><span>Date</span></div>` : ''}
+      ${histoRows}
     </div>
   `;
 }
@@ -734,8 +794,4 @@ function toggleSidebar() {
   if (overlay) overlay.classList.toggle('show');
 }
 
-// ── Stubs pour rubriques supplémentaires (finances, explorer, feedback) ──
-// Ces fonctions sont définies dans les fichiers JS additionnels chargés après
-function renderFinances(c) { c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>'; }
-function renderExplorerTipsters(c) { c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>'; }
-function renderPageFeedbackAdmin(c) { c.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Chargement...</div>'; }
+
