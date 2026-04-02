@@ -442,9 +442,9 @@ async function validateProno(id, status) {
 function renderTipsters(c) {
   const mobile = isMobile();
   const rows = adminState.tipsters.map(t => {
-    const lien = t.pseudo
-      ? `<a href="https://payperwin.co/${t.pseudo}" target="_blank" style="font-size:0.75rem;color:var(--blue);text-decoration:none">@${t.pseudo} 🔗</a>`
-      : '';
+    const lienHref = t.pseudo ? `https://payperwin.co/${t.pseudo}` : `https://payperwin.co/pages/tipster-public.html?id=${t.id}`;
+    const lienLabel = t.pseudo ? `@${t.pseudo}` : `Voir la page`;
+    const lien = `<a href="${lienHref}" target="_blank" style="font-size:0.75rem;color:var(--blue);text-decoration:none">${lienLabel} 🔗</a>`;
     const rib = t.ribSaved
       ? `<span class="badge badge-won" style="font-size:0.7rem">✓ Enregistré</span>`
       : `<span class="badge badge-lost" style="font-size:0.7rem">✕ Manquant</span>`;
@@ -874,16 +874,18 @@ async function loadFinances() {
     if (!tipsters.length) { table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucune vente sur cette période.</div>`; return; }
     const mob = isMobile();
     table.innerHTML = mob
-      ? `<div style="display:flex;flex-direction:column;gap:8px">
+      ? `<div class="pronos-table" style="padding:0">
           ${tipsters.sort((a,b)=>b.ca-a.ca).map(t => {
             const wr = (t.won+t.lost)>0 ? Math.round(t.won/(t.won+t.lost)*100) : 0;
-            return `<div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:var(--space-md) var(--space-lg)">
-              <div class="prono-title" style="margin-bottom:4px">${t.name}</div>
-              <div class="prono-meta" style="margin-bottom:8px">${t.won}W · ${t.lost}L · ${t.cancelled} annulés · Win Rate : <strong style="color:${wr>=60?'var(--success)':'var(--text-muted)'}">${wr}%</strong></div>
-              <div style="display:flex;gap:var(--space-lg);flex-wrap:wrap;font-size:0.85rem">
-                <span>CA : <strong style="color:var(--primary)">${formatEuros(t.ca)}</strong></span>
-                <span>Commission : <strong style="color:var(--success)">${formatEuros(t.ca*0.1)}</strong></span>
-                <span>Net tipster : <strong>${formatEuros(t.ca*0.9)}</strong></span>
+            return `<div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+                <span class="prono-title">${t.name}</span>
+                <span style="font-weight:700;color:var(--primary)">${formatEuros(t.ca)}</span>
+              </div>
+              <div class="prono-meta">${t.won}W · ${t.lost}L · <span style="color:${wr>=60?'var(--success)':'var(--warning)'};font-weight:600">${wr}%</span></div>
+              <div style="display:flex;gap:var(--space-md);font-size:0.8rem;margin-top:4px">
+                <span style="color:var(--success)">+${formatEuros(t.ca*0.1)} comm.</span>
+                <span style="color:var(--text-muted)">${formatEuros(t.ca*0.9)} tipster</span>
               </div>
             </div>`;
           }).join('')}
