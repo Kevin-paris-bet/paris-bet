@@ -443,8 +443,7 @@ function renderTipsters(c) {
   const mobile = isMobile();
   const rows = adminState.tipsters.map(t => {
     const lienHref = t.pseudo ? `https://payperwin.co/${t.pseudo}` : `https://payperwin.co/pages/tipster-public.html?id=${t.id}`;
-    const lienLabel = t.pseudo ? `@${t.pseudo}` : `Voir la page`;
-    const lien = `<a href="${lienHref}" target="_blank" style="font-size:0.75rem;color:var(--blue);text-decoration:none">${lienLabel} 🔗</a>`;
+    const lienIcon = `<a href="${lienHref}" target="_blank" style="color:var(--blue);text-decoration:none;font-size:0.9rem;margin-left:6px" title="Voir la page publique">🔗</a>`;
     const rib = t.ribSaved
       ? `<span class="badge badge-won" style="font-size:0.7rem">✓ Enregistré</span>`
       : `<span class="badge badge-lost" style="font-size:0.7rem">✕ Manquant</span>`;
@@ -456,9 +455,8 @@ function renderTipsters(c) {
         <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);${t.suspended?'opacity:0.55':''}">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px">
             <div>
-              <div class="prono-title">${t.name}</div>
+              <div class="prono-title">${t.name}${lienIcon}</div>
               <div class="prono-meta">${t.email}</div>
-              ${lien ? `<div style="margin-top:3px">${lien}</div>` : ''}
               ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
             </div>
             <div style="display:flex;gap:6px">${voirBtn}${suspBtn}</div>
@@ -475,9 +473,8 @@ function renderTipsters(c) {
     return `
       <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 120px;${t.suspended?'opacity:0.55':''}">
         <div>
-          <div class="prono-title">${t.name}</div>
+          <div class="prono-title">${t.name}${lienIcon}</div>
           <div class="prono-meta">${t.email}</div>
-          ${lien ? `<div style="margin-top:3px">${lien}</div>` : ''}
           ${t.suspended ? `<div style="font-size:0.7rem;color:var(--error);font-weight:600">⛔ Suspendu</div>` : ''}
         </div>
         <div style="font-weight:600">${t.pronos}</div>
