@@ -590,15 +590,20 @@ function renderUsers(c) {
         <div class="stat-card"><div class="stat-card__label">💰 Soldes cumulés</div><div class="stat-card__value">${formatEuros(totalBalance)}</div><div class="stat-card__sub">dépôts + attentes</div></div>
         <div class="stat-card"><div class="stat-card__label">⏳ En attente</div><div class="stat-card__value">${formatEuros(adminState.users.reduce((s,u)=>s+(parseFloat(u.pending)||0),0))}</div><div class="stat-card__sub">pronos non validés</div></div>
       </div>
-      <div class="tipster-search-wrap" style="margin-bottom:var(--space-md)">
-        <span class="input-icon">🔍</span>
-        <input class="input" id="user-admin-search" type="text" placeholder="Rechercher par prénom..."
-          oninput="adminState.userSearch=this.value;renderUserRows()" />
+      <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md);align-items:center">
+        <div class="tipster-search-wrap" style="flex:1;margin-bottom:0">
+          <span class="input-icon">🔍</span>
+          <input class="input" id="user-admin-search" type="text" placeholder="Rechercher par prénom..."
+            oninput="adminState.userSearch=this.value;renderUserRows()" />
+        </div>
+        <button id="achats-sort-btn" onclick="toggleUserSort()" class="btn btn-outline" style="white-space:nowrap;flex-shrink:0;font-size:0.82rem;padding:8px 14px">
+          Achats <span id="achats-sort-arrow">⇅</span>
+        </button>
       </div>
       <div class="pronos-table" style="${mobile?'padding:0':''}">
         ${!mobile ? `<div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr">
           <span>Utilisateur</span>
-          <span id="achats-sort-header" onclick="toggleUserSort()" style="cursor:pointer;user-select:none">Achats<span id="achats-sort-arrow"> ⇅</span></span>
+          <span style="cursor:pointer;user-select:none" onclick="toggleUserSort()">Achats <span id="achats-sort-arrow-desktop">⇅</span></span>
           <span>Solde dispo</span><span>En attente</span><span>Inscrit</span><span>Actions</span>
         </div>` : ''}
         <div id="users-rows"></div>
@@ -610,15 +615,17 @@ function renderUsers(c) {
 }
 
 function toggleUserSort() {
-  // Cycle: 0 (aucun) → -1 (décroissant) → 1 (croissant) → -1 ...
-  if (adminState.userSortDir === 0 || adminState.userSortDir === 1) {
-    adminState.userSortDir = -1;
-  } else {
-    adminState.userSortDir = 1;
-  }
-  // Mettre à jour la flèche dans le header
-  const arrow = document.getElementById('achats-sort-arrow');
-  if (arrow) arrow.textContent = adminState.userSortDir === 1 ? ' ↑' : ' ↓';
+  // Cycle: 0 → décroissant → croissant → décroissant...
+  adminState.userSortDir = (adminState.userSortDir === -1) ? 1 : -1;
+  const arrowText = adminState.userSortDir === 1 ? '↑' : '↓';
+  // Sync flèches mobile et desktop
+  const a1 = document.getElementById('achats-sort-arrow');
+  const a2 = document.getElementById('achats-sort-arrow-desktop');
+  if (a1) a1.textContent = arrowText;
+  if (a2) a2.textContent = arrowText;
+  // Highlight du bouton mobile
+  const btn = document.getElementById('achats-sort-btn');
+  if (btn) btn.style.borderColor = 'var(--blue)';
   renderUserRows();
 }
 
@@ -1290,11 +1297,23 @@ async function openFicheUser(id){
     modal.innerHTML=`
       <h2 style="margin-bottom:4px">${p.first_name} ${p.last_name}</h2>
       <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">Membre depuis ${formatDate(p.created_at?.split('T')[0])}</div>
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-card__label">Achats</div><div class="stat-card__value">${(purchases||[]).length}</div></div>
-        <div class="stat-card"><div class="stat-card__label">Total dépensé</div><div class="stat-card__value">${formatEuros(totalDepense)}</div></div>
-        <div class="stat-card"><div class="stat-card__label">Remboursés</div><div class="stat-card__value" style="color:var(--success)">${formatEuros(totalRembourse)}</div></div>
-        <div class="stat-card"><div class="stat-card__label">Pronos gagnés</div><div class="stat-card__value" style="color:var(--primary)">${totalWon}</div></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-sm);margin-bottom:var(--space-lg)">
+        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 14px">
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:4px">Achats</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--text-dark)">${(purchases||[]).length}</div>
+        </div>
+        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 14px">
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:4px">Total dépensé</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--text-dark)">${formatEuros(totalDepense)}</div>
+        </div>
+        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 14px">
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:4px">Remboursés</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--success)">${formatEuros(totalRembourse)}</div>
+        </div>
+        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 14px">
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:4px">Pronos gagnés</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--blue)">${totalWon}</div>
+        </div>
       </div>
       <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-lg);font-size:0.85rem">
         💰 Solde : <strong>${formatEuros(p.balance||0)}</strong> · ⏳ En attente : <strong>${formatEuros(p.pending||0)}</strong>
