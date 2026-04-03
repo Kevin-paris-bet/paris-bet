@@ -284,9 +284,13 @@
   backdrop-filter: blur(4px);
   z-index: 200;
   display: flex; align-items: center; justify-content: center;
-  padding: var(--space-lg);
+  padding: var(--space-md);
   opacity: 0; pointer-events: none;
   transition: opacity 0.25s;
+}
+@media (max-width: 600px) {
+  .modal-overlay { padding: 8px; }
+  .modal { border-radius: var(--radius-lg); }
 }
 .modal-overlay.open { opacity: 1; pointer-events: all; }
 
@@ -303,15 +307,15 @@
 .modal-overlay.open .modal { transform: translateY(0); }
 
 .modal__header {
-  padding: var(--space-xl) var(--space-xl) var(--space-md);
+  padding: var(--space-lg) var(--space-lg) var(--space-sm);
   border-bottom: 1px solid var(--border);
-  display: flex; align-items: flex-start; justify-content: space-between;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;
 }
 .modal__header h3 {
   font-family: var(--font-display);
-  font-size: 1.3rem; font-weight: 800; color: var(--text-dark);
+  font-size: 1.2rem; font-weight: 800; color: var(--text-dark);
 }
-.modal__header p { font-size: 0.82rem; color: var(--text-muted); margin-top: 3px; }
+.modal__header p { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; max-width: none; }
 .modal__close {
   width: 32px; height: 32px;
   border-radius: var(--radius-sm);
@@ -323,7 +327,7 @@
 }
 .modal__close:hover { border-color: var(--error); color: var(--error); }
 
-.modal__body { padding: var(--space-xl) var(--space-xl) var(--space-md); }
+.modal__body { padding: var(--space-md) var(--space-lg) var(--space-sm); }
 
 .modal__warning {
   background: var(--warning-pale);
@@ -337,7 +341,7 @@
 }
 
 .modal__footer {
-  padding: var(--space-sm) var(--space-xl) var(--space-xl);
+  padding: var(--space-xs,6px) var(--space-lg) var(--space-lg);
   display: flex;
   gap: var(--space-md);
   justify-content: flex-end;
@@ -765,8 +769,10 @@ input[type="time"].input {
 }
 
 /* ── Modal form : marge label → input ───────────────────────── */
-.modal__body .form-group label { margin-bottom: 14px; }
-.modal__body .form-group { margin-bottom: 18px; }
+.modal__body .form-group label { margin-bottom: 6px; font-size: 0.82rem; }
+.modal__body .form-group { margin-bottom: 12px; }
+.modal__body .input { min-height: 40px; padding: 8px 12px; font-size: 0.88rem; }
+.modal__body .input-textarea { min-height: 70px; }
 
 /* ── Toggle Dark Mode (sidebar) ─────────────────────────────── */
 .theme-toggle {
