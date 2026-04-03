@@ -48,7 +48,8 @@ const adminState = {
   pronosFilter: 'pending',
   tipsterSearch: '',
   userSearch: '',
-  userSortDir: 0,  // 0 = aucun tri, 1 = croissant, -1 = décroissant
+  userSortDir:  0,  // tri achats : 0 = aucun, 1 = croissant, -1 = décroissant
+  userSoldeDir: 0,  // tri solde  : 0 = aucun, 1 = croissant, -1 = décroissant
 };
 
 // ── Init ──────────────────────────────────────────────────────
@@ -599,12 +600,15 @@ function renderUsers(c) {
         <button id="achats-sort-btn" onclick="toggleUserSort()" class="btn btn-outline" style="white-space:nowrap;flex-shrink:0;font-size:0.82rem;padding:8px 14px">
           Achats <span id="achats-sort-arrow">⇅</span>
         </button>
+        <button id="solde-sort-btn" onclick="toggleUserSoldeSort()" class="btn btn-outline" style="white-space:nowrap;flex-shrink:0;font-size:0.82rem;padding:8px 14px">
+          Solde <span id="solde-sort-arrow">⇅</span>
+        </button>
       </div>
       <div class="pronos-table" style="${mobile?'padding:0':''}">
         ${!mobile ? `<div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr">
           <span>Utilisateur</span>
           <span style="cursor:pointer;user-select:none" onclick="toggleUserSort()">Achats <span id="achats-sort-arrow-desktop">⇅</span></span>
-          <span>Solde dispo</span><span>En attente</span><span>Inscrit</span><span>Actions</span>
+          <span style="cursor:pointer;user-select:none" onclick="toggleUserSoldeSort()">Solde dispo <span id="solde-sort-arrow-desktop">⇅</span></span><span>En attente</span><span>Inscrit</span><span>Actions</span>
         </div>` : ''}
         <div id="users-rows"></div>
       </div>
@@ -615,17 +619,42 @@ function renderUsers(c) {
 }
 
 function toggleUserSort() {
-  // Cycle: 0 → décroissant → croissant → décroissant...
   adminState.userSortDir = (adminState.userSortDir === -1) ? 1 : -1;
+  adminState.userSoldeDir = 0; // reset l'autre tri
   const arrowText = adminState.userSortDir === 1 ? '↑' : '↓';
-  // Sync flèches mobile et desktop
   const a1 = document.getElementById('achats-sort-arrow');
   const a2 = document.getElementById('achats-sort-arrow-desktop');
   if (a1) a1.textContent = arrowText;
   if (a2) a2.textContent = arrowText;
-  // Highlight du bouton mobile
   const btn = document.getElementById('achats-sort-btn');
   if (btn) btn.style.borderColor = 'var(--blue)';
+  // Reset bouton solde
+  const btn2 = document.getElementById('solde-sort-btn');
+  if (btn2) btn2.style.borderColor = '';
+  const s1 = document.getElementById('solde-sort-arrow');
+  const s2 = document.getElementById('solde-sort-arrow-desktop');
+  if (s1) s1.textContent = '⇅';
+  if (s2) s2.textContent = '⇅';
+  renderUserRows();
+}
+
+function toggleUserSoldeSort() {
+  adminState.userSoldeDir = (adminState.userSoldeDir === -1) ? 1 : -1;
+  adminState.userSortDir = 0; // reset l'autre tri
+  const arrowText = adminState.userSoldeDir === 1 ? '↑' : '↓';
+  const s1 = document.getElementById('solde-sort-arrow');
+  const s2 = document.getElementById('solde-sort-arrow-desktop');
+  if (s1) s1.textContent = arrowText;
+  if (s2) s2.textContent = arrowText;
+  const btn = document.getElementById('solde-sort-btn');
+  if (btn) btn.style.borderColor = 'var(--blue)';
+  // Reset bouton achats
+  const btn2 = document.getElementById('achats-sort-btn');
+  if (btn2) btn2.style.borderColor = '';
+  const a1 = document.getElementById('achats-sort-arrow');
+  const a2 = document.getElementById('achats-sort-arrow-desktop');
+  if (a1) a1.textContent = '⇅';
+  if (a2) a2.textContent = '⇅';
   renderUserRows();
 }
 
@@ -638,10 +667,14 @@ function renderUserRows() {
     (u.first_name || '').toLowerCase().includes(adminState.userSearch.toLowerCase())
   );
 
-  // Tri par nombre d'achats si actif
+  // Tri actif (achats ou solde — un seul à la fois)
   if (adminState.userSortDir !== 0) {
     filtered = [...filtered].sort((a, b) =>
       adminState.userSortDir === -1 ? b.achats - a.achats : a.achats - b.achats
+    );
+  } else if (adminState.userSoldeDir !== 0) {
+    filtered = [...filtered].sort((a, b) =>
+      adminState.userSoldeDir === -1 ? b.balance - a.balance : a.balance - b.balance
     );
   }
 
