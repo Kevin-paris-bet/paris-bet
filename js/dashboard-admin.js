@@ -478,7 +478,7 @@ function renderTipsters(c) {
       </div>
       <div class="tipster-search-wrap" style="margin-bottom:var(--space-md)">
         <span class="input-icon">🔍</span>
-        <input class="input" id="tipster-admin-search" type="text" placeholder="Rechercher par pseudo..."
+        <input class="input" id="tipster-admin-search" type="text" placeholder="Rechercher par pseudo ou prénom..."
           oninput="adminState.tipsterSearch=this.value;renderTipsterRows()" />
       </div>
       <div class="pronos-table" style="${mobile?'padding:0':''}">
@@ -498,12 +498,14 @@ function renderTipsterRows() {
   const container = document.getElementById('tipsters-rows');
   if (!container) return;
 
+  const q = adminState.tipsterSearch.toLowerCase();
   const filtered = adminState.tipsters.filter(t =>
-    (t.pseudo || '').toLowerCase().includes(adminState.tipsterSearch.toLowerCase())
+    (t.pseudo || '').toLowerCase().includes(q) ||
+    (t.first_name || '').toLowerCase().includes(q)
   );
 
   if (!filtered.length) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🔍</div><h3>Aucun tipster trouvé</h3><p>Essayez un autre pseudo.</p></div>`;
+    container.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🔍</div><h3>Aucun tipster trouvé</h3><p>Essayez un autre pseudo ou prénom.</p></div>`;
     return;
   }
 
