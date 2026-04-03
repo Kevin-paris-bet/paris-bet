@@ -904,9 +904,68 @@ function toggleSidebar() {
 async function renderFinances(container) {
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
   const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+
+  container.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>';
+
+  // ── Métriques globales (indépendantes des filtres de date) ───
+  const [rDep, rProfiles] = await Promise.all([
+    fetch(SUPA + '/rest/v1/deposits?select=amount&apikey=' + ANON, { headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON } }),
+    fetch(SUPA + '/rest/v1/profiles?select=balance,role&apikey=' + ANON, { headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON } }),
+  ]);
+  const deposits    = await rDep.json().catch(() => []);
+  const allProfiles = await rProfiles.json().catch(() => []);
+
+  const totalStripe   = Array.isArray(deposits) ? deposits.reduce((s, d) => s + parseFloat(d.amount || 0), 0) : 0;
+  const soldesUsers   = Array.isArray(allProfiles)
+    ? allProfiles.filter(p => p.role === 'user' || p.role === 'moderator').reduce((s, p) => s + parseFloat(p.balance || 0), 0)
+    : 0;
+  const soldesTipsters = Array.isArray(allProfiles)
+    ? allProfiles.filter(p => p.role === 'tipster').reduce((s, p) => s + parseFloat(p.balance || 0), 0)
+    : 0;
+
+  const mob = isMobile();
+
   container.innerHTML = `
     <div class="section-header">
-      <div><h2>Finances & Commissions</h2><p>Revenus par tipster sur les pronos terminés</p></div>
+      <div><h2>Finances & Commissions</h2><p>Vue comptable complète de la plateforme</p></div>
+    </div>
+
+    <!-- ── Bloc 1 : Vue financière réelle ── -->
+    <div style="background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-lg);margin-bottom:var(--space-xl)">
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:var(--space-md)">💳 Vue financière globale</div>
+      <div class="stats-grid" style="grid-template-columns:repeat(${mob?'2':'4'},1fr);gap:var(--space-sm)">
+        <div class="stat-card stat-card--blue">
+          <div class="stat-card__label">Encaissé (dépôts)</div>
+          <div class="stat-card__value" id="fin-stripe">${formatEuros(totalStripe)}</div>
+          <div class="stat-card__sub">Via Stripe</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">Soldes users</div>
+          <div class="stat-card__value" id="fin-soldes-users">${formatEuros(soldesUsers)}</div>
+          <div class="stat-card__sub">Non encore dépensés</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">Soldes tipsters</div>
+          <div class="stat-card__value" id="fin-soldes-tipsters">${formatEuros(soldesTipsters)}</div>
+          <div class="stat-card__sub">À virer ce lundi</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card__label">Trésorerie libre</div>
+          <div class="stat-card__value" style="color:var(--success)">${formatEuros(Math.max(0, totalStripe - soldesUsers - soldesTipsters))}</div>
+          <div class="stat-card__sub">Après obligations</div>
+        </div>
+      </div>
+      <div style="margin-top:var(--space-md);padding:var(--space-sm) var(--space-md);background:var(--blue-xpale,#eef3ff);border-radius:var(--radius-sm);font-size:0.8rem;color:var(--text-muted);line-height:1.6">
+        ℹ️ <strong>Comment lire ces chiffres :</strong> Les dépôts Stripe alimentent les soldes des users.
+        Quand un user achète un prono gagné, 90% va au tipster et 10% reste à PayPerWin.
+        Les soldes users + tipsters sont des obligations que tu dois honorer.
+        La trésorerie libre = encaissé − obligations en cours.
+      </div>
+    </div>
+
+    <!-- ── Bloc 2 : Commissions sur pronos (filtrable) ── -->
+    <div class="section-header" style="margin-bottom:var(--space-md)">
+      <div><h2>Commissions par tipster</h2><p>Sur les pronos terminés uniquement</p></div>
     </div>
     <div style="display:flex;gap:var(--space-md);align-items:flex-end;margin-bottom:var(--space-lg);flex-wrap:wrap">
       <div class="form-group" style="margin:0">
@@ -920,12 +979,25 @@ async function renderFinances(container) {
       <button class="btn btn-primary" onclick="loadFinances()">Filtrer</button>
       <button class="btn btn-outline" onclick="document.getElementById('fin-date-from').value='';document.getElementById('fin-date-to').value='';loadFinances();">Tout afficher</button>
     </div>
-    <div class="stats-grid" id="fin-totals">
-      <div class="stat-card"><div class="stat-card__label">CA Total</div><div class="stat-card__value" id="fin-total-ca">—</div></div>
-      <div class="stat-card"><div class="stat-card__label">Mes commissions (10%)</div><div class="stat-card__value" id="fin-total-comm" style="color:var(--success)">—</div></div>
-      <div class="stat-card"><div class="stat-card__label">Versé aux tipsters (90%)</div><div class="stat-card__value" id="fin-total-net">—</div></div>
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:var(--space-lg)">
+      <div class="stat-card">
+        <div class="stat-card__label">Ventes pronos (gagnants)</div>
+        <div class="stat-card__value" id="fin-total-ca">—</div>
+        <div class="stat-card__sub">Achats sur pronos validés ✓</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label">Commission platform (10%)</div>
+        <div class="stat-card__value" id="fin-total-comm" style="color:var(--success)">—</div>
+        <div class="stat-card__sub">Revenu PayPerWin</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-card__label">Crédité aux tipsters (90%)</div>
+        <div class="stat-card__value" id="fin-total-net">—</div>
+        <div class="stat-card__sub">Versé en solde tipster</div>
+      </div>
     </div>
     <div id="fin-table"><div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div></div>`;
+
   loadFinances();
 }
 
@@ -1023,7 +1095,7 @@ async function loadFinances() {
         </div>`
       : `<div class="pronos-table">
           <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr">
-            <span>Tipster</span><span>Pronos</span><span>Win Rate</span><span>Acheteurs</span><span>CA Total</span><span style="color:var(--success)">Mes 10%</span><span>Net Tipster</span>
+            <span>Tipster</span><span>Pronos</span><span>Win Rate</span><span>Acheteurs</span><span>Ventes pronos</span><span style="color:var(--success)">Commission (10%)</span><span>Crédité tipster</span>
           </div>
           ${tipsters.sort((a,b)=>b.ca-a.ca).map(t => {
             const wr = (t.won+t.lost)>0 ? Math.round(t.won/(t.won+t.lost)*100) : 0;
