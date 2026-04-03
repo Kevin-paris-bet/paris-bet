@@ -159,6 +159,7 @@
         </span>
       </div>
 
+      <!-- Match -->
       <div class="form-group">
         <label for="new-match">⚽ Match / Événement *</label>
         <div class="input-wrap">
@@ -169,16 +170,39 @@
         </div>
       </div>
 
+      <!-- Sport + Compétition -->
       <div class="form-row">
         <div class="form-group">
-          <label for="new-sport">🏆 Sport / Compétition *</label>
+          <label for="new-sport-cat">
+            🏅 Sport *
+            <span id="sport-info-btn" onclick="document.getElementById('sport-info-box').style.display=document.getElementById('sport-info-box').style.display==='none'?'block':'none'"
+              style="margin-left:6px;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--blue);color:var(--blue);font-size:0.7rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle">i</span>
+          </label>
+          <select class="input" id="new-sport-cat" style="padding-left:var(--space-md)">
+            <option value="">— Choisir —</option>
+            <option value="foot">⚽ Foot</option>
+            <option value="tennis">🎾 Tennis</option>
+            <option value="basket">🏀 Basket</option>
+            <option value="rugby">🏉 Rugby</option>
+            <option value="autres">➕ Autres</option>
+          </select>
+          <div id="sport-info-box" style="display:none;margin-top:6px;padding:10px 12px;background:var(--blue-xpale,#eef3ff);border:1px solid var(--blue);border-radius:var(--radius-sm);font-size:0.78rem;color:var(--text-dark);line-height:1.5">
+            ⚠️ Ce champ détermine dans quel filtre votre prono apparaîtra pour les utilisateurs. Si vous ne choisissez pas la bonne catégorie, votre prono sera visible uniquement dans "Tous" et "Autres".
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="new-competition">🏆 Compétition *</label>
           <div class="input-wrap">
-            <input class="input" type="text" id="new-sport"
-              placeholder="Ex: ⚽ Ligue 1"
+            <input class="input" type="text" id="new-competition"
+              placeholder="Ex: Ligue 1, ATP Houston, NBA…"
               style="padding-left: var(--space-md)"
             />
           </div>
         </div>
+      </div>
+
+      <!-- Prix + Cote -->
+      <div class="form-row">
         <div class="form-group">
           <label for="new-price">💶 Prix (€) *</label>
           <div class="input-wrap">
@@ -190,7 +214,11 @@
           </div>
         </div>
         <div class="form-group">
-          <label for="new-cote">📊 Cote <span style="color:var(--text-muted);font-weight:400">(optionnel)</span></label>
+          <label for="new-cote">
+            📊 Cote *
+            <span id="cote-info-btn" onclick="document.getElementById('cote-info-box').style.display=document.getElementById('cote-info-box').style.display==='none'?'block':'none'"
+              style="margin-left:6px;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--blue);color:var(--blue);font-size:0.7rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle">i</span>
+          </label>
           <div class="input-wrap">
             <input class="input" type="text" id="new-cote"
               placeholder="Ex: 1,76"
@@ -198,9 +226,17 @@
               style="padding-left: var(--space-md)"
             />
           </div>
+          <div id="cote-info-box" style="display:none;margin-top:6px;padding:10px 12px;background:var(--blue-xpale,#eef3ff);border:1px solid var(--blue);border-radius:var(--radius-sm);font-size:0.78rem;color:var(--text-dark);line-height:1.5">
+            La cote est obligatoire car elle est utilisée dans le classement des tipsters. Elle ne sera pas forcément visible par les utilisateurs — vous choisissez ci-dessous.
+          </div>
+          <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.82rem;font-weight:400;color:var(--text-dark);cursor:pointer">
+            <input type="checkbox" id="new-show-cote" checked style="width:16px;height:16px;cursor:pointer" />
+            Afficher la cote aux acheteurs
+          </label>
         </div>
       </div>
 
+      <!-- Date + Heure -->
       <div class="form-row">
         <div class="form-group">
           <label for="new-date">📅 Date du match *</label>
@@ -216,10 +252,20 @@
         </div>
       </div>
 
+      <!-- Pronostic + Analyse -->
       <div class="form-group">
-        <label for="new-content">📝 Votre pronostic *</label>
+        <label for="new-content">🎯 Votre pronostic *</label>
         <textarea class="input input-textarea" id="new-content"
-          placeholder="Décrivez votre pronostic en détail. C'est ce que verront vos acheteurs après paiement."
+          placeholder="La mise concrète. Ex: PSG gagne + plus de 1,5 buts"
+          style="min-height:80px"
+        ></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="new-analysis">📝 Votre analyse <span style="color:var(--text-muted);font-weight:400">(optionnel)</span></label>
+        <textarea class="input input-textarea" id="new-analysis"
+          placeholder="Votre raisonnement, les stats, les arguments qui justifient ce prono…"
+          style="min-height:80px"
         ></textarea>
       </div>
 
