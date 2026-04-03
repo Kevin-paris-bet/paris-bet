@@ -584,16 +584,16 @@ async function renderUsers(c) {
   const soldeAttente    = adminState.users.reduce((s,u) => s + (parseFloat(u.pending)||0), 0);
   const soldeCumule     = soldeDisponible + soldeAttente;
 
-  // Charger le total des dépôts users
+  // Charger le total des dépôts depuis total_deposits (fiable, inclut l'historique complet)
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
   const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
   let totalDepots = 0;
   try {
-    const rDep = await fetch(`${SUPA}/rest/v1/deposits?select=amount&apikey=${ANON}`, {
+    const rDep = await fetch(`${SUPA}/rest/v1/profiles?select=total_deposits&role=in.(user,moderator)&apikey=${ANON}`, {
       headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON }
     });
     const deps = await rDep.json();
-    if (Array.isArray(deps)) totalDepots = deps.reduce((s,d) => s + parseFloat(d.amount||0), 0);
+    if (Array.isArray(deps)) totalDepots = deps.reduce((s,p) => s + parseFloat(p.total_deposits||0), 0);
   } catch(e) {}
 
   // Première fois : construire la structure complète
@@ -961,13 +961,16 @@ async function renderFinances(container) {
 
   // ── Métriques globales (indépendantes des filtres de date) ───
   const [rDep, rProfiles] = await Promise.all([
-    fetch(SUPA + '/rest/v1/deposits?select=amount&apikey=' + ANON, { headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON } }),
+    fetch(SUPA + '/rest/v1/profiles?select=total_deposits,role&apikey=' + ANON, { headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON } }),
     fetch(SUPA + '/rest/v1/profiles?select=balance,role&apikey=' + ANON, { headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON } }),
   ]);
-  const deposits    = await rDep.json().catch(() => []);
+  const depProfiles = await rDep.json().catch(() => []);
   const allProfiles = await rProfiles.json().catch(() => []);
 
-  const totalStripe   = Array.isArray(deposits) ? deposits.reduce((s, d) => s + parseFloat(d.amount || 0), 0) : 0;
+  // Somme de total_deposits sur les users/modérateurs (historique complet depuis le webhook)
+  const totalStripe = Array.isArray(depProfiles)
+    ? depProfiles.filter(p => p.role === 'user' || p.role === 'moderator').reduce((s, p) => s + parseFloat(p.total_deposits || 0), 0)
+    : 0;
   const soldesUsers   = Array.isArray(allProfiles)
     ? allProfiles.filter(p => p.role === 'user' || p.role === 'moderator').reduce((s, p) => s + parseFloat(p.balance || 0), 0)
     : 0;
