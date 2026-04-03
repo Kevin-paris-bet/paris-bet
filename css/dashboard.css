@@ -355,10 +355,13 @@
   line-height: 1;
   box-sizing: border-box;
 }
+@media (max-width: 600px) {
+  .modal__body { padding-bottom: 4px; }
+}
 @media (max-width: 500px) {
   .modal__footer {
     flex-direction: column-reverse;
-    padding: 6px var(--space-lg) var(--space-md);
+    padding: 4px var(--space-lg) var(--space-md);
   }
   .modal__footer .btn {
     width: 80%;
@@ -772,8 +775,25 @@ input[type="time"].input {
 .modal__body .form-group label { margin-bottom: 6px; font-size: 0.82rem; }
 .modal__body .form-group { margin-bottom: 12px; }
 .modal__body .input { min-height: 40px; padding: 8px 12px; font-size: 0.88rem; }
-.modal__body .input-textarea { min-height: 70px; }
 .modal__body .form-row { gap: 12px; }
+
+/* Textareas dans modale : hauteur fixe, pas de resize libre sur iOS */
+.modal__body .input-textarea {
+  min-height: 70px;
+  height: 70px;
+  max-height: 70px;
+  resize: none;
+  overflow-y: auto;
+}
+
+/* Date/time dans modale : même hauteur que les autres inputs */
+.modal__body input[type="date"].input,
+.modal__body input[type="time"].input {
+  min-height: 40px;
+  height: 40px;
+  padding: 8px 12px;
+  font-size: 0.88rem;
+}
 
 /* ── Toggle Dark Mode (sidebar) ─────────────────────────────── */
 .theme-toggle {
