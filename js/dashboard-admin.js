@@ -1141,6 +1141,14 @@ async function loadFinances() {
     const profilesMap = {};
     (profiles || []).forEach(p => profilesMap[p.id] = p.first_name + ' ' + p.last_name);
 
+    // Charger les virements déjà effectués par tipster (toutes périodes confondues)
+    const rPay = await fetch(SUPA + '/rest/v1/payouts?select=tipster_id,amount&apikey=' + ANON, { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
+    const payouts = await rPay.json();
+    const payoutsMap = {};
+    if (Array.isArray(payouts)) {
+      payouts.forEach(v => { payoutsMap[v.tipster_id] = (payoutsMap[v.tipster_id] || 0) + parseFloat(v.amount || 0); });
+    }
+
     // ── Calculs corrects par statut ───────────────────────────
     const tipsterStats    = {};
     const tipsterPronoDetails = {};
@@ -1148,7 +1156,7 @@ async function loadFinances() {
 
     pronos.forEach(prono => {
       const tid = prono.tipster_id; if (!tid) return;
-      if (!tipsterStats[tid]) tipsterStats[tid] = { name: profilesMap[tid]||'—', pronos:0, won:0, lost:0, cancelled:0, caWon:0, caAll:0, acheteurs:0 };
+      if (!tipsterStats[tid]) tipsterStats[tid] = { name: profilesMap[tid]||'—', pronos:0, won:0, lost:0, cancelled:0, caWon:0, caAll:0, acheteurs:0, dejaVire: payoutsMap[tid]||0 };
       if (!tipsterPronoDetails[tid]) tipsterPronoDetails[tid] = [];
       const s = tipsterStats[tid]; s.pronos++;
       if (prono.status==='won') s.won++;
@@ -1197,21 +1205,22 @@ async function loadFinances() {
                 <span style="font-weight:700;color:var(--blue)">${formatEuros(t.caWon)}</span>
               </div>
               <div class="prono-meta">${t.won}W · ${t.lost}L · <span style="color:${wr>=60?'var(--success)':'var(--warning)'};font-weight:600">${wr}%</span></div>
-              <div style="display:flex;gap:var(--space-md);font-size:0.8rem;margin-top:4px">
+              <div style="display:flex;gap:var(--space-md);font-size:0.8rem;margin-top:4px;flex-wrap:wrap">
                 <span style="color:var(--success)">Comm : +${formatEuros(t.caWon*0.1)}</span>
                 <span style="color:var(--text-muted)">Tipster : ${formatEuros(t.caWon*0.9)}</span>
+                ${t.dejaVire > 0 ? `<span style="color:var(--blue)">Viré : ${formatEuros(t.dejaVire)}</span>` : ''}
               </div>
             </div>`;
           }).join('')}
         </div>`
       : `<div class="pronos-table">
-          <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr">
-            <span>Tipster</span><span>Pronos</span><span>Win Rate</span><span>Acheteurs</span><span>Ventes gagnants</span><span style="color:var(--success)">Commission (10%)</span><span>Crédité tipster</span>
+          <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr">
+            <span>Tipster</span><span>Pronos</span><span>Win Rate</span><span>Acheteurs</span><span>Ventes gagnants</span><span style="color:var(--success)">Commission (10%)</span><span>Crédité tipster</span><span style="color:var(--blue)">Déjà viré</span>
           </div>
           ${tipsters.sort((a,b)=>b.caWon-a.caWon).map(t => {
             const wr  = (t.won+t.lost)>0 ? Math.round(t.won/(t.won+t.lost)*100) : 0;
             const tid = Object.keys(tipsterPronoDetails).find(k => tipsterStats[k] === t) || '';
-            return `<div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr;${rowStyle}" ${hov} onclick="openFicheFinances('${tid}')">
+            return `<div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr;${rowStyle}" ${hov} onclick="openFicheFinances('${tid}')">
               <div>
                 <div class="prono-title">${t.name} <span style="font-size:0.75rem;color:var(--blue)">📋</span></div>
                 <div class="prono-meta">${t.won}W · ${t.lost}L · ${t.cancelled} annulés</div>
@@ -1222,6 +1231,7 @@ async function loadFinances() {
               <div style="font-weight:700;color:var(--blue)">${formatEuros(t.caWon)}</div>
               <div style="font-weight:700;color:var(--success)">${formatEuros(t.caWon*0.1)}</div>
               <div style="font-weight:600">${formatEuros(t.caWon*0.9)}</div>
+              <div style="font-weight:700;color:var(--blue)">${t.dejaVire > 0 ? formatEuros(t.dejaVire) : '<span style=\"color:var(--text-muted)\">—</span>'}</div>
             </div>`;
           }).join('')}
         </div>`;
