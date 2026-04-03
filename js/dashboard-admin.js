@@ -953,74 +953,136 @@ function toggleSidebar() {
 // ══════════════════════════════════════════════════════════════
 //  PAGE — FINANCES & COMMISSIONS
 // ══════════════════════════════════════════════════════════════
+
+// Tooltip cliquable : affiche/masque une explication sous chaque bloc
+function toggleFinTip(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+
 async function renderFinances(container) {
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
   const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
 
   container.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>';
 
-  // ── Métriques globales (indépendantes des filtres de date) ───
-  const [rDep, rProfiles] = await Promise.all([
-    fetch(SUPA + '/rest/v1/profiles?select=total_deposits,role&apikey=' + ANON, { headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON } }),
-    fetch(SUPA + '/rest/v1/profiles?select=balance,role&apikey=' + ANON, { headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON } }),
+  // ── Données globales ─────────────────────────────────────────
+  const [rProfiles, rPurchases] = await Promise.all([
+    fetch(SUPA + '/rest/v1/profiles?select=role,balance,total_deposits&apikey=' + ANON, { headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON } }),
+    fetch(SUPA + '/rest/v1/purchases?select=prono_id,amount,status&apikey=' + ANON,     { headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON } }),
   ]);
-  const depProfiles = await rDep.json().catch(() => []);
-  const allProfiles = await rProfiles.json().catch(() => []);
+  const allProfiles  = await rProfiles.json().catch(() => []);
+  const allPurchases = await rPurchases.json().catch(() => []);
 
-  // Somme de total_deposits sur les users/modérateurs (historique complet depuis le webhook)
-  const totalStripe = Array.isArray(depProfiles)
-    ? depProfiles.filter(p => p.role === 'user' || p.role === 'moderator').reduce((s, p) => s + parseFloat(p.total_deposits || 0), 0)
-    : 0;
-  const soldesUsers   = Array.isArray(allProfiles)
-    ? allProfiles.filter(p => p.role === 'user' || p.role === 'moderator').reduce((s, p) => s + parseFloat(p.balance || 0), 0)
-    : 0;
+  // Bloc 1 — Flux Stripe
+  const encaisseBrut   = Array.isArray(allProfiles)
+    ? allProfiles.filter(p => p.role === 'user' || p.role === 'moderator').reduce((s,p) => s + parseFloat(p.total_deposits||0), 0) : 0;
+  const fraisStripe    = parseFloat(localStorage.getItem('ppw-frais-stripe') || '0');
+  const netStripe      = encaisseBrut - fraisStripe;
+
+  // Bloc 2 — Obligations en cours
+  const soldesUsers    = Array.isArray(allProfiles)
+    ? allProfiles.filter(p => p.role === 'user' || p.role === 'moderator').reduce((s,p) => s + parseFloat(p.balance||0), 0) : 0;
   const soldesTipsters = Array.isArray(allProfiles)
-    ? allProfiles.filter(p => p.role === 'tipster').reduce((s, p) => s + parseFloat(p.balance || 0), 0)
-    : 0;
+    ? allProfiles.filter(p => p.role === 'tipster').reduce((s,p) => s + parseFloat(p.balance||0), 0) : 0;
+  const totalOblig     = soldesUsers + soldesTipsters;
 
+  // Bloc 3 — Activité pronos (calculé dans loadFinances)
   const mob = isMobile();
+  const cols = mob ? '2' : '3';
+
+  // Helper : carte cliquable avec tooltip
+  function finCard(id, label, value, color, tipText) {
+    return `<div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:12px 16px;cursor:pointer;border:1px solid var(--border)" onclick="toggleFinTip('tip-${id}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px">${label}</div>
+        <span style="font-size:0.75rem;color:var(--blue);flex-shrink:0;margin-left:6px">ⓘ</span>
+      </div>
+      <div style="font-size:1.3rem;font-weight:800;color:${color||'var(--text-dark)'};">${value}</div>
+      <div id="tip-${id}" style="display:none;margin-top:8px;padding:8px 10px;background:var(--blue-xpale,#eef3ff);border-radius:var(--radius-sm);font-size:0.78rem;color:var(--text-muted);line-height:1.5">${tipText}</div>
+    </div>`;
+  }
 
   container.innerHTML = `
     <div class="section-header">
-      <div><h2>Finances & Commissions</h2><p>Vue comptable complète de la plateforme</p></div>
+      <div><h2>Finances & Commissions</h2><p>Clique sur chaque bloc pour l'explication</p></div>
     </div>
 
-    <!-- ── Bloc 1 : Vue financière réelle ── -->
-    <div style="background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-lg);margin-bottom:var(--space-xl)">
-      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:var(--space-md)">💳 Vue financière globale</div>
-      <div class="stats-grid" style="grid-template-columns:repeat(${mob?'2':'4'},1fr);gap:var(--space-sm)">
-        <div class="stat-card stat-card--blue">
-          <div class="stat-card__label">Encaissé (dépôts)</div>
-          <div class="stat-card__value" id="fin-stripe">${formatEuros(totalStripe)}</div>
-          <div class="stat-card__sub">Via Stripe</div>
+    <!-- ══ BLOC 1 : FLUX STRIPE ══ -->
+    <div style="margin-bottom:var(--space-xl)">
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:var(--space-sm)">💳 Flux Stripe</div>
+      <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:var(--space-sm)">
+        ${finCard('encaisse', 'Encaissé brut', formatEuros(encaisseBrut), 'var(--blue)',
+          'Total de tous les dépôts effectués par les users depuis le lancement. Source : champ <code>total_deposits</code> dans les profils, mis à jour par le webhook Stripe à chaque paiement réussi.')}
+        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border)">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px">Frais Stripe</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:1.1rem;font-weight:800;color:var(--error)">−</span>
+            <input id="frais-stripe-input" type="number" min="0" step="0.01" value="${fraisStripe}"
+              style="width:90px;font-size:1.1rem;font-weight:800;border:none;background:transparent;color:var(--error);outline:none;border-bottom:1px dashed var(--border)"
+              onchange="localStorage.setItem('ppw-frais-stripe',this.value);renderFinances(document.getElementById('page-content'))" />
+            <span style="font-size:0.9rem;color:var(--error)">€</span>
+          </div>
+          <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">Clique pour saisir (visible sur Stripe)</div>
         </div>
-        <div class="stat-card">
-          <div class="stat-card__label">Soldes users</div>
-          <div class="stat-card__value" id="fin-soldes-users">${formatEuros(soldesUsers)}</div>
-          <div class="stat-card__sub">Non encore dépensés</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card__label">Soldes tipsters</div>
-          <div class="stat-card__value" id="fin-soldes-tipsters">${formatEuros(soldesTipsters)}</div>
-          <div class="stat-card__sub">À virer ce lundi</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-card__label">Trésorerie libre</div>
-          <div class="stat-card__value" style="color:var(--success)">${formatEuros(Math.max(0, totalStripe - soldesUsers - soldesTipsters))}</div>
-          <div class="stat-card__sub">Après obligations</div>
-        </div>
-      </div>
-      <div style="margin-top:var(--space-md);padding:var(--space-sm) var(--space-md);background:var(--blue-xpale,#eef3ff);border-radius:var(--radius-sm);font-size:0.8rem;color:var(--text-muted);line-height:1.6">
-        ℹ️ <strong>Comment lire ces chiffres :</strong> Les dépôts Stripe alimentent les soldes des users.
-        Quand un user achète un prono gagné, 90% va au tipster et 10% reste à PayPerWin.
-        Les soldes users + tipsters sont des obligations que tu dois honorer.
-        La trésorerie libre = encaissé − obligations en cours.
+        ${finCard('net-stripe', 'Net réel Stripe', formatEuros(netStripe), netStripe >= 0 ? 'var(--success)' : 'var(--error)',
+          'Encaissé brut moins les frais Stripe. C\'est l\'argent réellement disponible sur ton compte Stripe après déduction des frais de transaction.')}
       </div>
     </div>
 
-    <!-- ── Bloc 2 : Commissions sur pronos (filtrable) ── -->
+    <!-- ══ BLOC 2 : OBLIGATIONS ══ -->
+    <div style="margin-bottom:var(--space-xl)">
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:var(--space-sm)">⚖️ Obligations en cours</div>
+      <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:var(--space-sm)">
+        ${finCard('soldes-users', 'Soldes users', formatEuros(soldesUsers), 'var(--text-dark)',
+          'Argent que les users ont déposé et qui n\'a pas encore été dépensé en pronos. Tu dois pouvoir le rembourser à tout moment si un user demande un retrait.')}
+        ${finCard('soldes-tipsters', 'Soldes tipsters', formatEuros(soldesTipsters), 'var(--text-dark)',
+          'Gains accumulés par les tipsters sur leurs pronos gagnants, en attente de virement. Ce montant doit être viré chaque lundi aux tipsters dont le solde dépasse 30 €.')}
+        ${finCard('total-oblig', 'Total obligations', formatEuros(totalOblig), 'var(--warning)',
+          'Soldes users + soldes tipsters. C\'est le montant minimum que tu dois conserver sur ton compte Stripe pour honorer toutes tes obligations actuelles.')}
+      </div>
+      <div style="margin-top:var(--space-sm);padding:10px 14px;background:var(--bg-soft);border-radius:var(--radius-md);display:flex;justify-content:space-between;align-items:center;border:1px solid var(--border)">
+        <span style="font-size:0.85rem;color:var(--text-muted)">🏦 Trésorerie libre (net Stripe − obligations)</span>
+        <span style="font-weight:800;font-size:1.1rem;color:${(netStripe - totalOblig) >= 0 ? 'var(--success)' : 'var(--error)'}">${formatEuros(netStripe - totalOblig)}</span>
+      </div>
+    </div>
+
+    <!-- ══ BLOC 3 : ACTIVITÉ PRONOS ══ -->
+    <div style="margin-bottom:var(--space-xl)">
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:var(--space-sm)">🎯 Activité pronos</div>
+      <div style="display:grid;grid-template-columns:repeat(${mob?'2':'5'},1fr);gap:var(--space-sm)" id="fin-pronos-blocs">
+        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border)">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px">Volume total</div>
+          <div style="font-size:1.15rem;font-weight:800;color:var(--text-dark)" id="fin-vol-total">—</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">Tous achats confondus</div>
+        </div>
+        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border)">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px">Pronos gagnants</div>
+          <div style="font-size:1.15rem;font-weight:800;color:var(--blue)" id="fin-vol-won">—</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">Base de calcul réelle</div>
+        </div>
+        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border)">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px">Remboursés</div>
+          <div style="font-size:1.15rem;font-weight:800;color:var(--text-dark)" id="fin-vol-lost">—</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">Perdus + annulés</div>
+        </div>
+        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border)">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px">Ta commission</div>
+          <div style="font-size:1.15rem;font-weight:800;color:var(--success)" id="fin-commission">—</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">10% des gagnants</div>
+        </div>
+        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border)">
+          <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px">Crédité tipsters</div>
+          <div style="font-size:1.15rem;font-weight:800;color:var(--text-dark)" id="fin-net-tipsters">—</div>
+          <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">90% des gagnants</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TABLEAU PAR TIPSTER ══ -->
     <div class="section-header" style="margin-bottom:var(--space-md)">
-      <div><h2>Commissions par tipster</h2><p>Sur les pronos terminés uniquement</p></div>
+      <div><h2>Détail par tipster</h2><p>Clique sur un tipster pour voir le détail prono par prono</p></div>
     </div>
     <div style="display:flex;gap:var(--space-md);align-items:flex-end;margin-bottom:var(--space-lg);flex-wrap:wrap">
       <div class="form-group" style="margin:0">
@@ -1033,23 +1095,6 @@ async function renderFinances(container) {
       </div>
       <button class="btn btn-primary" onclick="loadFinances()">Filtrer</button>
       <button class="btn btn-outline" onclick="document.getElementById('fin-date-from').value='';document.getElementById('fin-date-to').value='';loadFinances();">Tout afficher</button>
-    </div>
-    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:var(--space-lg)">
-      <div class="stat-card">
-        <div class="stat-card__label">Ventes pronos (gagnants)</div>
-        <div class="stat-card__value" id="fin-total-ca">—</div>
-        <div class="stat-card__sub">Achats sur pronos validés ✓</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card__label">Commission platform (10%)</div>
-        <div class="stat-card__value" id="fin-total-comm" style="color:var(--success)">—</div>
-        <div class="stat-card__sub">Revenu PayPerWin</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-card__label">Crédité aux tipsters (90%)</div>
-        <div class="stat-card__value" id="fin-total-net">—</div>
-        <div class="stat-card__sub">Versé en solde tipster</div>
-      </div>
     </div>
     <div id="fin-table"><div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div></div>`;
 
@@ -1075,7 +1120,7 @@ async function loadFinances() {
     const pronos = await rP.json();
     if (!Array.isArray(pronos) || pronos.length === 0) {
       table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun prono terminé sur cette période.</div>`;
-      ['fin-total-ca','fin-total-comm','fin-total-net'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = '0 €'; });
+      ['fin-vol-total','fin-vol-won','fin-vol-lost','fin-commission','fin-net-tipsters'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = '0 €'; });
       return;
     }
     const pronoIds = pronos.map(p => p.id);
@@ -1085,6 +1130,7 @@ async function loadFinances() {
     urlPurch.searchParams.set('apikey', ANON);
     const rPurch = await fetch(urlPurch.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
     const purchases = await rPurch.json();
+
     const tipsterIds = [...new Set(pronos.map(p => p.tipster_id).filter(Boolean))];
     const urlProf = new URL(SUPA + '/rest/v1/profiles');
     urlProf.searchParams.set('select', 'id,first_name,last_name');
@@ -1094,68 +1140,78 @@ async function loadFinances() {
     const profiles = await rProf.json();
     const profilesMap = {};
     (profiles || []).forEach(p => profilesMap[p.id] = p.first_name + ' ' + p.last_name);
-    const tipsterStats = {};
-    // Stocker aussi le détail prono par prono pour la modale
+
+    // ── Calculs corrects par statut ───────────────────────────
+    const tipsterStats    = {};
     const tipsterPronoDetails = {};
+    let volTotal = 0, volWon = 0, volLost = 0;
+
     pronos.forEach(prono => {
       const tid = prono.tipster_id; if (!tid) return;
-      if (!tipsterStats[tid]) tipsterStats[tid] = { name: profilesMap[tid]||'—', pronos:0, won:0, lost:0, cancelled:0, ca:0, acheteurs:0 };
+      if (!tipsterStats[tid]) tipsterStats[tid] = { name: profilesMap[tid]||'—', pronos:0, won:0, lost:0, cancelled:0, caWon:0, caAll:0, acheteurs:0 };
       if (!tipsterPronoDetails[tid]) tipsterPronoDetails[tid] = [];
       const s = tipsterStats[tid]; s.pronos++;
-      if (prono.status==='won') s.won++; else if (prono.status==='lost') s.lost++; else if (prono.status==='cancelled') s.cancelled++;
+      if (prono.status==='won') s.won++;
+      else if (prono.status==='lost') s.lost++;
+      else if (prono.status==='cancelled') s.cancelled++;
+
       const pPurchases = (purchases||[]).filter(p => p.prono_id === prono.id);
-      const pronoCA = pPurchases.reduce((sum, p) => sum + parseFloat(p.amount||0), 0);
-      s.ca += pronoCA;
+      const pronoCA    = pPurchases.reduce((sum, p) => sum + parseFloat(p.amount||0), 0);
+
+      // caAll = tous les achats (info), caWon = uniquement gagnants (base commission)
+      s.caAll += pronoCA;
+      if (prono.status === 'won') { s.caWon += pronoCA; volWon += pronoCA; }
+      else { volLost += pronoCA; }
+      volTotal += pronoCA;
+
       s.acheteurs += prono.buyers||0;
       tipsterPronoDetails[tid].push({ ...prono, pronoCA, acheteurs: prono.buyers||0 });
     });
-    // Exposer sur window pour la modale
+
     window._finPronoDetails = tipsterPronoDetails;
     window._finProfilesMap  = profilesMap;
 
-    const tipsters = Object.values(tipsterStats).filter(s => s.ca > 0);
-    const totalCA = tipsters.reduce((s,t) => s+t.ca, 0);
-    const el1 = document.getElementById('fin-total-ca'); if(el1) el1.textContent = formatEuros(totalCA);
-    const el2 = document.getElementById('fin-total-comm'); if(el2) el2.textContent = formatEuros(totalCA*0.1);
-    const el3 = document.getElementById('fin-total-net'); if(el3) el3.textContent = formatEuros(totalCA*0.9);
+    // ── Mise à jour bloc 3 ────────────────────────────────────
+    const setEl = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+    setEl('fin-vol-total',    formatEuros(volTotal));
+    setEl('fin-vol-won',      formatEuros(volWon));
+    setEl('fin-vol-lost',     formatEuros(volLost));
+    setEl('fin-commission',   formatEuros(volWon * 0.1));
+    setEl('fin-net-tipsters', formatEuros(volWon * 0.9));
+
+    // ── Tableau par tipster ───────────────────────────────────
+    const tipsters = Object.values(tipsterStats).filter(s => s.caAll > 0);
     if (!tipsters.length) { table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucune vente sur cette période.</div>`; return; }
     const mob = isMobile();
-
-    const statusBadgeFin = {
-      won:       `<span class="badge badge-won" style="font-size:0.72rem">✓ Gagné</span>`,
-      lost:      `<span class="badge badge-lost" style="font-size:0.72rem">✕ Perdu</span>`,
-      cancelled: `<span class="badge badge-cancelled" style="font-size:0.72rem">⊘ Annulé</span>`,
-    };
-
     const rowStyle = `cursor:pointer;transition:background .12s`;
-    const hoverScript = `onmouseover="this.style.background='var(--bg-soft)'" onmouseout="this.style.background=''"`;
+    const hov = `onmouseover="this.style.background='var(--bg-soft)'" onmouseout="this.style.background=''"`;
 
     table.innerHTML = mob
       ? `<div class="pronos-table" style="padding:0">
-          ${tipsters.sort((a,b)=>b.ca-a.ca).map(t => {
-            const wr = (t.won+t.lost)>0 ? Math.round(t.won/(t.won+t.lost)*100) : 0;
+          ${tipsters.sort((a,b)=>b.caWon-a.caWon).map(t => {
+            const wr  = (t.won+t.lost)>0 ? Math.round(t.won/(t.won+t.lost)*100) : 0;
             const tid = Object.keys(tipsterPronoDetails).find(k => tipsterStats[k] === t) || '';
-            return `<div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);${rowStyle}" ${hoverScript} onclick="openFicheFinances('${tid}')">
+            return `<div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);${rowStyle}" ${hov} onclick="openFicheFinances('${tid}')">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
                 <span class="prono-title">${t.name} <span style="font-size:0.75rem;color:var(--blue)">📋</span></span>
-                <span style="font-weight:700;color:var(--primary)">${formatEuros(t.ca)}</span>
+                <span style="font-weight:700;color:var(--blue)">${formatEuros(t.caWon)}</span>
               </div>
               <div class="prono-meta">${t.won}W · ${t.lost}L · <span style="color:${wr>=60?'var(--success)':'var(--warning)'};font-weight:600">${wr}%</span></div>
               <div style="display:flex;gap:var(--space-md);font-size:0.8rem;margin-top:4px">
-                <span style="color:var(--success)">+${formatEuros(t.ca*0.1)} comm.</span>
-                <span style="color:var(--text-muted)">${formatEuros(t.ca*0.9)} tipster</span>
+                <span style="color:var(--success)">Comm : +${formatEuros(t.caWon*0.1)}</span>
+                <span style="color:var(--text-muted)">Tipster : ${formatEuros(t.caWon*0.9)}</span>
               </div>
             </div>`;
           }).join('')}
         </div>`
       : `<div class="pronos-table">
           <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr">
-            <span>Tipster</span><span>Pronos</span><span>Win Rate</span><span>Acheteurs</span><span>Ventes pronos</span><span style="color:var(--success)">Commission (10%)</span><span>Crédité tipster</span>
+            <span>Tipster</span><span>Pronos</span><span>Win Rate</span><span>Acheteurs</span><span>Ventes gagnants</span><span style="color:var(--success)">Commission (10%)</span><span>Crédité tipster</span>
           </div>
-          ${tipsters.sort((a,b)=>b.ca-a.ca).map(t => {
-            const wr = (t.won+t.lost)>0 ? Math.round(t.won/(t.won+t.lost)*100) : 0;
+          ${tipsters.sort((a,b)=>b.caWon-a.caWon).map(t => {
+            const wr  = (t.won+t.lost)>0 ? Math.round(t.won/(t.won+t.lost)*100) : 0;
             const tid = Object.keys(tipsterPronoDetails).find(k => tipsterStats[k] === t) || '';
-            return `<div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr;${rowStyle}" ${hoverScript} onclick="openFicheFinances('${tid}')">
+            return `<div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 1fr 1fr;${rowStyle}" ${hov} onclick="openFicheFinances('${tid}')">
               <div>
                 <div class="prono-title">${t.name} <span style="font-size:0.75rem;color:var(--blue)">📋</span></div>
                 <div class="prono-meta">${t.won}W · ${t.lost}L · ${t.cancelled} annulés</div>
@@ -1163,9 +1219,9 @@ async function loadFinances() {
               <div style="font-weight:600">${t.pronos}</div>
               <div style="color:${wr>=60?'var(--success)':'var(--text-muted)'};font-weight:600">${wr}%</div>
               <div>👥 ${t.acheteurs}</div>
-              <div style="font-weight:700;color:var(--primary)">${formatEuros(t.ca)}</div>
-              <div style="font-weight:700;color:var(--success)">${formatEuros(t.ca*0.1)}</div>
-              <div style="font-weight:600">${formatEuros(t.ca*0.9)}</div>
+              <div style="font-weight:700;color:var(--blue)">${formatEuros(t.caWon)}</div>
+              <div style="font-weight:700;color:var(--success)">${formatEuros(t.caWon*0.1)}</div>
+              <div style="font-weight:600">${formatEuros(t.caWon*0.9)}</div>
             </div>`;
           }).join('')}
         </div>`;
