@@ -578,18 +578,37 @@ async function toggleSuspend(id) {
 // ══════════════════════════════════════════════════════════════
 //  PAGE — GESTION DES UTILISATEURS
 // ══════════════════════════════════════════════════════════════
-function renderUsers(c) {
+async function renderUsers(c) {
   const mobile = isMobile();
-  const totalBalance = adminState.users.reduce((s,u) => s + u.balance + u.pending, 0);
+  const soldeDisponible = adminState.users.reduce((s,u) => s + (parseFloat(u.balance)||0), 0);
+  const soldeAttente    = adminState.users.reduce((s,u) => s + (parseFloat(u.pending)||0), 0);
+  const soldeCumule     = soldeDisponible + soldeAttente;
+
+  // Charger le total des dépôts users
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  let totalDepots = 0;
+  try {
+    const rDep = await fetch(`${SUPA}/rest/v1/deposits?select=amount&apikey=${ANON}`, {
+      headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON }
+    });
+    const deps = await rDep.json();
+    if (Array.isArray(deps)) totalDepots = deps.reduce((s,d) => s + parseFloat(d.amount||0), 0);
+  } catch(e) {}
 
   // Première fois : construire la structure complète
   if (!document.getElementById('users-rows')) {
     const sortArrow = () => adminState.userSortDir === 1 ? ' ↑' : adminState.userSortDir === -1 ? ' ↓' : ' ⇅';
     c.innerHTML = `
-      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:var(--space-xl)">
+      <div class="stats-grid" style="grid-template-columns:repeat(${isMobile()?'2':'4'},1fr);margin-bottom:var(--space-xl)">
         <div class="stat-card"><div class="stat-card__label">👤 Utilisateurs</div><div class="stat-card__value">${adminState.users.length}</div><div class="stat-card__sub">inscrits</div></div>
-        <div class="stat-card"><div class="stat-card__label">💰 Soldes cumulés</div><div class="stat-card__value">${formatEuros(totalBalance)}</div><div class="stat-card__sub">dépôts + attentes</div></div>
-        <div class="stat-card"><div class="stat-card__label">⏳ En attente</div><div class="stat-card__value">${formatEuros(adminState.users.reduce((s,u)=>s+(parseFloat(u.pending)||0),0))}</div><div class="stat-card__sub">pronos non validés</div></div>
+        <div class="stat-card stat-card--blue"><div class="stat-card__label">💳 Total dépôts</div><div class="stat-card__value">${formatEuros(totalDepots)}</div><div class="stat-card__sub">Encaissé via Stripe</div></div>
+        <div class="stat-card"><div class="stat-card__label">💰 Solde disponible</div><div class="stat-card__value">${formatEuros(soldeDisponible)}</div><div class="stat-card__sub">Dispo dans les comptes</div></div>
+        <div class="stat-card"><div class="stat-card__label">⏳ Solde en attente</div><div class="stat-card__value">${formatEuros(soldeAttente)}</div><div class="stat-card__sub">Pronos non validés</div></div>
+      </div>
+      <div style="background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px var(--space-md);margin-bottom:var(--space-lg);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <span style="font-size:0.82rem;color:var(--text-muted)">Solde cumulé (dispo + attente)</span>
+        <span style="font-weight:800;font-size:1.1rem;color:var(--text-dark)">${formatEuros(soldeCumule)}</span>
       </div>
       <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md);align-items:center">
         <div class="tipster-search-wrap" style="flex:1;margin-bottom:0">
