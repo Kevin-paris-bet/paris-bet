@@ -142,22 +142,12 @@
     <div class="modal__header">
       <div>
         <h3>Nouveau pronostic</h3>
-        <p>Une fois publié, le pronostic est définitivement verrouillé</p>
+        <p>💡 En cas d'erreur, vous pourrez toujours supprimer votre prono depuis votre tableau de bord.</p>
       </div>
       <button class="modal__close" onclick="closeModal()">✕</button>
     </div>
 
     <div class="modal__body">
-
-      <!-- Avertissement anti-fraude -->
-      <div class="modal__warning">
-        <span>⚠️</span>
-        <span>
-          <strong>Important :</strong> une fois ce formulaire validé, votre pronostic sera
-          immédiatement verrouillé et <strong>impossible à modifier</strong>.
-          Vérifiez bien toutes les informations avant de publier.
-        </span>
-      </div>
 
       <!-- Match -->
       <div class="form-group">
@@ -173,11 +163,7 @@
       <!-- Sport + Compétition -->
       <div class="form-row">
         <div class="form-group">
-          <label for="new-sport-cat">
-            🏅 Sport *
-            <span id="sport-info-btn" onclick="document.getElementById('sport-info-box').style.display=document.getElementById('sport-info-box').style.display==='none'?'block':'none'"
-              style="margin-left:6px;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--blue);color:var(--blue);font-size:0.7rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;vertical-align:middle">i</span>
-          </label>
+          <label for="new-sport-cat">🏅 Sport *</label>
           <select class="input" id="new-sport-cat" style="padding-left:var(--space-md)">
             <option value="">— Choisir —</option>
             <option value="foot">⚽ Foot</option>
@@ -186,9 +172,6 @@
             <option value="rugby">🏉 Rugby</option>
             <option value="autres">➕ Autres</option>
           </select>
-          <div id="sport-info-box" style="display:none;margin-top:6px;padding:10px 12px;background:var(--blue-xpale,#eef3ff);border:1px solid var(--blue);border-radius:var(--radius-sm);font-size:0.78rem;color:var(--text-dark);line-height:1.5">
-            ⚠️ Ce champ détermine dans quel filtre votre prono apparaîtra pour les utilisateurs. Si vous ne choisissez pas la bonne catégorie, votre prono sera visible uniquement dans "Tous" et "Autres".
-          </div>
         </div>
         <div class="form-group">
           <label for="new-competition">🏆 Compétition *</label>
@@ -230,7 +213,7 @@
             La cote est obligatoire car elle est utilisée dans le classement des tipsters. Elle ne sera pas forcément visible par les utilisateurs — vous choisissez ci-dessous.
           </div>
           <label style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:0.82rem;font-weight:400;color:var(--text-dark);cursor:pointer">
-            <input type="checkbox" id="new-show-cote" checked style="width:16px;height:16px;cursor:pointer" />
+            <input type="checkbox" id="new-show-cote" style="width:16px;height:16px;cursor:pointer" />
             Afficher la cote aux acheteurs
           </label>
         </div>
