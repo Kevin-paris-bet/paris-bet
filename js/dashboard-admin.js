@@ -756,16 +756,14 @@ async function renderVirements(c) {
   const allProfiles = await rT.json();
   const tipsters = Array.isArray(allProfiles) ? allProfiles.filter(p => p.role === 'tipster') : [];
 
-  const urlP = new URL(SUPA + '/rest/v1/payouts');
-  urlP.searchParams.set('select', 'id,tipster_id,amount,created_at');
+  // Lire payouts_with_profile pour avoir nom/prénom/pseudo/email directement
+  const urlP = new URL(SUPA + '/rest/v1/payouts_with_profile');
+  urlP.searchParams.set('select', 'id,tipster_id,amount,created_at,first_name,last_name,pseudo,email');
   urlP.searchParams.set('order', 'created_at.desc');
   urlP.searchParams.set('apikey', ANON);
-  const rP = await fetch(urlP.toString());
+  const rP = await fetch(urlP.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
   const payoutsRaw = await rP.json();
   const payouts = Array.isArray(payoutsRaw) ? payoutsRaw : [];
-
-  const tipstersMap = {};
-  if (Array.isArray(tipsters)) tipsters.forEach(t => { tipstersMap[t.id] = t.first_name + ' ' + t.last_name; });
 
   const minPayout = 30;
   const pending = Array.isArray(tipsters) ? tipsters.filter(t => parseFloat(t.balance) >= minPayout) : [];
@@ -798,22 +796,32 @@ async function renderVirements(c) {
 
   const histoRows = !Array.isArray(payouts) || payouts.length === 0
     ? `<div style="text-align:center;padding:var(--space-xl);color:var(--text-muted);font-size:0.88rem">Aucun virement effectué pour l'instant.</div>`
-    : payouts.map(v => mobile ? `
-        <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px">
-          <div>
-            <div class="prono-title">${tipstersMap[v.tipster_id] || '—'}</div>
-            <div class="prono-meta">${new Date(v.created_at).toLocaleDateString('fr-FR')}</div>
+    : payouts.map(v => {
+      const nom    = (v.first_name || '') + ' ' + (v.last_name || '');
+      const pseudo = v.pseudo ? `@${v.pseudo}` : '';
+      const mail   = v.email || '';
+      const date   = new Date(v.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' });
+      return mobile ? `
+        <div style="padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px">
+            <div>
+              <div class="prono-title">${nom.trim() || '—'}</div>
+              <div class="prono-meta">${[pseudo, mail].filter(Boolean).join(' · ')}</div>
+              <div class="prono-meta">${date}</div>
+            </div>
+            <div style="font-weight:700;color:var(--success);white-space:nowrap">+${formatEuros(v.amount)}</div>
           </div>
-          <div style="font-weight:700;color:var(--success)">+${formatEuros(v.amount)}</div>
         </div>` : `
-        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr">
+        <div class="table-row" style="grid-template-columns:2fr 1fr 1fr 1fr">
           <div>
-            <div class="prono-title">${tipstersMap[v.tipster_id] || '—'}</div>
-            <div class="prono-meta">Virement effectué</div>
+            <div class="prono-title">${nom.trim() || '—'}</div>
+            <div class="prono-meta">${[pseudo, mail].filter(Boolean).join(' · ')}</div>
           </div>
           <div style="font-weight:700;color:var(--success)">+${formatEuros(v.amount)}</div>
-          <div style="font-size:0.82rem;color:var(--text-muted)">${new Date(v.created_at).toLocaleDateString('fr-FR')}</div>
-        </div>`).join('');
+          <div style="font-size:0.82rem;color:var(--text-muted)">${date}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted)">${v.tipster_id?.slice(0,8) || '—'}…</div>
+        </div>`;
+    }).join('');
 
   c.innerHTML = `
     ${pending.length > 0 ? `
@@ -831,7 +839,7 @@ async function renderVirements(c) {
     </div>
     <div class="section-header"><div><h2>Historique des virements</h2></div></div>
     <div class="pronos-table" style="${mobile?'padding:0':''}">
-      ${!mobile ? `<div class="table-header" style="grid-template-columns:2fr 1fr 1fr"><span>Tipster</span><span>Montant</span><span>Date</span></div>` : ''}
+      ${!mobile ? `<div class="table-header" style="grid-template-columns:2fr 1fr 1fr 1fr"><span>Tipster</span><span>Montant</span><span>Date</span><span>ID</span></div>` : ''}
       ${histoRows}
     </div>
   `;
