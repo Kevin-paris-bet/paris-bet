@@ -26,8 +26,9 @@ module.exports = async (req, res) => {
     }
 
     // Créer la session Stripe Checkout
+    // Sans payment_method_types : Stripe affiche automatiquement
+    // Apple Pay / Google Pay en premier selon l'appareil
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
       line_items: [
         {
           price_data: {
