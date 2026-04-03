@@ -994,7 +994,7 @@ async function renderFinances(container) {
 
   // Helper : carte cliquable avec tooltip
   function finCard(id, label, value, color, tipText) {
-    return `<div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:12px 16px;cursor:pointer;border:1px solid var(--border)" onclick="toggleFinTip('tip-${id}')">
+    return `<div style="background:var(--bg);border-radius:var(--radius-md);padding:12px 16px;cursor:pointer;border:1px solid var(--border);box-shadow:var(--shadow-sm,0 1px 3px rgba(0,0,0,.06))" onclick="toggleFinTip('tip-${id}')">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px">${label}</div>
         <span style="font-size:0.75rem;color:var(--blue);flex-shrink:0;margin-left:6px">ⓘ</span>
@@ -1015,7 +1015,7 @@ async function renderFinances(container) {
       <div style="display:grid;grid-template-columns:repeat(${cols},1fr);gap:var(--space-sm)">
         ${finCard('encaisse', 'Encaissé brut', formatEuros(encaisseBrut), 'var(--blue)',
           'Total de tous les dépôts effectués par les users depuis le lancement. Source : champ <code>total_deposits</code> dans les profils, mis à jour par le webhook Stripe à chaque paiement réussi.')}
-        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border)">
+        <div style="background:var(--bg);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border);box-shadow:var(--shadow-sm,0 1px 3px rgba(0,0,0,.06))">
           <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px">Frais Stripe</div>
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:1.1rem;font-weight:800;color:var(--error)">−</span>
@@ -1052,27 +1052,27 @@ async function renderFinances(container) {
     <div style="margin-bottom:var(--space-xl)">
       <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:var(--space-sm)">🎯 Activité pronos</div>
       <div style="display:grid;grid-template-columns:repeat(${mob?'2':'5'},1fr);gap:var(--space-sm)" id="fin-pronos-blocs">
-        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border)">
+        <div style="background:var(--bg);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border);box-shadow:var(--shadow-sm,0 1px 3px rgba(0,0,0,.06))">
           <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px">Volume total</div>
           <div style="font-size:1.15rem;font-weight:800;color:var(--text-dark)" id="fin-vol-total">—</div>
           <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">Tous achats confondus</div>
         </div>
-        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border)">
+        <div style="background:var(--bg);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border);box-shadow:var(--shadow-sm,0 1px 3px rgba(0,0,0,.06))">
           <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px">Pronos gagnants</div>
           <div style="font-size:1.15rem;font-weight:800;color:var(--blue)" id="fin-vol-won">—</div>
           <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">Base de calcul réelle</div>
         </div>
-        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border)">
+        <div style="background:var(--bg);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border);box-shadow:var(--shadow-sm,0 1px 3px rgba(0,0,0,.06))">
           <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px">Remboursés</div>
           <div style="font-size:1.15rem;font-weight:800;color:var(--text-dark)" id="fin-vol-lost">—</div>
           <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">Perdus + annulés</div>
         </div>
-        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border)">
+        <div style="background:var(--bg);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border);box-shadow:var(--shadow-sm,0 1px 3px rgba(0,0,0,.06))">
           <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px">Ta commission</div>
           <div style="font-size:1.15rem;font-weight:800;color:var(--success)" id="fin-commission">—</div>
           <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">10% des gagnants</div>
         </div>
-        <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border)">
+        <div style="background:var(--bg);border-radius:var(--radius-md);padding:12px 16px;border:1px solid var(--border);box-shadow:var(--shadow-sm,0 1px 3px rgba(0,0,0,.06))">
           <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px">Crédité tipsters</div>
           <div style="font-size:1.15rem;font-weight:800;color:var(--text-dark)" id="fin-net-tipsters">—</div>
           <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">90% des gagnants</div>
