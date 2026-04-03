@@ -1316,12 +1316,19 @@ async function renderExplorerTipsters(container, publicUrlBase) {
     }
     const sortBtns=['total','totalAcheteurs','winRate','avgCote','score'].map(col=>{
       const labels={total:'Pronos',totalAcheteurs:'Acheteurs',winRate:'Win Rate',avgCote:'Cote moy.',score:'🏆 Score'};
-      return `<button id="sort-btn-${col}" class="btn btn-outline" style="font-size:0.78rem;padding:6px 12px" onclick="document.setSortCol('${col}')">${labels[col]} <span id="sort-arr-${col}"></span></button>`;
+      const extra = col==='score' ? ` <span onclick="event.stopPropagation();toggleScoreInfo()" style="font-size:0.8rem;cursor:pointer;color:var(--blue);vertical-align:middle" title="Explication du score">ⓘ</span>` : '';
+      return `<button id="sort-btn-${col}" class="btn btn-outline" style="font-size:0.78rem;padding:6px 12px" onclick="document.setSortCol('${col}')">${labels[col]}${extra} <span id="sort-arr-${col}"></span></button>`;
     }).join('');
     container.innerHTML=`
       <div class="section-header"><div><h2>Explorer les tipsters</h2><p>${tipsters.length} tipsters inscrits</p></div></div>
       <div class="tipster-search-wrap"><span class="input-icon">🔍</span><input class="input" id="tipster-search" type="text" placeholder="Rechercher par pseudo..." oninput="document.tipsterFilter(this.value)" /></div>
       <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md);flex-wrap:wrap;align-items:center;">${sortBtns}</div>
+      <div id="score-info-box" style="display:none;background:var(--blue-xpale,#eef3ff);border:1px solid var(--blue);border-radius:var(--radius-md);padding:12px 16px;margin-bottom:var(--space-md);font-size:0.82rem;color:var(--text-dark);line-height:1.7">
+        <strong>🏆 Comment est calculé le Score ?</strong><br>
+        <code style="font-size:0.79rem;background:rgba(0,0,0,.05);padding:2px 6px;border-radius:4px">Score = Win Rate × Cote moyenne × log10(pronos terminés + 1)</code><br><br>
+        Ce score récompense les tipsters qui combinent un bon taux de réussite, des cotes élevées, et un volume suffisant de pronos.
+        Un tipster avec 60% de win rate, cote moy. 2,0 et 10 pronos terminés aura un score de 60 × 2,0 × log10(11) ≈ 125.
+      </div>
       <div id="tipsters-list"></div>`;
     document.tipsterFilter=(val)=>{filterVal=val;renderList();};
     document.setSortCol=setSortCol;
@@ -1770,5 +1777,10 @@ async function togglePronoAcheteurs(pronoId, triggerEl) {
   } catch(e) {
     container.innerHTML = '<div style="color:var(--error);font-size:0.78rem">Erreur de chargement.</div>';
   }
+}
+
+function toggleScoreInfo() {
+  const box = document.getElementById('score-info-box');
+  if (box) box.style.display = box.style.display === 'none' ? 'block' : 'none';
 }
 
