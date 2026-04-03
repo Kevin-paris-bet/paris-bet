@@ -1485,8 +1485,11 @@ async function openFicheTipster(id){
         <div style="display:flex;flex-direction:column;gap:8px;max-height:350px;overflow-y:auto">
           ${(pronos||[]).map(pr=>`<div style="background:var(--bg-soft);border-radius:var(--radius-sm);padding:10px 14px;font-size:0.85rem">
             <div style="display:flex;justify-content:space-between;align-items:center"><strong>${pr.game}</strong>${badge[pr.status]||''}</div>
-            <div style="color:var(--text-muted);margin-top:2px">${pr.sport} · ${formatDate(pr.match_date)} · 👥 ${pr.buyers||0} · ${formatEuros(pr.price)}${pr.cote?` · 📊 ${parseFloat(pr.cote).toFixed(2).replace('.',',')}`:''}</div>
+            <div style="color:var(--text-muted);margin-top:2px">${pr.sport} · ${formatDate(pr.match_date)} ·
+              <span onclick="togglePronoAcheteurs('${pr.id}',this)" style="cursor:pointer;color:var(--blue);font-weight:600;border-bottom:1px dashed var(--blue)">👥 ${pr.buyers||0}</span>
+              · ${formatEuros(pr.price)}${pr.cote?` · 📊 ${parseFloat(pr.cote).toFixed(2).replace('.',',')}`:''}</div>
             ${pr.content?`<div style="margin-top:4px;font-style:italic;color:var(--text-muted)">📋 ${pr.content}</div>`:''}
+            <div id="acheteurs-${pr.id}" style="display:none;margin-top:8px"></div>
           </div>`).join('')}
         </div>`}`;
   }catch(e){modal.innerHTML=`<div style="color:var(--error)">Erreur de chargement.</div>`;}
@@ -1696,5 +1699,76 @@ function openFicheFinances(tipsterId) {
     '</div>';
 
   overlay.style.display = 'block';
+}
+
+// ══════════════════════════════════════════════════════════════
+//  ACHETEURS D'UN PRONO (dans fiche tipster)
+// ══════════════════════════════════════════════════════════════
+async function togglePronoAcheteurs(pronoId, triggerEl) {
+  const container = document.getElementById('acheteurs-' + pronoId);
+  if (!container) return;
+
+  // Toggle : si déjà ouvert, refermer
+  if (container.style.display === 'block') {
+    container.style.display = 'none';
+    return;
+  }
+
+  // Afficher un loader
+  container.style.display = 'block';
+  container.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem;padding:6px 0">⏳ Chargement...</div>';
+
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+
+  try {
+    // Charger les purchases de ce prono
+    const rPurch = await fetch(
+      `${SUPA}/rest/v1/purchases?select=user_id,amount,status,created_at&prono_id=eq.${pronoId}&order=created_at.desc&apikey=${ANON}`,
+      { headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON } }
+    );
+    const purchases = await rPurch.json();
+
+    if (!Array.isArray(purchases) || purchases.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-muted);font-size:0.78rem;padding:6px 0">Aucun acheteur.</div>';
+      return;
+    }
+
+    // Charger les profils des acheteurs
+    const userIds = [...new Set(purchases.map(p => p.user_id).filter(Boolean))];
+    const rProf = await fetch(
+      `${SUPA}/rest/v1/profiles?select=id,first_name,last_name&id=in.(${userIds.join(',')})&apikey=${ANON}`,
+      { headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON } }
+    );
+    const profiles = await rProf.json();
+    const profMap = {};
+    (profiles || []).forEach(p => profMap[p.id] = p.first_name + ' ' + p.last_name);
+
+    const statusIcon = { won: '✓', lost: '✕', cancelled: '⊘', pending: '⏳' };
+    const statusColor = { won: 'var(--success)', lost: 'var(--error)', cancelled: 'var(--text-muted)', pending: 'var(--warning)' };
+
+    container.innerHTML =
+      '<div style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px">' +
+        '<div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin-bottom:6px">Acheteurs</div>' +
+        '<div style="display:flex;flex-direction:column;gap:4px">' +
+          purchases.map(p => {
+            const nom = profMap[p.user_id] || p.user_id?.slice(0,8) + '…';
+            const date = new Date(p.created_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+            const icon = statusIcon[p.status] || '?';
+            const col  = statusColor[p.status] || 'var(--text-muted)';
+            return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 8px;background:var(--bg);border-radius:var(--radius-sm);font-size:0.8rem">' +
+              '<span style="font-weight:600;color:var(--text-dark)">' + nom + '</span>' +
+              '<span style="display:flex;gap:10px;align-items:center">' +
+                '<span style="color:var(--text-muted)">' + date + '</span>' +
+                '<span style="font-weight:700">' + formatEuros(parseFloat(p.amount||0)) + '</span>' +
+                '<span style="font-weight:700;color:' + col + '">' + icon + '</span>' +
+              '</span>' +
+            '</div>';
+          }).join('') +
+        '</div>' +
+      '</div>';
+  } catch(e) {
+    container.innerHTML = '<div style="color:var(--error);font-size:0.78rem">Erreur de chargement.</div>';
+  }
 }
 
