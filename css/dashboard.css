@@ -170,7 +170,7 @@
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: var(--space-lg);
+  padding: var(--space-md);
 }
 .stat-card__label {
   font-size: 0.75rem; font-weight: 600;
@@ -293,7 +293,7 @@
 .modal {
   background: var(--white);
   border-radius: var(--radius-xl);
-  width: 100%; max-width: 560px;
+  width: 100%; max-width: 680px;
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: var(--shadow-lg);
