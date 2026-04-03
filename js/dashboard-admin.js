@@ -1461,7 +1461,7 @@ async function openFicheTipster(id){
   try{
     const rP=await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,rib_iban,rib_bic,rib_name,created_at&id=eq.${id}&apikey=${ANON}`,{headers:{apikey:ANON}});
     const profiles=await rP.json(); const p=profiles[0]||{};
-    const rPr=await fetch(`${SUPA}/rest/v1/pronos?select=id,game,sport,match_date,status,buyers,price,content,cote&tipster_id=eq.${id}&order=created_at.desc&apikey=${ANON}`,{headers:{apikey:ANON}});
+    const rPr=await fetch(`${SUPA}/rest/v1/pronos?select=id,game,sport,match_date,status,buyers,price,content,analysis,show_cote,cote&tipster_id=eq.${id}&order=created_at.desc&apikey=${ANON}`,{headers:{apikey:ANON}});
     const pronos=await rPr.json();
     const pronoIds=(pronos||[]).map(p=>p.id);
     let totalCA=0;
@@ -1494,8 +1494,9 @@ async function openFicheTipster(id){
             <div style="display:flex;justify-content:space-between;align-items:center"><strong>${pr.game}</strong>${badge[pr.status]||''}</div>
             <div style="color:var(--text-muted);margin-top:2px">${pr.sport} · ${formatDate(pr.match_date)} ·
               <span onclick="togglePronoAcheteurs('${pr.id}',this)" style="cursor:pointer;color:var(--blue);font-weight:600;border-bottom:1px dashed var(--blue)">👥 ${pr.buyers||0}</span>
-              · ${formatEuros(pr.price)}${pr.cote?` · 📊 ${parseFloat(pr.cote).toFixed(2).replace('.',',')}`:''}</div>
-            ${pr.content?`<div style="margin-top:4px;font-style:italic;color:var(--text-muted)">📋 ${pr.content}</div>`:''}
+              · ${formatEuros(pr.price)}${pr.cote?` · 📊 ${parseFloat(pr.cote).toFixed(2).replace('.',',')}${pr.show_cote===false?' <span style=\"color:var(--warning);font-size:0.75rem\">(masqué)</span>':''}`:''}</div>
+            ${pr.content?`<div style="margin-top:4px;font-style:italic;color:var(--text-muted)">🎯 ${pr.content}</div>`:''}
+            ${pr.analysis?`<div style="margin-top:3px;font-style:italic;color:var(--text-muted)">📝 ${pr.analysis}</div>`:''}
             <div id="acheteurs-${pr.id}" style="display:none;margin-top:8px"></div>
           </div>`).join('')}
         </div>`}`;

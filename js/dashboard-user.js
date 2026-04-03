@@ -84,7 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pronosMap = {};
     try {
       const url = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
-      url.searchParams.set('select', 'id,game,sport,match_date,content,tipster_id,cote');
+      url.searchParams.set('select', 'id,game,sport,match_date,content,analysis,show_cote,tipster_id,cote');
       url.searchParams.set('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI');
       const resp = await fetch(url.toString());
       const tousLesPronos = await resp.json();
@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Charger les pronos disponibles via fetch direct
   try {
     const url2 = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
-    url2.searchParams.set('select', 'id,game,sport,match_date,content,price,status,tipster_id,cote');
+    url2.searchParams.set('select', 'id,game,sport,match_date,content,analysis,show_cote,price,status,tipster_id,cote');
     url2.searchParams.set('status', 'eq.pending');
     url2.searchParams.set('order', 'created_at.desc');
     url2.searchParams.set('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI');
@@ -503,6 +503,9 @@ function savePassword() {
 // ══════════════════════════════════════════════════════════════
 //  PAGE — EXPLORER LES TIPSTERS / ACHETER UN PRONO
 // ══════════════════════════════════════════════════════════════
+// Filtre sport actif pour l'explorer pronos
+let explorerSportFilter = 'tous';
+
 function renderPageExplorer(container) {
   const pronos = userState.availablePronos;
   const alreadyBought = new Set(userState.realAchats.map(a => a.pronoId));
@@ -514,12 +517,45 @@ function renderPageExplorer(container) {
     return;
   }
 
+  // Filtrage par sport
+  const sportKeywords = {
+    foot:    ['foot', 'ligue', 'liga', 'premier', 'serie a', 'bundesliga', 'mls', 'uefa', 'champions', 'europa', 'soccer'],
+    tennis:  ['tennis', 'atp', 'wta', 'roland', 'wimbledon', 'open'],
+    basket:  ['basket', 'nba', 'nfl', 'bball'],
+    rugby:   ['rugby', 'top 14', 'top14', 'pro d2', 'six nations'],
+  };
+
+  function getSportCategory(sport) {
+    const s = (sport || '').toLowerCase();
+    for (const [cat, keys] of Object.entries(sportKeywords)) {
+      if (keys.some(k => s.includes(k))) return cat;
+    }
+    return 'autres';
+  }
+
+  const filtered = explorerSportFilter === 'tous'
+    ? pronos
+    : pronos.filter(p => getSportCategory(p.sport) === explorerSportFilter);
+
+  const sportBtns = [
+    { key: 'tous',   label: '🌐 Tous' },
+    { key: 'foot',   label: '⚽ Foot' },
+    { key: 'tennis', label: '🎾 Tennis' },
+    { key: 'basket', label: '🏀 Basket' },
+    { key: 'rugby',  label: '🏉 Rugby' },
+    { key: 'autres', label: '➕ Autres' },
+  ].map(s => `<button class="filter-btn ${explorerSportFilter === s.key ? 'active' : ''}"
+    onclick="explorerSportFilter='${s.key}';renderPageExplorer(document.getElementById('page-content'))"
+    style="font-size:0.82rem">${s.label}</button>`).join('');
+
   container.innerHTML = `
     <div class="section-header">
-      <div><h2>Explorer les pronos</h2><p>${pronos.length} prono(s) disponible(s)</p></div>
+      <div><h2>Explorer les pronos</h2><p>${filtered.length} / ${pronos.length} prono(s)</p></div>
     </div>
+    <div class="achats-filters" style="margin-bottom:var(--space-lg)">${sportBtns}</div>
+    ${filtered.length === 0 ? `<div class="empty-state"><div class="empty-state__icon">🔍</div><h3>Aucun prono dans cette catégorie</h3><p>Essayez une autre.</p></div>` : `
     <div style="display:flex;flex-direction:column;gap:var(--space-md)">
-      ${pronos.map(p => {
+      ${filtered.map(p => {
         const tipsterName = p.tipsterName || '—';
         const tipsterAvatar = p.tipsterAvatar || '';
         const avatarHtml = tipsterAvatar
@@ -539,19 +575,20 @@ function renderPageExplorer(container) {
             </div>
             <div class="achat-card__right">
               <div class="achat-card__price">${p.price} €</div>
-              ${p.cote ? `<div style="font-size:0.75rem;color:var(--text-muted);text-align:right">📊 Cote : <strong style="color:var(--primary)">${parseFloat(p.cote).toFixed(2).replace('.', ',')}</strong></div>` : ''}
+              ${p.cote && p.show_cote !== false ? `<div style="font-size:0.75rem;color:var(--text-muted);text-align:right">📊 Cote : <strong style="color:var(--primary)">${parseFloat(p.cote).toFixed(2).replace('.', ',')}</strong></div>` : ''}
               ${bought
                 ? `<span class="badge badge-won">✓ Acheté</span>`
                 : `<button class="btn btn-primary" style="font-size:0.85rem;padding:8px 16px" onclick="buyProno('${p.id}', ${p.price}, '${p.game.replace(/'/g,"\'")}')">Acheter</button>`
               }
             </div>
           </div>
-          ${bought ? `<div style="margin-top:8px;padding:10px;background:var(--blue-pale);border-radius:var(--radius-sm);font-size:0.9rem">
-            <strong>Pronostic :</strong> ${p.content || '—'}
+          ${bought ? `<div style="margin-top:8px;padding:10px;background:var(--blue-pale);border-radius:var(--radius-sm);font-size:0.9rem;display:flex;flex-direction:column;gap:8px">
+            <div><strong>🎯 Pronostic :</strong> ${p.content || '—'}</div>
+            ${p.analysis ? `<div style="padding-top:8px;border-top:1px solid rgba(0,0,0,.08)"><strong>📝 Analyse :</strong> ${p.analysis}</div>` : ''}
           </div>` : `<div style="margin-top:8px;font-size:0.85rem;color:var(--text-muted)">🔒 Achetez pour voir le pronostic</div>`}
         </div>`;
       }).join('')}
-    </div>
+    </div>`}
   `;
 }
 

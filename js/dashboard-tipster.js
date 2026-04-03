@@ -292,30 +292,43 @@ function openModal() {
 function closeModal() {
   document.getElementById('modal-overlay').classList.remove('open');
   // Reset form
-  ['new-match','new-sport','new-date','new-time','new-price','new-cote','new-content'].forEach(id => {
+  ['new-match','new-sport-cat','new-competition','new-date','new-time','new-price','new-cote','new-content','new-analysis'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
+  const showCote = document.getElementById('new-show-cote');
+  if (showCote) showCote.checked = true;
+  const sportInfo = document.getElementById('sport-info-box');
+  if (sportInfo) sportInfo.style.display = 'none';
+  const coteInfo = document.getElementById('cote-info-box');
+  if (coteInfo) coteInfo.style.display = 'none';
 }
 
 async function submitProno() {
-  const game    = document.getElementById('new-match').value.trim();
-  const sport   = document.getElementById('new-sport').value.trim();
-  const date    = document.getElementById('new-date').value;
-  const time    = document.getElementById('new-time')?.value || '';
-  const price   = parseFloat(document.getElementById('new-price').value);
-  const coteRaw = document.getElementById('new-cote').value.trim().replace(',', '.');
-  const cote    = coteRaw ? parseFloat(coteRaw) : null;
-  const content = document.getElementById('new-content').value.trim();
+  const game        = document.getElementById('new-match').value.trim();
+  const sportCat    = document.getElementById('new-sport-cat').value;
+  const competition = document.getElementById('new-competition').value.trim();
+  const date        = document.getElementById('new-date').value;
+  const time        = document.getElementById('new-time')?.value || '';
+  const price       = parseFloat(document.getElementById('new-price').value);
+  const coteRaw     = document.getElementById('new-cote').value.trim().replace(',', '.');
+  const cote        = coteRaw ? parseFloat(coteRaw) : null;
+  const showCote    = document.getElementById('new-show-cote')?.checked ?? true;
+  const content     = document.getElementById('new-content').value.trim();
+  const analysis    = document.getElementById('new-analysis')?.value.trim() || '';
 
-  if (!game || !sport || !date || !price || !content) {
+  // Construire le champ sport : catégorie normalisée + compétition
+  const sportLabels = { foot:'⚽ Foot', tennis:'🎾 Tennis', basket:'🏀 Basket', rugby:'🏉 Rugby', autres:'➕ Autres' };
+  const sport = sportCat ? (sportLabels[sportCat] || sportCat) + (competition ? ' · ' + competition : '') : competition;
+
+  if (!game || !sportCat || !competition || !date || !price || !content) {
     showToast('Veuillez remplir tous les champs obligatoires.', 'error'); return;
   }
   if (price < 1) {
     showToast('Le prix minimum est 1 €.', 'error'); return;
   }
-  if (coteRaw && (isNaN(cote) || cote < 1)) {
-    showToast('La cote doit être un nombre supérieur à 1 (ex: 1,76).', 'error'); return;
+  if (!coteRaw || isNaN(cote) || cote < 1) {
+    showToast('La cote est obligatoire et doit être supérieure à 1 (ex: 1,76).', 'error'); return;
   }
 
   const btn = document.getElementById('btn-submit-prono');
@@ -330,10 +343,12 @@ async function submitProno() {
       sport,
       match_date: time ? date + ' · ' + time : date,
       price,
-      cote:    cote,
+      cote,
+      show_cote: showCote,
       buyers:  0,
       status:  CONFIG.betStatus.PENDING,
       content,
+      analysis,
       locked:  true,
     }]).select().single();
 
