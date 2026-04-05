@@ -247,7 +247,7 @@ function renderPageAchats(container) {
       <div class="stat-card">
         <div class="stat-card__label">🏆 Taux réussite</div>
         <div class="stat-card__value">${winRate}%</div>
-        <div class="stat-card__sub">${won}W · ${lost}L · ${canc} annulé(s)</div>
+        <div class="stat-card__sub">${won}V · ${lost}D · ${canc} annulé(s)</div>
       </div>
     </div>
 

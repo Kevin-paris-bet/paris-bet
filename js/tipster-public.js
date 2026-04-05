@@ -308,7 +308,7 @@ function renderTipsterInfo() {
   document.getElementById('info-winrate').textContent  = `${t.winRate}%`;
   document.getElementById('info-pronos').textContent   = t.totalPronos;
   document.getElementById('info-buyers').textContent   = t.totalBuyers;
-  document.getElementById('info-record').textContent   = `${won}W / ${total - won}L`;
+  document.getElementById('info-record').textContent   = `${won}V / ${total - won}D`;
 }
 
 // ── Filtres ───────────────────────────────────────────────────
