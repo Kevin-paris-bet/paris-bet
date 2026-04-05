@@ -208,6 +208,9 @@
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: var(--space-lg);
 }
+@media (max-width: 600px) {
+  .section-header { margin-bottom: var(--space-xs, 6px); }
+}
 .section-header h2 {
   font-family: var(--font-display);
   font-size: 1.1rem; font-weight: 800;
