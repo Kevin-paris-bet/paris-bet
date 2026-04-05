@@ -92,7 +92,7 @@
 .hero__actions {
   display: flex; gap: var(--space-md);
   flex-wrap: wrap;
-  margin-bottom: var(--space-xl);
+  margin-bottom: var(--space-md);
 }
 
 .hero__trust {
@@ -500,7 +500,7 @@ input[type=range] {
   .features__grid { grid-template-columns: 1fr; }
   .feat--large { grid-column: span 1; }
   .hero__actions { flex-direction: column; }
-  .hero__trust { gap: var(--space-md); padding-top: var(--space-sm); padding-bottom: var(--space-sm); margin-bottom: 0; }
+  .hero__trust { gap: var(--space-md); padding-top: 4px; padding-bottom: 4px; margin-bottom: 0; }
   .cta-banner { padding: 32px 0; }
   .hero { min-height: auto; padding-bottom: 0; padding-top: calc(var(--nav-height) + 8px); }
   .hero__inner { padding-top: var(--space-sm); padding-bottom: 0; }
