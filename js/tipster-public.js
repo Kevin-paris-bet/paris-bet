@@ -358,11 +358,13 @@ function renderPronoCard(p) {
   };
 
   // Contenu : visible si acheté, verrouillé sinon
+  const isFinished = p.status === 'won' || p.status === 'lost' || p.status === 'cancelled';
   const contentBlock = p.purchased
     ? `<div class="prono-card__content">
         <div class="prono-card__content-label">🔓 Pronostic déverrouillé</div>
         <div class="prono-card__content-text">${p.content}</div>
        </div>`
+    : isFinished ? ''
     : `<div class="prono-card__locked">
         <div class="prono-card__locked-icon">🔒</div>
         <span>Achetez ce pronostic pour voir le contenu</span>
