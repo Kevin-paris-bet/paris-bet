@@ -278,7 +278,10 @@ function renderPronoRow(p) {
       <div style="font-size:0.8rem;color:var(--text-muted)">${formatDate(p.match_date || p.date)}</div>
       <div class="table-actions">
         <button class="btn-icon" title="Voir le pronostic" onclick="viewProno('${p.id}')">👁</button>
-        <button class="btn-icon danger" title="${canDelete ? 'Supprimer' : 'Impossible : déjà acheté'}" onclick="deleteProno('${p.id}')" ${canDelete ? '' : 'disabled'}>🗑</button>
+        <button class="btn-icon" title="${p.status === 'pending' ? 'Signaler une erreur' : 'Validation effectuée — signalement impossible'}"
+          onclick="${p.status === 'pending' ? `signalErreurProno('${p.id}', '${p.game.replace(/'/g, "\'")}')` : ''}"
+          ${p.status !== 'pending' ? 'disabled' : ''}
+          style="font-size:0.85rem">🚩</button>
       </div>
     </div>
   `;
@@ -376,6 +379,45 @@ function viewProno(id) {
 // ── Supprimer un prono (seulement si 0 acheteur) ───────────────
 async function deleteProno(id) {
   showToast('La suppression de pronostics est désactivée.', 'error'); return;
+}
+
+async function signalErreurProno(id, game) {
+  const msg = prompt(`Décrivez l'erreur sur le prono "${game}" :\n(Ex: mauvaise cote, mauvaise date…)`);
+  if (!msg || !msg.trim()) return;
+
+  const user = await getCurrentUser();
+  if (!user) return;
+
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+
+  try {
+    const r = await fetch(`${SUPA}/rest/v1/feedback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': ANON,
+        'Authorization': 'Bearer ' + ANON,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        role:        'tipster',
+        pseudo:      user.profile?.pseudo || user.profile?.first_name || '—',
+        email:       user.email || '—',
+        categorie:   'bug',
+        titre:       `Erreur prono : ${game}`,
+        description: msg.trim(),
+        statut:      'nouveau'
+      })
+    });
+    if (r.ok || r.status === 201) {
+      showToast('Signalement envoyé ✓', 'success');
+    } else {
+      showToast('Erreur lors du signalement.', 'error');
+    }
+  } catch(e) {
+    showToast('Erreur : ' + e.message, 'error');
+  }
   const p = state.pronos.find(p => p.id === id);
   if (!p || p.locked || p.buyers > 0) {
     showToast('Impossible de supprimer ce pronostic.', 'error'); return;
