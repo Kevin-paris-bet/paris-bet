@@ -47,6 +47,8 @@ const adminState = {
   virements:  [...MOCK_VIREMENTS],
   pronosFilter: 'pending',
   tipsterSearch: '',
+  tipsterSortCol: null,
+  tipsterSortDir: 1,
   userSearch: '',
   userSortDir:  0,  // tri achats : 0 = aucun, 1 = croissant, -1 = décroissant
   userSoldeDir: 0,  // tri solde  : 0 = aucun, 1 = croissant, -1 = décroissant
@@ -472,20 +474,34 @@ async function validateProno(id, status) {
 function renderTipsters(c) {
   const mobile = isMobile();
 
-  // Première fois : construire la structure complète
   if (!document.getElementById('tipsters-rows')) {
     c.innerHTML = `
       <div class="section-header">
         <div><h2>Tipsters</h2><p>${adminState.tipsters.length} tipster(s) inscrits</p></div>
       </div>
-      <div class="tipster-search-wrap" style="margin-bottom:var(--space-md)">
-        <span class="input-icon">🔍</span>
-        <input class="input" id="tipster-admin-search" type="text" placeholder="Rechercher par pseudo ou prénom..."
-          oninput="adminState.tipsterSearch=this.value;renderTipsterRows()" />
+      <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md);align-items:center">
+        <div class="tipster-search-wrap" style="flex:1;margin-bottom:0">
+          <span class="input-icon">🔍</span>
+          <input class="input" id="tipster-admin-search" type="text" placeholder="Rechercher par pseudo ou prénom..."
+            oninput="adminState.tipsterSearch=this.value;renderTipsterRows()" />
+        </div>
+        <button id="tip-pronos-btn" onclick="setTipsterSort('pronos')" class="btn btn-outline" style="white-space:nowrap;flex-shrink:0;font-size:0.82rem;padding:8px 14px">
+          Pronos <span id="tip-pronos-arrow">⇅</span>
+        </button>
+        <button id="tip-winrate-btn" onclick="setTipsterSort('winRate')" class="btn btn-outline" style="white-space:nowrap;flex-shrink:0;font-size:0.82rem;padding:8px 14px">
+          Win Rate <span id="tip-winrate-arrow">⇅</span>
+        </button>
+        <button id="tip-solde-btn" onclick="setTipsterSort('balance')" class="btn btn-outline" style="white-space:nowrap;flex-shrink:0;font-size:0.82rem;padding:8px 14px">
+          Solde <span id="tip-solde-arrow">⇅</span>
+        </button>
       </div>
       <div class="pronos-table" style="${mobile?'padding:0':''}">
         ${!mobile ? `<div class="table-header" style="grid-template-columns:2fr 1.2fr 1fr 1fr 1fr 1fr 120px">
-          <span>Tipster</span><span>Pseudo</span><span>Pronos</span><span>Win Rate</span><span>Solde</span><span>RIB</span><span>Actions</span>
+          <span>Tipster</span><span>Pseudo</span>
+          <span style="cursor:pointer;user-select:none" onclick="setTipsterSort('pronos')">Pronos <span id="tip-pronos-arrow-d">⇅</span></span>
+          <span style="cursor:pointer;user-select:none" onclick="setTipsterSort('winRate')">Win Rate <span id="tip-winrate-arrow-d">⇅</span></span>
+          <span style="cursor:pointer;user-select:none" onclick="setTipsterSort('balance')">Solde <span id="tip-solde-arrow-d">⇅</span></span>
+          <span>RIB</span><span>Actions</span>
         </div>` : ''}
         <div id="tipsters-rows"></div>
       </div>
@@ -495,16 +511,51 @@ function renderTipsters(c) {
   renderTipsterRows();
 }
 
+function setTipsterSort(col) {
+  const cols = { pronos: ['tip-pronos-btn','tip-pronos-arrow','tip-pronos-arrow-d'], winRate: ['tip-winrate-btn','tip-winrate-arrow','tip-winrate-arrow-d'], balance: ['tip-solde-btn','tip-solde-arrow','tip-solde-arrow-d'] };
+  if (adminState.tipsterSortCol === col) {
+    adminState.tipsterSortDir *= -1;
+  } else {
+    adminState.tipsterSortCol = col;
+    adminState.tipsterSortDir = -1;
+  }
+  const arrow = adminState.tipsterSortDir === 1 ? '↑' : '↓';
+  // Reset tous
+  Object.keys(cols).forEach(c => {
+    const [btn, a1, a2] = cols[c];
+    const b = document.getElementById(btn); if (b) b.style.borderColor = '';
+    const e1 = document.getElementById(a1); if (e1) e1.textContent = '⇅';
+    const e2 = document.getElementById(a2); if (e2) e2.textContent = '⇅';
+  });
+  // Activer le bon
+  if (cols[col]) {
+    const [btn, a1, a2] = cols[col];
+    const b = document.getElementById(btn); if (b) b.style.borderColor = 'var(--blue)';
+    const e1 = document.getElementById(a1); if (e1) e1.textContent = arrow;
+    const e2 = document.getElementById(a2); if (e2) e2.textContent = arrow;
+  }
+  renderTipsterRows();
+}
+
 function renderTipsterRows() {
   const mobile = isMobile();
   const container = document.getElementById('tipsters-rows');
   if (!container) return;
 
   const q = adminState.tipsterSearch.toLowerCase();
-  const filtered = adminState.tipsters.filter(t =>
+  let filtered = adminState.tipsters.filter(t =>
     (t.pseudo || '').toLowerCase().includes(q) ||
     (t.first_name || '').toLowerCase().includes(q)
   );
+  if (adminState.tipsterSortCol) {
+    const col = adminState.tipsterSortCol;
+    const dir = adminState.tipsterSortDir;
+    filtered = [...filtered].sort((a, b) => {
+      const va = a[col] ?? 0;
+      const vb = b[col] ?? 0;
+      return (va - vb) * dir;
+    });
+  }
 
   if (!filtered.length) {
     container.innerHTML = `<div class="empty-state"><div class="empty-state__icon">🔍</div><h3>Aucun tipster trouvé</h3><p>Essayez un autre pseudo ou prénom.</p></div>`;
