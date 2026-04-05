@@ -9,6 +9,15 @@
   display: flex; gap: var(--space-sm); flex-wrap: wrap;
   margin-bottom: var(--space-lg);
 }
+@media (max-width: 600px) {
+  .achats-filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+  .achats-filters .filter-btn { flex-shrink: 0; }
+}
 
 /* ── Carte achat ── */
 .achat-card {
