@@ -13,6 +13,7 @@ const authState = {
 
 // ── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  loadAuthStats();
 
   // Lire le hash de l'URL pour ouvrir le bon onglet
   // Ex: auth.html#register ou auth.html#login
@@ -245,4 +246,31 @@ function showToast(message, type = 'info') {
   });
   document.body.appendChild(toast);
   setTimeout(() => toast?.remove(), 3500);
+}
+
+// ── Stats page auth ───────────────────────────────────────────
+async function loadAuthStats() {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  try {
+    const [r1, r2, r3] = await Promise.all([
+      fetch(`${SUPA}/rest/v1/profiles?select=id&role=eq.tipster&apikey=${ANON}`),
+      fetch(`${SUPA}/rest/v1/profiles?select=id&role=eq.user&apikey=${ANON}`),
+      fetch(`${SUPA}/rest/v1/profiles?select=total_deposits&role=eq.user&apikey=${ANON}`),
+    ]);
+    const tipsters = await r1.json();
+    const users    = await r2.json();
+    const deposits = await r3.json();
+    const total    = Array.isArray(deposits)
+      ? deposits.reduce((s, p) => s + parseFloat(p.total_deposits || 0), 0)
+      : 0;
+    set('auth-stat-tipsters', Array.isArray(tipsters) ? tipsters.length + '+' : '0');
+    set('auth-stat-users',    Array.isArray(users)    ? users.length    + '+' : '0');
+    set('auth-stat-paid',     total > 0 ? Math.round(total).toLocaleString('fr-FR') + '€+' : '0€');
+  } catch(e) {
+    set('auth-stat-tipsters', '—');
+    set('auth-stat-users',    '—');
+    set('auth-stat-paid',     '—');
+  }
 }
