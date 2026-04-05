@@ -572,30 +572,33 @@ function renderPageExplorer(container) {
           : `<div style="width:32px;height:32px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0">${tipsterName[0]?.toUpperCase()}</div>`;
         const bought = alreadyBought.has(p.id);
         const expired = isMatchExpired(p.match_date);
+        const tipsterHref = p.tipsterPseudo ? 'https://payperwin.co/' + p.tipsterPseudo : '../pages/tipster-public.html?id=' + p.tipster_id;
         return `
-        <div class="achat-card" style="border-left-color:var(--blue)">
-          <div class="achat-card__header">
-            <div>
-              <div class="achat-card__match">${p.game}</div>
-              <div class="achat-card__meta" style="display:flex;align-items:center;gap:6px">
-                ${avatarHtml}
-                ${p.sport} · ${formatDate(p.match_date)} · par <a href="${p.tipsterPseudo ? 'https://payperwin.co/' + p.tipsterPseudo : '../pages/tipster-public.html?id=' + p.tipster_id}" target="_blank" style="color:var(--blue);font-weight:600">${tipsterName}</a>
+        <div class="achat-card" style="border-left-color:var(--blue);padding:0;overflow:hidden">
+          <div style="padding:12px 14px 10px">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
+              ${avatarHtml}
+              <div style="font-size:0.8rem;color:var(--text-muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                <a href="${tipsterHref}" target="_blank" style="color:var(--blue);font-weight:600;text-decoration:none">${tipsterName}</a>
+                · ${p.sport} · ${formatDate(p.match_date)}
               </div>
             </div>
-            <div class="achat-card__right">
-              <div class="achat-card__price">${p.price} €</div>
-              ${p.cote && p.show_cote !== false ? `<div style="font-size:0.75rem;color:var(--text-muted);text-align:right">📊 Cote : <strong style="color:var(--primary)">${parseFloat(p.cote).toFixed(2).replace('.', ',')}</strong></div>` : ''}
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">
+              <div class="achat-card__match" style="flex:1;min-width:0;margin:0">${p.game}</div>
               ${bought
-                ? `<span class="badge badge-won">✓ Acheté</span>`
-                : `<button class="btn btn-primary" style="font-size:0.85rem;padding:8px 16px" onclick="buyProno('${p.id}', ${p.price}, '${p.game.replace(/'/g,"\'")}')">Acheter</button>`
+                ? `<span class="badge badge-won" style="flex-shrink:0">✓ Acheté</span>`
+                : `<button class="btn btn-primary" style="font-size:0.82rem;padding:6px 14px;border-radius:20px;flex-shrink:0;white-space:nowrap" onclick="buyProno('${p.id}', ${p.price}, '${p.game.replace(/'/g,"\'")}')">
+                    ${p.price} € · Acheter
+                  </button>`
               }
             </div>
+            ${p.cote && p.show_cote !== false ? `<span style="font-size:0.75rem;color:var(--text-muted);background:var(--bg-soft);padding:2px 8px;border-radius:10px">📊 Cote ${parseFloat(p.cote).toFixed(2).replace('.', ',')}</span>` : ''}
           </div>
-          ${p.image_url && p.image_status === 'approved' && bought ? `<div style="margin-top:8px;text-align:center"><button onclick="openImagePopup('${p.image_url}')" style="display:inline-flex;align-items:center;gap:6px;background:var(--blue-pale);border:1px solid var(--blue);border-radius:var(--radius-md);padding:8px 16px;font-size:0.82rem;font-weight:600;color:var(--blue);cursor:pointer">🖼️ Le prono en image</button></div>` : ''}
-          ${bought ? `<div style="margin-top:8px;padding:10px;background:var(--blue-pale);border-radius:var(--radius-sm);font-size:0.9rem;display:flex;flex-direction:column;gap:8px">
+          ${p.image_url && p.image_status === 'approved' && bought ? `<div style="padding:0 14px 10px;text-align:center"><button onclick="openImagePopup('${p.image_url}')" style="display:inline-flex;align-items:center;gap:6px;background:var(--blue-pale);border:1px solid var(--blue);border-radius:var(--radius-md);padding:8px 16px;font-size:0.82rem;font-weight:600;color:var(--blue);cursor:pointer">🖼️ Le prono en image</button></div>` : ''}
+          ${bought ? `<div style="margin:0 14px 10px;padding:10px;background:var(--blue-pale);border-radius:var(--radius-sm);font-size:0.88rem;display:flex;flex-direction:column;gap:8px">
             <div><strong>🎯 Pronostic :</strong> ${p.content || '—'}</div>
             ${p.analysis ? `<div style="padding-top:8px;border-top:1px solid rgba(0,0,0,.08)"><strong>📝 Analyse :</strong> ${p.analysis}</div>` : ''}
-          </div>` : `<div style="margin-top:8px;font-size:0.85rem;color:var(--text-muted)">🔒 Achetez pour voir le pronostic</div>`}
+          </div>` : `<div style="padding:7px 14px;border-top:0.5px solid var(--border);background:var(--bg-soft);font-size:0.8rem;color:var(--text-muted);display:flex;align-items:center;gap:5px">🔒 Achetez pour voir le pronostic</div>`}
         </div>`;
       }).join('')}
     </div>`}
