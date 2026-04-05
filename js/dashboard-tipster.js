@@ -1252,14 +1252,15 @@ function showToast(message, type = 'info') {
   const toast = document.createElement('div');
   toast.className = 'toast';
   toast.innerHTML = `<span>${c.icon}</span> ${message}`;
+  const mob = window.innerWidth < 900;
   Object.assign(toast.style, {
-    position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)',
+    position:'fixed', bottom:'24px',
+    ...(mob ? { left:'16px', right:'16px', textAlign:'center' } : { left:'50%', transform:'translateX(-50%)', whiteSpace:'nowrap' }),
     background: c.bg, border: `1px solid ${c.border}`,
-    borderRadius:'var(--radius-md)', padding:'12px 24px',
+    borderRadius:'var(--radius-md)', padding:'12px 20px',
     fontSize:'0.87rem', fontFamily:'var(--font-body)',
     color:'var(--text-dark)', zIndex:'9999',
     animation:'fadeUp 0.3s ease both', boxShadow:'var(--shadow-md)',
-    whiteSpace:'nowrap',
   });
   document.body.appendChild(toast);
   setTimeout(() => toast?.remove(), 3500);
