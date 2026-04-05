@@ -95,11 +95,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         const tipsterIds = [...new Set(Object.values(pronosMap).map(p => p.tipster_id).filter(Boolean))];
         if (tipsterIds.length > 0) {
           const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-          const rp = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id,first_name,last_name&apikey=' + ANON);
+          const rp = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id,first_name,last_name,pseudo&apikey=' + ANON);
           const profiles = await rp.json();
           if (Array.isArray(profiles)) {
             const profilesMap = {};
-            profiles.forEach(p => profilesMap[p.id] = p.first_name + ' ' + p.last_name);
+            profiles.forEach(p => profilesMap[p.id] = p.pseudo || (p.first_name + ' ' + p.last_name));
             Object.values(pronosMap).forEach(p => p.tipsterName = profilesMap[p.tipster_id] || '—');
           }
         }
