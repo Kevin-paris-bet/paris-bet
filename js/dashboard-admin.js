@@ -479,7 +479,7 @@ function renderTipsters(c) {
       <div class="section-header">
         <div><h2>Tipsters</h2><p>${adminState.tipsters.length} tipster(s) inscrits</p></div>
       </div>
-      <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md);align-items:center">
+      <div style="display:flex;gap:var(--space-sm);margin-bottom:var(--space-md);align-items:center;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch">
         <div class="tipster-search-wrap" style="flex:1;margin-bottom:0">
           <span class="input-icon">🔍</span>
           <input class="input" id="tipster-admin-search" type="text" placeholder="Rechercher par pseudo ou prénom..."
