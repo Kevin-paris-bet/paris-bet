@@ -278,10 +278,6 @@ function renderPronoRow(p) {
       <div style="font-size:0.8rem;color:var(--text-muted)">${formatDate(p.match_date || p.date)}</div>
       <div class="table-actions">
         <button class="btn-icon" title="Voir le pronostic" onclick="viewProno('${p.id}')">👁</button>
-        <button class="btn-icon" title="${p.status === 'pending' ? 'Signaler une erreur' : 'Validation effectuée — signalement impossible'}"
-          onclick="${p.status === 'pending' ? `signalErreurProno('${p.id}', '${p.game.replace(/'/g, "\'")}')` : ''}"
-          ${p.status !== 'pending' ? 'disabled' : ''}
-          style="font-size:0.85rem">🚩</button>
       </div>
     </div>
   `;
