@@ -126,7 +126,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
   try {
     const urlP = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
-    urlP.searchParams.set('select', 'id,game,sport,match_date,content,price,status,buyers,tipster_id,created_at');
+    urlP.searchParams.set('select', 'id,game,sport,match_date,content,price,status,buyers,tipster_id,created_at,image_url,image_status');
     urlP.searchParams.set('tipster_id', 'eq.' + user.id);
     urlP.searchParams.set('order', 'created_at.desc');
     urlP.searchParams.set('apikey', ANON);
@@ -265,12 +265,19 @@ function renderPronoRow(p) {
     ? `<div class="prono-lock">🔒 Verrouillé</div>`
     : `<div class="prono-lock prono-lock--editable">✏️ Modifiable</div>`;
 
+  const imageStatusHtml = p.image_url
+    ? p.image_status === 'pending'   ? '<div style="font-size:0.72rem;color:var(--warning);margin-top:3px">🖼️ ⏳ Image en cours de validation</div>'
+    : p.image_status === 'approved'  ? '<div style="font-size:0.72rem;color:var(--success);margin-top:3px">🖼️ ✓ Image approuvée</div>'
+    : p.image_status === 'rejected'  ? '<div style="font-size:0.72rem;color:var(--error);margin-top:3px">🖼️ 🚫 Image refusée</div>'
+    : '' : '';
+
   return `
     <div class="table-row prono-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px">
       <div>
         <div class="prono-title">${p.game}</div>
         <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
         ${lockText}
+        ${imageStatusHtml}
       </div>
       <div class="buyers-count">${p.buyers}</div>
       <div class="prono-price">${formatEuros(p.price)}</div>
@@ -301,6 +308,7 @@ function closeModal() {
   if (sportInfo) sportInfo.style.display = 'none';
   const coteInfo = document.getElementById('cote-info-box');
   if (coteInfo) coteInfo.style.display = 'none';
+  clearPronoImage();
 }
 
 async function submitProno() {
@@ -352,6 +360,22 @@ async function submitProno() {
     }]).select().single();
 
     if (error) throw error;
+
+    // Upload image si présente
+    const imageFile = document.getElementById('new-prono-image')?.files?.[0];
+    if (imageFile && data?.id) {
+      try {
+        const ext = imageFile.name.split('.').pop();
+        const path = `pronos/${data.id}.${ext}`;
+        const { error: upErr } = await sb.storage.from('prono-images').upload(path, imageFile, { upsert: true });
+        if (!upErr) {
+          const { data: urlData } = sb.storage.from('prono-images').getPublicUrl(path);
+          await sb.from('pronos').update({ image_url: urlData.publicUrl, image_status: 'pending' }).eq('id', data.id);
+          data.image_url = urlData.publicUrl;
+          data.image_status = 'pending';
+        }
+      } catch(imgErr) { console.error('Erreur upload image:', imgErr); }
+    }
 
     state.pronos.unshift(data);
     closeModal();
@@ -1370,3 +1394,33 @@ async function submitFeedback() {
     if (btn) { btn.disabled = false; btn.textContent = 'Envoyer mon feedback →'; }
   }
 }
+
+function previewPronoImage(input) {
+  const file = input.files?.[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('Image trop lourde (max 5MB).', 'error');
+    input.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('prono-image-preview-img').src = e.target.result;
+    document.getElementById('prono-image-preview').style.display = 'block';
+    document.getElementById('image-upload-label').textContent = file.name;
+    document.getElementById('image-upload-icon').textContent = '✅';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearPronoImage() {
+  const input = document.getElementById('new-prono-image');
+  if (input) input.value = '';
+  const preview = document.getElementById('prono-image-preview');
+  if (preview) preview.style.display = 'none';
+  const label = document.getElementById('image-upload-label');
+  if (label) label.textContent = 'Choisir une image (JPG, PNG · max 5MB)';
+  const icon = document.getElementById('image-upload-icon');
+  if (icon) icon.textContent = '📁';
+}
+

@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Charger les pronos disponibles via fetch direct
   try {
     const url2 = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
-    url2.searchParams.set('select', 'id,game,sport,match_date,content,analysis,show_cote,price,status,tipster_id,cote');
+    url2.searchParams.set('select', 'id,game,sport,match_date,content,analysis,show_cote,price,status,tipster_id,cote,image_url,image_status');
     url2.searchParams.set('status', 'eq.pending');
     url2.searchParams.set('order', 'created_at.desc');
     url2.searchParams.set('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI');
@@ -582,6 +582,7 @@ function renderPageExplorer(container) {
               }
             </div>
           </div>
+          ${p.image_url && p.image_status === 'approved' ? `<img src="${p.image_url}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--radius-md);margin-top:8px;border:1px solid var(--border)" />` : ''}
           ${bought ? `<div style="margin-top:8px;padding:10px;background:var(--blue-pale);border-radius:var(--radius-sm);font-size:0.9rem;display:flex;flex-direction:column;gap:8px">
             <div><strong>🎯 Pronostic :</strong> ${p.content || '—'}</div>
             ${p.analysis ? `<div style="padding-top:8px;border-top:1px solid rgba(0,0,0,.08)"><strong>📝 Analyse :</strong> ${p.analysis}</div>` : ''}
