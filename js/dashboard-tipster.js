@@ -261,9 +261,6 @@ function renderPronoRow(p) {
   };
 
   const canDelete = false; // Suppression désactivée pour la transparence
-  const lockText = p.buyers > 0 || p.status !== 'pending'
-    ? `<div class="prono-lock">🔒 Verrouillé</div>`
-    : `<div class="prono-lock prono-lock--editable">✏️ Modifiable</div>`;
 
   const imageStatusHtml = p.image_url
     ? p.image_status === 'pending'   ? '<div style="font-size:0.72rem;color:var(--warning);margin-top:3px">🖼️ ⏳ Image en cours de validation</div>'
@@ -276,7 +273,6 @@ function renderPronoRow(p) {
       <div>
         <div class="prono-title">${p.game}</div>
         <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
-        ${lockText}
         ${imageStatusHtml}
       </div>
       <div class="buyers-count">${p.buyers}</div>
@@ -370,7 +366,12 @@ async function submitProno() {
         const { error: upErr } = await sb.storage.from('prono-images').upload(path, imageFile, { upsert: true });
         if (!upErr) {
           const { data: urlData } = sb.storage.from('prono-images').getPublicUrl(path);
-          await sb.from('pronos').update({ image_url: urlData.publicUrl, image_status: 'pending' }).eq('id', data.id);
+          const ANON2 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+          await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos?id=eq.' + data.id, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'apikey': ANON2, 'Authorization': 'Bearer ' + ANON2 },
+            body: JSON.stringify({ image_url: urlData.publicUrl, image_status: 'pending' })
+          });
           data.image_url = urlData.publicUrl;
           data.image_status = 'pending';
         }

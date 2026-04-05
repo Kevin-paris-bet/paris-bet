@@ -1808,7 +1808,7 @@ async function renderPageImages(container) {
 
   try {
     // Charger tous les pronos avec une image
-    const r = await fetch(`${SUPA}/rest/v1/pronos?select=id,game,sport,match_date,tipster_id,image_url,image_status&image_url=not.is.null&order=created_at.desc&apikey=${ANON}`, {
+    const r = await fetch(`${SUPA}/rest/v1/pronos?select=id,game,sport,match_date,tipster_id,image_url,image_status&image_status=neq.none&image_url=not.is.null&order=created_at.desc&apikey=${ANON}`, {
       headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON }
     });
     const pronos = await r.json();

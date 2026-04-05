@@ -44,10 +44,71 @@ function navigateTo(page) {
   document.querySelectorAll('.sidebar__link').forEach(l =>
     l.classList.toggle('active', l.dataset.page === page)
   );
-  document.getElementById('topbar-title').textContent = 'Valider les résultats';
+  const titles = { pronos: 'Valider les résultats', images: 'Validation des images' };
+  document.getElementById('topbar-title').textContent = titles[page] || 'Modération';
   const content = document.getElementById('page-content');
   content.innerHTML = '';
-  renderPronos(content);
+  if (page === 'pronos') renderPronos(content);
+  if (page === 'images') renderPageImages(content);
+}
+
+// renderPageImages et validateImage sont partagés avec admin
+// On les réutilise directement (même code Supabase)
+async function renderPageImages(container) {
+  const ANON2 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA2 = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Chargement...</div>';
+  try {
+    const r = await fetch(`${SUPA2}/rest/v1/pronos?select=id,game,sport,match_date,tipster_id,image_url,image_status&image_status=neq.none&image_url=not.is.null&order=created_at.desc&apikey=${ANON2}`, {
+      headers: { apikey: ANON2, 'Authorization': 'Bearer ' + ANON2 }
+    });
+    const pronos = await r.json();
+    const tipsterIds = [...new Set((pronos||[]).map(p => p.tipster_id).filter(Boolean))];
+    let profilesMap = {};
+    if (tipsterIds.length > 0) {
+      const rP = await fetch(`${SUPA2}/rest/v1/profiles?select=id,first_name,last_name,pseudo&id=in.(${tipsterIds.join(',')})&apikey=${ANON2}`, { headers: { apikey: ANON2, 'Authorization': 'Bearer ' + ANON2 } });
+      const profiles = await rP.json();
+      (profiles||[]).forEach(p => profilesMap[p.id] = p.pseudo || (p.first_name + ' ' + p.last_name));
+    }
+    const pending  = (pronos||[]).filter(p => p.image_status === 'pending');
+    const approved = (pronos||[]).filter(p => p.image_status === 'approved');
+    const rejected = (pronos||[]).filter(p => p.image_status === 'rejected');
+    function imageCard(p, showActions) {
+      const tipster = profilesMap[p.tipster_id] || '—';
+      const statusBadge = p.image_status === 'pending' ? '<span class="badge badge-pending">⏳ En attente</span>' : p.image_status === 'approved' ? '<span class="badge badge-won">✓ Approuvée</span>' : '<span class="badge badge-lost">🚫 Refusée</span>';
+      return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-md);display:flex;gap:var(--space-md);align-items:flex-start">
+        <img src="${p.image_url}" style="width:180px;height:120px;object-fit:cover;border-radius:var(--radius-md);flex-shrink:0;cursor:pointer" onclick="window.open('${p.image_url}','_blank')" />
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
+            <div><div class="prono-title">${p.game}</div><div class="prono-meta">${p.sport||'—'} · par ${tipster}</div></div>
+            ${statusBadge}
+          </div>
+          ${showActions ? `<div style="display:flex;gap:8px;margin-top:8px">
+            <button class="btn btn-primary btn--sm" onclick="validateImageMod('${p.id}','approved')">✓ Approuver</button>
+            <button class="btn btn-outline btn--sm" style="color:var(--error);border-color:var(--error)" onclick="validateImageMod('${p.id}','rejected')">🚫 Refuser</button>
+          </div>` : ''}
+        </div>
+      </div>`;
+    }
+    container.innerHTML = `
+      <div class="section-header"><div><h2>Validation des images</h2><p>${pending.length} en attente · ${approved.length} approuvées · ${rejected.length} refusées</p></div></div>
+      ${pending.length > 0 ? `<div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--warning);margin-bottom:var(--space-sm)">⏳ En attente (${pending.length})</div><div style="display:flex;flex-direction:column;gap:var(--space-md);margin-bottom:var(--space-xl)">${pending.map(p => imageCard(p, true)).join('')}</div>` : '<div style="text-align:center;padding:40px;color:var(--text-muted)">✅ Aucune image en attente.</div>'}
+      ${approved.length > 0 ? `<div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--success);margin-bottom:var(--space-sm)">✓ Approuvées (${approved.length})</div><div style="display:flex;flex-direction:column;gap:var(--space-md);margin-bottom:var(--space-xl)">${approved.map(p => imageCard(p, false)).join('')}</div>` : ''}
+      ${rejected.length > 0 ? `<div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;color:var(--error);margin-bottom:var(--space-sm)">🚫 Refusées (${rejected.length})</div><div style="display:flex;flex-direction:column;gap:var(--space-md)">${rejected.map(p => imageCard(p, false)).join('')}</div>` : ''}`;
+  } catch(e) { container.innerHTML = `<div style="color:var(--error);text-align:center;padding:40px">Erreur : ${e.message}</div>`; }
+}
+
+async function validateImageMod(pronoId, status) {
+  const ANON2 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  try {
+    await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos?id=eq.${pronoId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', apikey: ANON2, 'Authorization': 'Bearer ' + ANON2 },
+      body: JSON.stringify({ image_status: status })
+    });
+    showToast(status === 'approved' ? 'Image approuvée ✓' : 'Image refusée', status === 'approved' ? 'success' : 'info');
+    renderPageImages(document.getElementById('page-content'));
+  } catch(e) { showToast('Erreur : ' + e.message, 'error'); }
 }
 
 // ── Charger les pronos depuis Supabase ────────────────────────
