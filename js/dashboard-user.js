@@ -83,10 +83,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     const pronoIds = new Set(achats.map(a => a.prono_id));
     const pronosMap = {};
     try {
+      const ANON_ACH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
       const url = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/pronos');
-      url.searchParams.set('select', 'id,game,sport,match_date,content,analysis,show_cote,tipster_id,cote');
-      url.searchParams.set('apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI');
-      const resp = await fetch(url.toString());
+      url.searchParams.set('select', 'id,game,sport,match_date,content,analysis,show_cote,tipster_id,cote,image_url,image_status');
+      url.searchParams.set('apikey', ANON_ACH);
+      const resp = await fetch(url.toString(), { headers: { apikey: ANON_ACH, 'Authorization': 'Bearer ' + ANON_ACH } });
       const tousLesPronos = await resp.json();
       if (Array.isArray(tousLesPronos)) {
         tousLesPronos.filter(p => pronoIds.has(p.id)).forEach(p => pronosMap[p.id] = p);
@@ -109,16 +110,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     userState.realAchats = achats.map(a => {
       const p = pronosMap[a.prono_id] || {};
       return {
-        id:       a.id,
-        game:     p.game || "—",
-        sport:    p.sport || '—',
-        date:     p.match_date || '—',
-        tipster:  (pronosMap[a.prono_id] || {}).tipsterName || '—',
-        price:    parseFloat(a.amount) || 0,
-        status:   a.status || 'pending',
-        content:  p.content || '',
-        cote:     p.cote || null,
-        pronoId:  a.prono_id,
+        id:           a.id,
+        game:         p.game || "—",
+        sport:        p.sport || '—',
+        date:         p.match_date || '—',
+        tipster:      (pronosMap[a.prono_id] || {}).tipsterName || '—',
+        price:        parseFloat(a.amount) || 0,
+        status:       a.status || 'pending',
+        content:      p.content || '',
+        cote:         p.cote || null,
+        image_url:    p.image_url || null,
+        image_status: p.image_status || 'none',
+        pronoId:      a.prono_id,
       };
     });
   } else {
@@ -303,6 +306,12 @@ function renderAchatsList() {
           <div class="achat-card__content-label">📋 Pronostic</div>
           <div class="achat-card__content-text">${a.content}</div>
         </div>
+        ${a.image_url && a.image_status === 'approved' ? `
+        <div style="margin-top:8px">
+          <button onclick="openImagePopup('${a.image_url}')" style="background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;font-size:0.8rem;color:var(--blue);cursor:pointer;display:flex;align-items:center;gap:6px">
+            🖼️ Voir l'image du ticket
+          </button>
+        </div>` : ''}
       </div>`;
   }).join('');
 }
@@ -582,7 +591,7 @@ function renderPageExplorer(container) {
               }
             </div>
           </div>
-          ${p.image_url && p.image_status === 'approved' && bought ? `<img src="${p.image_url}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--radius-md);margin-top:8px;border:1px solid var(--border)" />` : ''}
+          ${p.image_url && p.image_status === 'approved' && bought ? `<div style="margin-top:8px"><button onclick="openImagePopup('${p.image_url}')" style="background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 12px;font-size:0.8rem;color:var(--blue);cursor:pointer">🖼️ Voir l'image du ticket</button></div>` : ''}
           ${bought ? `<div style="margin-top:8px;padding:10px;background:var(--blue-pale);border-radius:var(--radius-sm);font-size:0.9rem;display:flex;flex-direction:column;gap:8px">
             <div><strong>🎯 Pronostic :</strong> ${p.content || '—'}</div>
             ${p.analysis ? `<div style="padding-top:8px;border-top:1px solid rgba(0,0,0,.08)"><strong>📝 Analyse :</strong> ${p.analysis}</div>` : ''}
@@ -665,7 +674,7 @@ async function buyProno(pronoId, price, matchName) {
       (pronosData || []).forEach(p => pronosMap[p.id] = p);
       userState.realAchats = achats.map(a => {
         const p = pronosMap[a.prono_id] || {};
-        return { id: a.id, game: p.game||"—", sport: p.sport||'—', date: p.match_date||'—', tipster:'—', price: parseFloat(a.amount)||0, status: a.status||'pending', prediction: p.content||'', content_odds: ''||'', pronoId: a.prono_id };
+        return { id: a.id, game: p.game||"—", sport: p.sport||'—', date: p.match_date||'—', tipster:'—', price: parseFloat(a.amount)||0, status: a.status||'pending', prediction: p.content||'', content_odds: ''||'', image_url: p.image_url||null, image_status: p.image_status||'none', pronoId: a.prono_id };
       });
     } else { userState.realAchats = []; }
 
@@ -1158,3 +1167,23 @@ async function submitFeedback() {
     if (btn) { btn.disabled = false; btn.textContent = 'Envoyer mon feedback →'; }
   }
 }
+
+function openImagePopup(url) {
+  const existing = document.getElementById('image-popup-overlay');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'image-popup-overlay';
+  overlay.onclick = () => overlay.remove();
+  Object.assign(overlay.style, {
+    position:'fixed', inset:'0', background:'rgba(0,0,0,0.85)',
+    zIndex:'9999', display:'flex', alignItems:'center', justifyContent:'center',
+    padding:'20px', cursor:'zoom-out'
+  });
+  overlay.innerHTML = `
+    <div style="position:relative;max-width:90vw;max-height:85vh">
+      <img src="${url}" style="max-width:100%;max-height:85vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 32px rgba(0,0,0,0.5)" />
+      <button onclick="event.stopPropagation();document.getElementById('image-popup-overlay').remove()" style="position:absolute;top:-12px;right:-12px;width:32px;height:32px;border-radius:50%;background:white;border:none;font-size:1rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3)">✕</button>
+    </div>`;
+  document.body.appendChild(overlay);
+}
+
