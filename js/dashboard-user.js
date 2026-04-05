@@ -582,7 +582,7 @@ function renderPageExplorer(container) {
               }
             </div>
           </div>
-          ${p.image_url && p.image_status === 'approved' ? `<img src="${p.image_url}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--radius-md);margin-top:8px;border:1px solid var(--border)" />` : ''}
+          ${p.image_url && p.image_status === 'approved' && bought ? `<img src="${p.image_url}" style="width:100%;max-height:200px;object-fit:cover;border-radius:var(--radius-md);margin-top:8px;border:1px solid var(--border)" />` : ''}
           ${bought ? `<div style="margin-top:8px;padding:10px;background:var(--blue-pale);border-radius:var(--radius-sm);font-size:0.9rem;display:flex;flex-direction:column;gap:8px">
             <div><strong>🎯 Pronostic :</strong> ${p.content || '—'}</div>
             ${p.analysis ? `<div style="padding-top:8px;border-top:1px solid rgba(0,0,0,.08)"><strong>📝 Analyse :</strong> ${p.analysis}</div>` : ''}
