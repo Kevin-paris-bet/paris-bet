@@ -97,7 +97,7 @@
 
 .hero__trust {
   display: flex; align-items: center; gap: var(--space-lg);
-  padding-top: var(--space-lg);
+  padding-top: var(--space-sm);
   margin-bottom: 0;
   border-top: 1px solid var(--border);
 }
@@ -500,7 +500,7 @@ input[type=range] {
   .features__grid { grid-template-columns: 1fr; }
   .feat--large { grid-column: span 1; }
   .hero__actions { flex-direction: column; }
-  .hero__trust { gap: var(--space-md); padding-top: var(--space-md); padding-bottom: var(--space-md); margin-bottom: 0; }
+  .hero__trust { gap: var(--space-md); padding-top: var(--space-sm); padding-bottom: var(--space-sm); margin-bottom: 0; }
   .cta-banner { padding: 32px 0; }
   .hero { min-height: auto; padding-bottom: 0; padding-top: calc(var(--nav-height) + 8px); }
   .hero__inner { padding-top: var(--space-sm); padding-bottom: 0; }
