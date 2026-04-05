@@ -260,6 +260,20 @@
         ></textarea>
       </div>
 
+      <!-- Image du prono -->
+      <div class="form-group">
+        <label>🖼️ Image <span style="color:var(--text-muted);font-weight:400">(optionnel · soumise à validation admin)</span></label>
+        <label style="display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px dashed var(--border);border-radius:var(--radius-md);cursor:pointer;background:var(--bg-soft);font-size:0.85rem;color:var(--text-muted)">
+          <span id="image-upload-icon">📁</span>
+          <span id="image-upload-label">Choisir une image (JPG, PNG · max 5MB)</span>
+          <input type="file" id="new-prono-image" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="previewPronoImage(this)" />
+        </label>
+        <div id="prono-image-preview" style="display:none;margin-top:8px">
+          <img id="prono-image-preview-img" style="max-height:120px;border-radius:var(--radius-md);border:1px solid var(--border)" />
+          <button onclick="clearPronoImage()" style="margin-left:8px;background:none;border:none;color:var(--error);cursor:pointer;font-size:0.82rem">✕ Supprimer</button>
+        </div>
+      </div>
+
     </div>
 
     <div class="modal__footer">
