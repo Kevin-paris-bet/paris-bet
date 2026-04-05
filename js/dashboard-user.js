@@ -561,7 +561,7 @@ function renderPageExplorer(container) {
     <div class="section-header">
       <div><h2>Explorer les pronos</h2><p>${filtered.length} / ${pronos.length} prono(s)</p></div>
     </div>
-    <div class="achats-filters" style="margin-bottom:var(--space-lg)">${sportBtns}</div>
+    <div class="achats-filters" style="margin-bottom:var(--space-sm)">${sportBtns}</div>
     ${filtered.length === 0 ? `<div class="empty-state"><div class="empty-state__icon">🔍</div><h3>Aucun prono dans cette catégorie</h3><p>Essayez une autre.</p></div>` : `
     <div style="display:flex;flex-direction:column;gap:var(--space-md)">
       ${filtered.map(p => {
@@ -578,9 +578,9 @@ function renderPageExplorer(container) {
           <div style="padding:12px 14px 10px">
             <div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">
               ${avatarHtml}
-              <div style="font-size:0.8rem;color:var(--text-muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+              <div style="font-size:0.8rem;color:var(--text-muted);flex:1;min-width:0">
                 <a href="${tipsterHref}" target="_blank" style="color:var(--blue);font-weight:600;text-decoration:none">${tipsterName}</a>
-                · ${p.sport} · ${formatDate(p.match_date)}
+                <span style="white-space:nowrap">· ${p.sport} · ${formatDate(p.match_date)}</span>
               </div>
             </div>
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px">
