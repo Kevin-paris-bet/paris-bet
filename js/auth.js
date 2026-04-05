@@ -49,6 +49,11 @@ function selectRole(role) {
   document.querySelectorAll('.role-option').forEach(opt => {
     opt.classList.toggle('selected', opt.dataset.role === role);
   });
+  // Afficher/masquer les champs selon le rôle
+  const nameFields   = document.getElementById('name-fields');
+  const pseudoField  = document.getElementById('pseudo-field');
+  if (nameFields)  nameFields.style.display  = role === 'tipster' ? 'none' : '';
+  if (pseudoField) pseudoField.style.display = role === 'tipster' ? '' : 'none';
 }
 
 // ── Toggle affichage mot de passe ─────────────────────────────
@@ -154,15 +159,18 @@ async function handleLogin() {
 
 // ── INSCRIPTION ───────────────────────────────────────────────
 async function handleRegister() {
+  const isTipster = authState.selectedRole === 'tipster';
   const firstName = document.getElementById('reg-firstname').value.trim();
   const lastName  = document.getElementById('reg-lastname').value.trim();
+  const pseudo    = document.getElementById('reg-pseudo')?.value.trim() || '';
   const email     = document.getElementById('reg-email').value.trim();
   const pw        = document.getElementById('reg-pw').value;
   const terms     = document.getElementById('reg-terms').checked;
   const btn       = document.getElementById('btn-register');
 
   // Validations
-  if (!firstName || !lastName) { showToast('Veuillez renseigner votre prénom et nom.', 'error'); return; }
+  if (!isTipster && (!firstName || !lastName)) { showToast('Veuillez renseigner votre prénom et nom.', 'error'); return; }
+  if (isTipster && !pseudo) { showToast('Veuillez renseigner votre pseudo.', 'error'); return; }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Adresse email invalide.', 'error'); return; }
   if (pw.length < 8) { showToast('Le mot de passe doit faire au moins 8 caractères.', 'error'); return; }
   if (!terms) { showToast('Veuillez accepter les conditions d\'utilisation.', 'error'); return; }
@@ -175,8 +183,9 @@ async function handleRegister() {
       password: pw,
       options: {
         data: {
-          first_name: firstName,
-          last_name:  lastName,
+          first_name: isTipster ? pseudo : firstName,
+          last_name:  isTipster ? '' : lastName,
+          pseudo:     isTipster ? pseudo : '',
           role:       authState.selectedRole,
         }
       }

@@ -696,6 +696,36 @@ function renderPageCompte(container) {
         </button>
       </div>
 
+      <!-- Nom & Prénom -->
+      <div class="rib-card">
+        <div class="rib-card__header">
+          <div style="font-size:1.6rem">👤</div>
+          <div>
+            <h3>Nom & Prénom</h3>
+            <p>Vos informations personnelles (non publiques)</p>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Prénom</label>
+            <div class="input-wrap">
+              <span class="input-icon">👤</span>
+              <input class="input" type="text" id="new-firstname" placeholder="Prénom" value="${MOCK_TIPSTER.firstName || ''}" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Nom</label>
+            <div class="input-wrap">
+              <span class="input-icon">👤</span>
+              <input class="input" type="text" id="new-lastname" placeholder="Nom" value="${MOCK_TIPSTER.lastName || ''}" />
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="saveNomPrenom()">
+          Enregistrer
+        </button>
+      </div>
+
       <!-- Modifier le pseudo -->
       <div class="rib-card">
         <div class="rib-card__header">
@@ -884,6 +914,24 @@ async function checkPseudoAvailable() {
       ? '<span style="color:var(--error)">✕ Ce pseudo est déjà pris</span>'
       : '<span style="color:var(--success)">✓ Disponible</span>';
   }, 500);
+}
+
+async function saveNomPrenom() {
+  const firstName = document.getElementById('new-firstname')?.value.trim();
+  const lastName  = document.getElementById('new-lastname')?.value.trim();
+  if (!firstName || !lastName) { showToast('Veuillez renseigner prénom et nom.', 'error'); return; }
+  try {
+    const user = await getCurrentUser();
+    const { error } = await sb.from('profiles')
+      .update({ first_name: firstName, last_name: lastName })
+      .eq('id', user.id);
+    if (error) throw error;
+    MOCK_TIPSTER.firstName = firstName;
+    MOCK_TIPSTER.lastName  = lastName;
+    showToast('Nom et prénom mis à jour ✓', 'success');
+  } catch(e) {
+    showToast('Erreur : ' + e.message, 'error');
+  }
 }
 
 async function savePseudo() {
