@@ -568,8 +568,8 @@ function renderPageExplorer(container) {
         const tipsterName = p.tipsterName || '—';
         const tipsterAvatar = p.tipsterAvatar || '';
         const avatarHtml = tipsterAvatar
-          ? `<img src="${tipsterAvatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
-          : `<div style="width:32px;height:32px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;flex-shrink:0">${tipsterName[0]?.toUpperCase()}</div>`;
+          ? `<img src="${tipsterAvatar}" style="width:24px;height:24px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
+          : `<div style="width:24px;height:24px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.7rem;flex-shrink:0">${tipsterName[0]?.toUpperCase()}</div>`;
         const bought = alreadyBought.has(p.id);
         const expired = isMatchExpired(p.match_date);
         const tipsterHref = p.tipsterPseudo ? 'https://payperwin.co/' + p.tipsterPseudo : '../pages/tipster-public.html?id=' + p.tipster_id;
