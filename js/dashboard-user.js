@@ -251,7 +251,7 @@ function renderPageAchats(container) {
       </div>
     </div>
 
-    <div class="section-header" style="margin-top:var(--space-xl)">
+    <div class="section-header" style="margin-top:var(--space-md)">
       <div><h2>Mes pronostics achetés</h2></div>
     </div>
 
