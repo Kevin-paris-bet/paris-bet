@@ -260,7 +260,7 @@ function renderPronoRow(p) {
     [CONFIG.betStatus.CANCELLED]: `<span class="badge badge-cancelled">⊘ Annulé</span>`,
   };
 
-  const canDelete = !p.locked && p.buyers === 0;
+  const canDelete = false; // Suppression désactivée pour la transparence
   const lockText = p.buyers > 0 || p.status !== 'pending'
     ? `<div class="prono-lock">🔒 Verrouillé</div>`
     : `<div class="prono-lock prono-lock--editable">✏️ Modifiable</div>`;
@@ -375,6 +375,7 @@ function viewProno(id) {
 
 // ── Supprimer un prono (seulement si 0 acheteur) ───────────────
 async function deleteProno(id) {
+  showToast('La suppression de pronostics est désactivée.', 'error'); return;
   const p = state.pronos.find(p => p.id === id);
   if (!p || p.locked || p.buyers > 0) {
     showToast('Impossible de supprimer ce pronostic.', 'error'); return;
