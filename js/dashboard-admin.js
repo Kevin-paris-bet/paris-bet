@@ -485,6 +485,12 @@ function renderTipsters(c) {
           <input class="input" id="tipster-admin-search" type="text" placeholder="Rechercher par pseudo ou prénom..."
             oninput="adminState.tipsterSearch=this.value;renderTipsterRows()" />
         </div>
+        <button id="tip-name-btn" onclick="setTipsterSort('name')" class="btn btn-outline" style="white-space:nowrap;flex-shrink:0;font-size:0.82rem;padding:8px 14px">
+          Tipster <span id="tip-name-arrow">⇅</span>
+        </button>
+        <button id="tip-pseudo-btn" onclick="setTipsterSort('pseudo')" class="btn btn-outline" style="white-space:nowrap;flex-shrink:0;font-size:0.82rem;padding:8px 14px">
+          Pseudo <span id="tip-pseudo-arrow">⇅</span>
+        </button>
         <button id="tip-pronos-btn" onclick="setTipsterSort('pronos')" class="btn btn-outline" style="white-space:nowrap;flex-shrink:0;font-size:0.82rem;padding:8px 14px">
           Pronos <span id="tip-pronos-arrow">⇅</span>
         </button>
@@ -497,7 +503,8 @@ function renderTipsters(c) {
       </div>
       <div class="pronos-table" style="${mobile?'padding:0':''}">
         ${!mobile ? `<div class="table-header" style="grid-template-columns:2fr 1.2fr 1fr 1fr 1fr 1fr 120px">
-          <span>Tipster</span><span>Pseudo</span>
+          <span style="cursor:pointer;user-select:none" onclick="setTipsterSort('name')">Tipster <span id="tip-name-arrow-d">⇅</span></span>
+          <span style="cursor:pointer;user-select:none" onclick="setTipsterSort('pseudo')">Pseudo <span id="tip-pseudo-arrow-d">⇅</span></span>
           <span style="cursor:pointer;user-select:none" onclick="setTipsterSort('pronos')">Pronos <span id="tip-pronos-arrow-d">⇅</span></span>
           <span style="cursor:pointer;user-select:none" onclick="setTipsterSort('winRate')">Win Rate <span id="tip-winrate-arrow-d">⇅</span></span>
           <span style="cursor:pointer;user-select:none" onclick="setTipsterSort('balance')">Solde <span id="tip-solde-arrow-d">⇅</span></span>
@@ -512,22 +519,26 @@ function renderTipsters(c) {
 }
 
 function setTipsterSort(col) {
-  const cols = { pronos: ['tip-pronos-btn','tip-pronos-arrow','tip-pronos-arrow-d'], winRate: ['tip-winrate-btn','tip-winrate-arrow','tip-winrate-arrow-d'], balance: ['tip-solde-btn','tip-solde-arrow','tip-solde-arrow-d'] };
+  const cols = {
+    name:    ['tip-name-btn',   'tip-name-arrow',   'tip-name-arrow-d'],
+    pseudo:  ['tip-pseudo-btn', 'tip-pseudo-arrow',  'tip-pseudo-arrow-d'],
+    pronos:  ['tip-pronos-btn', 'tip-pronos-arrow',  'tip-pronos-arrow-d'],
+    winRate: ['tip-winrate-btn','tip-winrate-arrow', 'tip-winrate-arrow-d'],
+    balance: ['tip-solde-btn',  'tip-solde-arrow',   'tip-solde-arrow-d'],
+  };
   if (adminState.tipsterSortCol === col) {
     adminState.tipsterSortDir *= -1;
   } else {
     adminState.tipsterSortCol = col;
-    adminState.tipsterSortDir = -1;
+    adminState.tipsterSortDir = 1; // A→Z ou croissant par défaut pour texte
   }
   const arrow = adminState.tipsterSortDir === 1 ? '↑' : '↓';
-  // Reset tous
   Object.keys(cols).forEach(c => {
     const [btn, a1, a2] = cols[c];
     const b = document.getElementById(btn); if (b) b.style.borderColor = '';
     const e1 = document.getElementById(a1); if (e1) e1.textContent = '⇅';
     const e2 = document.getElementById(a2); if (e2) e2.textContent = '⇅';
   });
-  // Activer le bon
   if (cols[col]) {
     const [btn, a1, a2] = cols[col];
     const b = document.getElementById(btn); if (b) b.style.borderColor = 'var(--blue)';
@@ -550,7 +561,13 @@ function renderTipsterRows() {
   if (adminState.tipsterSortCol) {
     const col = adminState.tipsterSortCol;
     const dir = adminState.tipsterSortDir;
+    const textCols = ['name', 'pseudo'];
     filtered = [...filtered].sort((a, b) => {
+      if (textCols.includes(col)) {
+        const va = (a[col] || '').toLowerCase();
+        const vb = (b[col] || '').toLowerCase();
+        return va.localeCompare(vb) * dir;
+      }
       const va = a[col] ?? 0;
       const vb = b[col] ?? 0;
       return (va - vb) * dir;
