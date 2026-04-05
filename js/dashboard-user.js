@@ -307,9 +307,9 @@ function renderAchatsList() {
           <div class="achat-card__content-text">${a.content}</div>
         </div>
         ${a.image_url && a.image_status === 'approved' ? `
-        <div style="margin-top:8px;text-align:center">
+        <div style="margin-top:8px;margin-bottom:8px;text-align:center">
           <button onclick="openImagePopup('${a.image_url}')" style="display:inline-flex;align-items:center;gap:6px;background:var(--blue-pale);border:1px solid var(--blue);border-radius:var(--radius-md);padding:8px 16px;font-size:0.82rem;font-weight:600;color:var(--blue);cursor:pointer">
-            🖼️ Voir l'image du ticket
+            🖼️ Le prono en image
           </button>
         </div>` : ''}
       </div>`;
@@ -591,7 +591,7 @@ function renderPageExplorer(container) {
               }
             </div>
           </div>
-          ${p.image_url && p.image_status === 'approved' && bought ? `<div style="margin-top:8px;text-align:center"><button onclick="openImagePopup('${p.image_url}')" style="display:inline-flex;align-items:center;gap:6px;background:var(--blue-pale);border:1px solid var(--blue);border-radius:var(--radius-md);padding:8px 16px;font-size:0.82rem;font-weight:600;color:var(--blue);cursor:pointer">🖼️ Voir l'image du ticket</button></div>` : ''}
+          ${p.image_url && p.image_status === 'approved' && bought ? `<div style="margin-top:8px;text-align:center"><button onclick="openImagePopup('${p.image_url}')" style="display:inline-flex;align-items:center;gap:6px;background:var(--blue-pale);border:1px solid var(--blue);border-radius:var(--radius-md);padding:8px 16px;font-size:0.82rem;font-weight:600;color:var(--blue);cursor:pointer">🖼️ Le prono en image</button></div>` : ''}
           ${bought ? `<div style="margin-top:8px;padding:10px;background:var(--blue-pale);border-radius:var(--radius-sm);font-size:0.9rem;display:flex;flex-direction:column;gap:8px">
             <div><strong>🎯 Pronostic :</strong> ${p.content || '—'}</div>
             ${p.analysis ? `<div style="padding-top:8px;border-top:1px solid rgba(0,0,0,.08)"><strong>📝 Analyse :</strong> ${p.analysis}</div>` : ''}
