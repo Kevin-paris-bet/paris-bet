@@ -7,7 +7,7 @@
 /* ── Filtres achats ── */
 .achats-filters {
   display: flex; gap: var(--space-sm); flex-wrap: wrap;
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-sm);
 }
 @media (max-width: 600px) {
   .achats-filters {
