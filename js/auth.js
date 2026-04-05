@@ -192,9 +192,20 @@ async function handleRegister() {
     });
     if (error) throw new Error(error.message);
 
-    // Succès — email de confirmation envoyé
-    document.getElementById('form-register').style.display = 'none';
-    document.getElementById('register-success').classList.add('show');
+    // Connecter automatiquement après inscription
+    const { error: loginError } = await sb.auth.signInWithPassword({ email, password: pw });
+
+    if (loginError) {
+      // Si confirmation email requise, afficher le message de succès avec bon lien
+      const dashboard = isTipster ? '/pages/dashboard-tipster.html' : '/pages/dashboard-user.html';
+      document.getElementById('btn-goto-dashboard').href = dashboard;
+      document.getElementById('form-register').style.display = 'none';
+      document.getElementById('register-success').classList.add('show');
+    } else {
+      // Connexion réussie → redirection directe
+      const dashboard = isTipster ? '/pages/dashboard-tipster.html' : '/pages/dashboard-user.html';
+      window.location.href = dashboard;
+    }
 
   } catch (err) {
     showToast(err.message || 'Une erreur est survenue.', 'error');
