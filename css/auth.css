@@ -412,6 +412,6 @@
   .auth-mobile-logo { display: none; }
 }
 @media (max-width: 480px) {
-  .form-row { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; gap: 0; }
   .role-selector { grid-template-columns: 1fr 1fr; }
 }
