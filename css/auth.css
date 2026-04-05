@@ -413,5 +413,5 @@
 }
 @media (max-width: 480px) {
   .form-row { grid-template-columns: 1fr; }
-  .role-selector { grid-template-columns: 1fr; }
+  .role-selector { grid-template-columns: 1fr 1fr; }
 }
