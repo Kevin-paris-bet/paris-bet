@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PayPerWin · Générateur de posts Twitter</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f8f8f6;
+      --surface: #ffffff;
+      --surface2: #f2f2ef;
+      --border: #e4e4e0;
+      --text: #1a1a18;
+      --text2: #6b6b67;
+      --text3: #9b9b97;
+      --blue: #1DA1F2;
+      --blue-light: #e8f5fe;
+      --green: #16a34a;
+      --green-light: #dcfce7;
+      --amber: #b45309;
+      --amber-light: #fef3c7;
+      --pink: #be185d;
+      --pink-light: #fce7f3;
+      --teal: #0f766e;
+      --teal-light: #ccfbf1;
+      --radius: 10px;
+      --radius-sm: 6px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container { max-width: 720px; margin: 0 auto; }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--blue);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .logo-text { font-size: 16px; font-weight: 600; color: var(--text); }
+    .logo-sub { font-size: 13px; color: var(--text2); margin-top: 1px; }
+
+    .btn-primary {
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-primary:disabled { opacity: 0.45; cursor: default; }
+
+    .status {
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 1.25rem;
+      min-height: 20px;
+    }
+    .status.error { color: #dc2626; }
+    .status.ok { color: var(--green); }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 10px;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+    }
+    .stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+    .stat-value { font-size: 24px; font-weight: 600; color: var(--text); }
+    .stat-sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--text3);
+      margin-bottom: 12px;
+    }
+
+    .posts-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .post-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      transition: border-color 0.15s;
+    }
+    .post-card:hover { border-color: #c4c4c0; }
+
+    .post-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .post-day { font-size: 12px; color: var(--text3); }
+
+    .pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 9px;
+      border-radius: 20px;
+    }
+    .pill-coulisses { background: var(--blue-light); color: #1565c0; }
+    .pill-resultats { background: var(--green-light); color: #15803d; }
+    .pill-education { background: var(--amber-light); color: var(--amber); }
+    .pill-humour { background: var(--pink-light); color: var(--pink); }
+    .pill-social { background: var(--teal-light); color: var(--teal); }
+
+    .post-heure { font-size: 11px; color: var(--text3); margin-left: auto; }
+    .post-format { font-size: 11px; color: var(--text3); font-style: italic; }
+
+    .post-body {
+      font-size: 14px;
+      line-height: 1.65;
+      color: var(--text);
+      white-space: pre-wrap;
+      background: var(--surface2);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin: 10px 0;
+      min-height: 60px;
+      cursor: text;
+      outline: none;
+      border: 1px solid transparent;
+      transition: border-color 0.15s;
+    }
+    .post-body:focus { border-color: var(--border); background: var(--surface); }
+
+    .post-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .char-count { font-size: 12px; }
+    .char-ok { color: var(--green); }
+    .char-warn { color: #d97706; }
+    .char-over { color: #dc2626; font-weight: 600; }
+
+    .btn-copy {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 5px 14px;
+      font-size: 12px;
+      color: var(--text2);
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s, border-color 0.12s;
+    }
+    .btn-copy:hover { background: var(--surface2); }
+    .btn-copy.copied { color: var(--green); border-color: var(--green); }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.75rem 0;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 2.5rem 1rem;
+      color: var(--text3);
+      font-size: 14px;
+    }
+
+    .empty-icon { font-size: 32px; margin-bottom: 10px; }
+
+    .refresh-hint {
+      font-size: 12px;
+      color: var(--text3);
+      text-align: right;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <div class="logo">
+      <div class="logo-icon">PPW</div>
+      <div>
+        <div class="logo-text">PayPerWin</div>
+        <div class="logo-sub">Générateur de posts Twitter</div>
+      </div>
+    </div>
+    <button class="btn-primary" id="fetchBtn" onclick="fetchAndGenerate()">
+      Actualiser les stats
+    </button>
+  </header>
+
+  <div class="status" id="statusBar">Clique sur "Actualiser les stats" pour charger tes données en temps réel.</div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Inscrits</div>
+      <div class="stat-value" id="s-total">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Tipsters</div>
+      <div class="stat-value" id="s-tipsters">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Pronos</div>
+      <div class="stat-value" id="s-pronos">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Win rate</div>
+      <div class="stat-value" id="s-winrate">—</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Remboursés</div>
+      <div class="stat-value" id="s-refunds">—</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <div class="section-label">7 premiers posts — prêts à publier</div>
+
+  <div class="posts-list" id="postsList">
+    <div class="empty">
+      <div class="empty-icon">✦</div>
+      Lance la récupération pour générer les posts avec tes vrais chiffres.
+    </div>
+  </div>
+
+  <div class="refresh-hint" id="refreshHint"></div>
+
+</div>
+
+<script>
+  const SUPABASE_URL = "https://haezbgglpghjrgdpmcrj.supabase.co";
+  const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI";
+
+  async function sbFetch(table, params = {}) {
+    const url = new URL(`${SUPABASE_URL}/rest/v1/${table}`);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    const r = await fetch(url.toString(), {
+      headers: { apikey: ANON_KEY, Authorization: "Bearer " + ANON_KEY }
+    });
+    if (!r.ok) throw new Error(`Erreur Supabase (${table}) : ${r.status}`);
+    return r.json();
+  }
+
+  function setText(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  }
+
+  function pluriel(n, word) {
+    return n > 1 ? word + 's' : word;
+  }
+
+  function generatePosts(s) {
+    const { total, tipsters, pronos, gagnes, perdus, winrate, refundTotal } = s;
+
+    return [
+      {
+        jour: 1, heure: "08:00",
+        pilier: "coulisses", pilierLabel: "🛠️ Coulisses",
+        format: "Thread de lancement",
+        text: `PayPerWin est en ligne. 🧵\n\nLe concept en 3 phrases :\n→ Tu achètes un prono\n→ Le tipster gagne ? Tu paies\n→ Il perd ? Tu es remboursé automatiquement\n\n${tipsters} ${pluriel(tipsters, 'tipster')} déjà ${pluriel(tipsters, 'inscrit')}. ${total} ${pluriel(total, 'membre')} sur la plateforme.\n\nOn change les règles du jeu. 👇\n\npayperwin.co`
+      },
+      {
+        jour: 1, heure: "20:00",
+        pilier: "education", pilierLabel: "📚 Éducation",
+        format: "Tweet simple",
+        text: `C'est quoi le Pay-Per-Win ?\n\nLa plupart des tipsters te font payer même quand ils se plantent.\n\nNous, non.\n\nTu ne paies que les pronos gagnants. Les perdants ? Remboursés à 100%, automatiquement.\n\nPas de promesse. Juste les résultats.\n\n→ payperwin.co`
+      },
+      {
+        jour: 2, heure: "08:00",
+        pilier: "resultats", pilierLabel: "🏆 Résultats",
+        format: "Tweet chiffres",
+        text: `Chiffres du jour sur PayPerWin :\n\n→ ${pronos} ${pluriel(pronos, 'prono')} posté${pronos > 1 ? 's' : ''}\n→ ${gagnes} gagné${gagnes > 1 ? 's' : ''} / ${perdus} perdu${perdus > 1 ? 's' : ''}\n→ Win rate : ${winrate > 0 ? winrate + '%' : 'en cours'}\n→ ${refundTotal > 0 ? refundTotal.toFixed(2) + '€ remboursés automatiquement' : 'Remboursements auto actifs'}\n\nLa plateforme tourne. Les tipsters performent.\n\n#PayPerWin #Pronostics`
+      },
+      {
+        jour: 2, heure: "20:00",
+        pilier: "humour", pilierLabel: "😂 Humour",
+        format: "Meme",
+        text: `Avant PayPerWin :\n💸 paye un tipster\n📉 prono perdu\n😢 solde dans les chaussettes\n\nAprès PayPerWin :\n💸 paye un tipster\n📉 prono perdu\n💰 remboursé automatiquement\n😌 solde intact\n\nRévolution ou simple bon sens ?\n\n→ payperwin.co`
+      },
+      {
+        jour: 3, heure: "08:00",
+        pilier: "coulisses", pilierLabel: "🛠️ Coulisses",
+        format: "Thread dev",
+        text: `Pourquoi vanilla JS + Supabase + Stripe pour PayPerWin ? 🧵\n\n1/ Vanilla JS : zéro dépendance. Un bug = mon bug. Pas celui d'un framework.\n\n2/ Supabase : Postgres natif + auth + RLS. Tout ce qu'il faut sans serveur custom.\n\n3/ Stripe : la fiabilité des paiements n'est pas négociable quand ton modèle repose dessus.\n\nStack simple. Produit solide.`
+      },
+      {
+        jour: 3, heure: "20:00",
+        pilier: "resultats", pilierLabel: "🏆 Résultats",
+        format: "Tweet simple",
+        text: `${tipsters > 0 ? `${tipsters} ${pluriel(tipsters, 'tipster')} actif${tipsters > 1 ? 's' : ''} sur PayPerWin en ce moment.` : 'Les premiers tipsters arrivent sur PayPerWin.'}\n\nChaque prono posté = engagement total.\nIls ne sont payés que sur les gagnants.\n\nC'est ça la différence.\n\n→ payperwin.co`
+      },
+      {
+        jour: 4, heure: "08:00",
+        pilier: "education", pilierLabel: "📚 Éducation",
+        format: "Tweet éducatif",
+        text: `Comment fonctionne la commission sur PayPerWin ?\n\nProno vendu 5€ → tipster gagne :\n→ Tipster reçoit 4,50€ (90%)\n→ Plateforme garde 0,50€ (10%)\n\nProno perdu :\n→ Acheteur remboursé 100%\n→ Tipster ne touche rien\n\nLe tipster est aligné avec toi.\nSon revenu dépend de sa performance.`
+      }
+    ];
+  }
+
+  function pilierClass(p) {
+    return { coulisses: 'pill-coulisses', resultats: 'pill-resultats', education: 'pill-education', humour: 'pill-humour', social: 'pill-social' }[p] || 'pill-coulisses';
+  }
+
+  function charInfo(text) {
+    const len = text.length;
+    if (len <= 240) return `<span class="char-count char-ok">${len}/280</span>`;
+    if (len <= 280) return `<span class="char-count char-warn">${len}/280 ⚠</span>`;
+    return `<span class="char-count char-over">${len}/280 — dépasse !</span>`;
+  }
+
+  function renderPosts(posts) {
+    const list = document.getElementById('postsList');
+    list.innerHTML = posts.map((p, i) => `
+      <div class="post-card">
+        <div class="post-meta">
+          <span class="post-day">Jour ${p.jour}</span>
+          <span class="pill ${pilierClass(p.pilier)}">${p.pilierLabel}</span>
+          <span class="post-heure">${p.heure}</span>
+          <span class="post-format">· ${p.format}</span>
+        </div>
+        <div class="post-body" id="pb-${i}" contenteditable="true" spellcheck="false">${escHtml(p.text)}</div>
+        <div class="post-footer">
+          <div id="cc-${i}">${charInfo(p.text)}</div>
+          <button class="btn-copy" id="bcopy-${i}" onclick="copyPost(${i})">Copier</button>
+        </div>
+      </div>
+    `).join('');
+
+    posts.forEach((_, i) => {
+      const el = document.getElementById(`pb-${i}`);
+      el.addEventListener('input', () => {
+        document.getElementById(`cc-${i}`).innerHTML = charInfo(el.innerText);
+      });
+    });
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function copyPost(i) {
+    const el = document.getElementById(`pb-${i}`);
+    const text = el ? el.innerText : '';
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = document.getElementById(`bcopy-${i}`);
+      btn.textContent = '✓ Copié';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copier'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+
+  async function fetchAndGenerate() {
+    const btn = document.getElementById('fetchBtn');
+    const status = document.getElementById('statusBar');
+    btn.disabled = true;
+    btn.textContent = 'Chargement...';
+    status.className = 'status';
+    status.textContent = 'Connexion à Supabase...';
+
+    try {
+      status.textContent = 'Récupération des données...';
+      const [profiles, pronos, purchases] = await Promise.all([
+        sbFetch('profiles', { select: 'id,role' }),
+        sbFetch('pronos', { select: 'id,status' }),
+        sbFetch('purchases', { select: 'id,amount,status' })
+      ]);
+
+      const total = profiles.length;
+      const tipsters = profiles.filter(p => p.role === 'tipster').length;
+      const totalPronos = pronos.length;
+      const gagnes = pronos.filter(p => p.status === 'gagné').length;
+      const perdus = pronos.filter(p => p.status === 'perdu').length;
+      const termines = gagnes + perdus;
+      const winrate = termines > 0 ? Math.round((gagnes / termines) * 100) : 0;
+      const refundTotal = purchases
+        .filter(p => p.status === 'remboursé')
+        .reduce((acc, p) => acc + parseFloat(p.amount || 0), 0);
+
+      setText('s-total', total);
+      setText('s-tipsters', tipsters);
+      setText('s-pronos', totalPronos);
+      setText('s-winrate', termines > 0 ? winrate + '%' : 'N/A');
+      setText('s-refunds', refundTotal > 0 ? refundTotal.toFixed(2) + '€' : '0€');
+
+      const now = new Date();
+      status.className = 'status ok';
+      status.textContent = `Mis à jour le ${now.toLocaleDateString('fr-FR')} à ${now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+
+      document.getElementById('refreshHint').textContent = `${total} inscrits · ${tipsters} tipster${tipsters > 1 ? 's' : ''} · ${totalPronos} prono${totalPronos > 1 ? 's' : ''}`;
+
+      const stats = { total, tipsters, pronos: totalPronos, gagnes, perdus, winrate, refundTotal };
+      renderPosts(generatePosts(stats));
+
+    } catch (err) {
+      status.className = 'status error';
+      status.textContent = `Erreur : ${err.message}`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Actualiser les stats';
+    }
+  }
+</script>
+</body>
+</html>
