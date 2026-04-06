@@ -449,12 +449,25 @@ async function validateProno(id, status) {
         const { data: tipsterProfile } = await sb.from('profiles').select('balance').eq('id', p.tipster_id).single();
         const currentBalance = parseFloat(tipsterProfile?.balance || 0);
         await sb.from('profiles').update({ balance: currentBalance + tipsterShare }).eq('id', p.tipster_id);
+        // Décrémenter le pending de chaque acheteur
+        for (const achat of purchases) {
+          const { data: userProfile } = await sb.from('profiles').select('pending').eq('id', achat.user_id).single();
+          const currentPending = parseFloat(userProfile?.pending || 0);
+          const newPending = Math.max(0, currentPending - parseFloat(achat.amount || 0));
+          await sb.from('profiles').update({ pending: newPending }).eq('id', achat.user_id);
+        }
         await sb.from('purchases').update({ status: 'won' }).eq('prono_id', p.id);
       } else {
         for (const achat of purchases) {
-          const { data: userProfile } = await sb.from('profiles').select('balance').eq('id', achat.user_id).single();
+          const { data: userProfile } = await sb.from('profiles').select('balance, pending').eq('id', achat.user_id).single();
           const currentBalance = parseFloat(userProfile?.balance || 0);
-          await sb.from('profiles').update({ balance: currentBalance + parseFloat(achat.amount || 0) }).eq('id', achat.user_id);
+          const currentPending = parseFloat(userProfile?.pending || 0);
+          const amount = parseFloat(achat.amount || 0);
+          const newPending = Math.max(0, currentPending - amount);
+          await sb.from('profiles').update({
+            balance: currentBalance + amount,
+            pending: newPending
+          }).eq('id', achat.user_id);
         }
         await sb.from('purchases').update({ status }).eq('prono_id', p.id);
       }
