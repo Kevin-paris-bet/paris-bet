@@ -185,7 +185,7 @@ async function handleRegister() {
         data: {
           first_name: isTipster ? pseudo : firstName,
           last_name:  isTipster ? '' : lastName,
-          pseudo:     isTipster ? pseudo : '',
+          pseudo:     isTipster ? pseudo : null,
           role:       authState.selectedRole,
         }
       }
