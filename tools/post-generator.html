@@ -138,66 +138,128 @@ function getWeekDates(launchDate, weekNum) {
   return `${fmt(start)} → ${fmt(end)}`;
 }
 
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
 function getAllPosts(s) {
   const { total, tipsters, pronos, won, lost, winrate, refundTotal } = s;
   const remb = refundTotal > 0 ? refundTotal.toFixed(2) + '€ remboursés aux parieurs' : 'Remboursements auto actifs';
 
+  // ── POOLS DE VARIANTES (sans data) ──
+  const V = {
+    coulisses_lancement: [
+      `PayPerWin est en ligne. 🧵\n\nLe concept en 3 phrases :\n→ Tu achètes un prono\n→ Le tipster gagne ? Tu paies\n→ Il perd ? Tu es remboursé automatiquement\n\n${tipsters} ${pl(tipsters,'tipster')} déjà inscrit${tipsters>1?'s':''}. ${total} membres sur la plateforme.\n\nOn change les règles du jeu. 👇\n\npayperwin.co`,
+      `J'ai lancé PayPerWin il y a quelques semaines.\n\nL'idée de départ : et si tu ne payais un tipster que quand il gagne ?\n\nAujourd'hui :\n→ ${total} membres\n→ ${tipsters} tipsters actifs\n→ Le modèle tourne pour de vrai\n\nThread sur comment on en est arrivé là 🧵\n\npayperwin.co`,
+      `Le problème des services de pronos :\n\nTu paies. Peu importe le résultat.\nLe tipster prend l'abonnement. Tu prends le risque.\n\nPayPerWin inverse ça.\n\n→ Tu paies uniquement si le prono est gagné\n→ Sinon, remboursé automatiquement\n\n${total} membres ont déjà compris. 👇\n\npayperwin.co`,
+      `Builder en public — jour X de PayPerWin 🧵\n\nCe qu'on a construit :\n→ Un modèle Pay-Per-Win 100% automatisé\n→ ${tipsters} tipsters qui ne sont payés que sur leurs gagnants\n→ ${total} membres qui ne paient plus pour des pronos perdants\n\nVoilà comment ça fonctionne. 👇`,
+      `Si un tipster perd, pourquoi tu paierais ?\n\nBonne question. Personne ne se la posait.\n\nPayPerWin si :\n→ Prono gagné = tu paies\n→ Prono perdu = remboursé auto\n→ Match annulé = remboursé auto\n\n${total} membres · ${tipsters} tipsters · payperwin.co`
+    ],
+    coulisses_dev: [
+      `Pourquoi vanilla JS + Supabase + Stripe pour PayPerWin ? 🧵\n\n1/ Vanilla JS : zéro dépendance. Un bug = mon bug. Pas celui d'un framework.\n\n2/ Supabase : Postgres natif + auth. Tout ce qu'il faut sans serveur custom.\n\n3/ Stripe : la fiabilité des paiements n'est pas négociable quand ton modèle repose dessus.\n\nStack simple. Produit solide.`,
+      `Les 3 erreurs que j'aurais évitées en buildant PayPerWin 🧵\n\n1/ Vouloir tout coder soi-même dès le début. Utilise ce qui existe.\n\n2/ Négliger les webhooks Stripe. Un webhook raté = un paiement fantôme.\n\n3/ Sous-estimer le temps de debug. Le code représente 30% du boulot. Le reste c'est des tests.\n\nLa vraie vie du builder solo.`,
+      `Derrière chaque prono validé "gagné" sur PayPerWin :\n\n→ Le tipster est crédité automatiquement (90%)\n→ L'acheteur est débité\n→ La commission est isolée\n\nZéro intervention manuelle.\nTout est automatisé via Stripe + Supabase.\n\nLa tech au service de la confiance. 🔧`,
+      `J'ai passé 6h à débugger un webhook Stripe cette semaine.\n\nLeçon apprise :\nLe diable est dans les détails quand tu gères de l'argent réel.\n\nChaque centième d'euro doit être tracé.\nChaque événement doit être idempotent.\nChaque erreur doit être loguée.\n\nC'est ça la vraie responsabilité d'une plateforme de paiement.`,
+      `Ce que personne ne te dit quand tu lances une startup :\n\n80% du temps → débugger des trucs que tu pensais réglés.\n20% du temps → parler à tes premiers utilisateurs.\n\n0% du temps → faire ce que tu avais prévu de faire ce jour-là.\n\nPayPerWin est vivant malgré tout. 🫀`
+    ],
+    coulisses_bilan: [
+      `Bilan de la semaine sur PayPerWin 🧵\n\n✅ ${won} pronos gagnés · ❌ ${lost} perdus\n📊 ${winrate}% win rate global\n👥 ${total} membres · ${tipsters} tipsters\n💰 ${remb}\n\nLe modèle fonctionne. On continue.`,
+      `Cette semaine sur PayPerWin :\n\nOn a franchi un cap.\n\n→ ${total} membres inscrits\n→ ${tipsters} tipsters actifs\n→ ${winrate}% de win rate global\n\nChaque semaine qui passe, le modèle se prouve.\nLe Pay-Per-Win n'est pas un concept. C'est une réalité.`,
+      `Semaine écoulée — ce que j'ai appris en tant que builder 🧵\n\n1/ Les utilisateurs te disent ce qui ne va pas si tu les écoutes vraiment.\n\n2/ Une feature simple bien exécutée vaut mieux qu'une feature complexe à moitié finie.\n\n3/ La confiance se construit lentement. Elle se perd vite.\n\nPayPerWin avance. Merci à tous ceux qui sont là depuis le début.`,
+      `Les chiffres de la semaine :\n\n📊 ${pronos} pronos au total\n✅ ${won} gagnés\n❌ ${lost} perdus\n🎯 ${winrate}% de réussite\n💰 ${remb}\n\nOn construit quelque chose de solide.\nSemaine après semaine.`,
+      `Bilan honnête de la semaine 🧵\n\nCe qui a bien marché :\n→ Les tipsters postent régulièrement\n→ Le win rate tient à ${winrate}%\n→ Les remboursements auto fonctionnent sans friction\n\nCe qui peut mieux faire :\n→ L'onboarding tipster est encore trop manuel\n→ Il manque des stats plus détaillées par sport\n\nOn travaille dessus.`
+    ],
+    humour: [
+      `Avant PayPerWin :\n💸 paye un tipster\n📉 prono perdu\n😢 solde dans les chaussettes\n\nAprès PayPerWin :\n💸 paye un tipster\n📉 prono perdu\n💰 remboursé automatiquement\n😌 solde intact\n\nRévolution ou simple bon sens ?\n\n→ payperwin.co`,
+      `Les 3 types de parieurs sur Twitter :\n\n1️⃣ "J'ai un système infaillible" → perd tout en mars\n2️⃣ "Mon tipster Telegram m'a sauvé" → abonné depuis 2 ans, toujours à -€\n3️⃣ Le PayPerWin user → ne paye que les pronos gagnants\n\nLequel tu es ? 👇`,
+      `Le tipster Telegram en janvier :\n"Janvier = mois de la remontada 🔥"\n\nLe tipster Telegram en février :\n"Février = mois du rebond 💪"\n\nLe tipster Telegram en mars :\n"Mars = mois du retour en force 🚀"\n\nLe tipster PayPerWin :\nIl est payé uniquement quand il gagne.\n\nCoïncidence ? 😏`,
+      `"Mon tipster est en confiance à 95%"\n\n[match annulé pour brouillard]\n\n😶\n\nSur PayPerWin, match annulé = remboursement automatique.\n\nMême la météo ne peut pas te ruiner. ⛈️`,
+      `Fin de mois chez le parieur classique :\n📉 solde en négatif\n😤 tipster qui répond plus\n🙏 attend le week-end pour "se refaire"\n\nFin de mois chez le PayPerWin user :\n✅ a payé que les pronos gagnants\n💰 les perdants remboursés auto\n😌 solde préservé\n\nC'est ça la différence.`
+    ],
+    education_concept: [
+      `C'est quoi le Pay-Per-Win ?\n\nLa plupart des tipsters te font payer même quand ils se plantent.\n\nNous, non.\n\nTu ne paies que les pronos gagnants.\nLes perdants ? Remboursés à 100%, automatiquement.\n\nPas de promesse. Juste les résultats.\n\n→ payperwin.co`,
+      `Le modèle de la plupart des tipsters :\n→ Tu paies un abonnement\n→ Ils publient des pronos\n→ Peu importe s'ils gagnent ou perdent, tu as payé\n\nLe modèle PayPerWin :\n→ Tu paies uniquement si le prono est gagné\n→ Prono perdu = remboursé automatiquement\n\nQui prend le risque dans chaque modèle ? La réponse est évidente.`,
+      `PayPerWin en 30 secondes :\n\n1/ Le tipster publie un prono\n2/ Tu l'achètes\n3/ Il gagne → tu es débité, le tipster est payé\n4/ Il perd → tu es remboursé automatiquement\n\nAucune confiance aveugle.\nAucun abonnement.\nAucun risque inutile.\n\n→ payperwin.co`,
+      `Pourquoi payer un tipster qui perd ?\n\nBonne question. Pourtant c'est ce que font 99% des services de pronos.\n\nPayPerWin a été construit pour répondre à cette question.\n\nLa réponse : tu ne paies pas.\n\n→ payperwin.co`,
+      `Le principe Pay-Per-Win :\n\nTon risque = 0 si le prono perd.\nLe tipster est motivé à performer.\nLa plateforme ne gagne que si tout le monde gagne.\n\nAlignement d'intérêts total.\n\nC'est ça PayPerWin. → payperwin.co`
+    ],
+    education_commission: [
+      `Comment fonctionne la commission sur PayPerWin ?\n\nProno vendu 5€ → tipster gagne :\n→ Tipster reçoit 4,50€ (90%)\n→ Plateforme garde 0,50€ (10%)\n\nProno perdu :\n→ Acheteur remboursé 100%\n→ Tipster ne touche rien\n\nLe tipster est aligné avec toi.\nSon revenu dépend de sa performance.`,
+      `La commission PayPerWin : 10%.\n\nPourquoi seulement 10% ?\n\nParce que si on prenait 30%, les tipsters auraient moins d'intérêt à performer.\n\nNotre modèle ne marche que si les tipsters gagnent.\nDonc on a tout intérêt à ce qu'ils soient bons.\n\nAlignement total.`,
+      `Beaucoup me demandent : "comment vous gagnez de l'argent ?"\n\nSimple.\n\n→ Prono vendu 5€\n→ Tipster gagne : 4,50€ pour lui, 0,50€ pour nous\n→ Tipster perd : 0€ pour lui, 0€ pour nous, 5€ remboursés à l'acheteur\n\nOn est payés uniquement quand tout le monde gagne. C'est ça le Pay-Per-Win.`,
+      `Un tipster sur PayPerWin qui publie 20 pronos à 3€ avec 60% de win rate :\n\n→ 12 pronos gagnants × 3€ × 90% = 32,40€ de revenus\n→ 8 pronos perdants = 0€ (les acheteurs sont remboursés)\n\nIl est payé pour sa vraie performance. Pas pour avoir publié.`,
+      `La règle d'or de PayPerWin :\n\nSi tu perds, tu ne paies pas.\nSi tu gagnes, le tipster est récompensé.\n\n90% pour lui. 10% pour la plateforme.\n100% de remboursement si perdu.\n\nMathématiquement, c'est le seul modèle juste.\n\n→ payperwin.co`
+    ],
+    education_choisir: [
+      `Comment choisir un tipster sur PayPerWin ? 🧵\n\n3 indicateurs à regarder :\n\n1/ Le win rate → au-dessus de 55% sur 20+ pronos, c'est solide\n2/ Le nombre de pronos → méfiance avant 10 pronos, l'échantillon est trop petit\n3/ La cote moyenne → 70% de win rate sur des cotes à 1.20 c'est moins impressionnant qu'il n'y paraît\n\nLa data ne ment pas.`,
+      `PayPerWin vs abonnement tipster classique — le calcul concret 🧵\n\nAbonnement 30€/mois :\n→ Tu paies même si 0 prono gagne\n→ Aucune garantie\n→ Risque 100% côté acheteur\n\nPayPerWin :\n→ Tu paies uniquement les pronos gagnants\n→ Prono perdu = remboursé automatiquement\n→ Risque 0 côté acheteur\n\nLes maths sont simples.`,
+      `Ce que personne ne te dit sur les cotes :\n\nUn tipster à 80% de win rate sur des cotes à 1.10 te rapporte moins qu'un tipster à 55% sur des cotes à 2.00.\n\nLe win rate seul ne suffit pas.\nRegarde aussi la cote moyenne et le ROI.\n\nSur PayPerWin, toutes ces stats sont visibles avant d'acheter.`,
+      `Comment devenir tipster sur PayPerWin ? 🧵\n\n1/ Tu crées un compte et demandes le statut tipster\n2/ Tu publies tes pronos avec ta cote et ton analyse\n3/ Un parieur achète → l'argent est bloqué\n4/ Le prono gagne ? Tu reçois 90% automatiquement\n5/ Le prono perd ? Le parieur est remboursé\n\nSimple. Transparent. Aligné.\n\n→ payperwin.co`,
+      `3 raisons pour lesquelles un bon tipster préfère PayPerWin à un Telegram payant 🧵\n\n1/ Sa réputation est protégée : si les pronos sont mauvais, il gagne 0€. Pas d'arnaque possible.\n\n2/ Ses revenus sont directs : pas d'abonnement à gérer, pas de remboursements à traiter.\n\n3/ Sa crédibilité est prouvée : les stats sont publiques, visibles par tous.\n\nLe bon deal pour les bons tipsters.`
+    ],
+    social: [
+      `L'avantage du Pay-Per-Win en une phrase :\n\n"Je ne paye que si le tipster gagne. Sinon, je suis remboursé automatiquement."\n\nPas besoin d'un long argumentaire.\nLe modèle se défend tout seul.\n\nEssaie → payperwin.co`,
+      `Ce qu'on entend le plus souvent de nos membres :\n\n"J'avais jamais vu un service comme ça."\n"Le remboursement auto, c'est ce qui m'a convaincu."\n"Enfin un tipster qui prend le risque avec toi."\n\nC'est exactement pour ça qu'on a construit PayPerWin.\n\n→ payperwin.co`,
+      `Pourquoi un tipster choisit PayPerWin plutôt qu'un Telegram payant ? 🧵\n\n1/ Sa réputation est protégée : si les pronos sont mauvais, il gagne 0€.\n\n2/ Ses revenus sont directs : pas d'abonnement à gérer.\n\n3/ Sa crédibilité est prouvée : les stats sont publiques.\n\nLe bon deal pour les bons tipsters.`,
+      `Sur PayPerWin, les tipsters n'ont aucun intérêt à publier des pronos douteux.\n\nPourquoi ?\n→ Ils ne sont payés que si le prono est gagné\n→ Chaque perte = 0€ pour eux\n\n${winrate}% de win rate global sur la plateforme.\n\nLe marché s'autorégule. 📊\n\n→ payperwin.co`,
+      `Un parieur m'a dit cette semaine :\n\n"Avant PayPerWin, je payais mon tipster 30€/mois. Je calculais jamais vraiment si j'étais gagnant."\n\n"Maintenant je vois exactement ce que chaque prono m'a coûté. Et ce que j'ai récupéré."\n\nC'est ça la transparence.\n\n→ payperwin.co`
+    ]
+  };
+
   return [
     // ── SEMAINE 1 ──
     { jour:1, heure:"08:00", pilier:"coulisses", pilierLabel:"🛠️ Coulisses", format:"Thread de lancement",
-      text:`PayPerWin est en ligne. 🧵\n\nLe concept en 3 phrases :\n→ Tu achètes un prono\n→ Le tipster gagne ? Tu paies\n→ Il perd ? Tu es remboursé automatiquement\n\n${tipsters} ${pl(tipsters,'tipster')} déjà inscrit${tipsters>1?'s':''}. ${total} membres sur la plateforme.\n\nOn change les règles du jeu. 👇\n\npayperwin.co`},
-    { jour:1, heure:"20:00", pilier:"education", pilierLabel:"📚 Éducation", format:"Tweet simple",
-      text:`C'est quoi le Pay-Per-Win ?\n\nLa plupart des tipsters te font payer même quand ils se plantent.\n\nNous, non.\n\nTu ne paies que les pronos gagnants.\nLes perdants ? Remboursés à 100%, automatiquement.\n\nPas de promesse. Juste les résultats.\n\n→ payperwin.co`},
+      text: pick(V.coulisses_lancement) },
+    { jour:1, heure:"20:00", pilier:"education", pilierLabel:"📚 Éducation", format:"Concept Pay-Per-Win",
+      text: pick(V.education_concept) },
     { jour:2, heure:"08:00", pilier:"resultats", pilierLabel:"🏆 Résultats", format:"Tweet chiffres",
       text:`Chiffres du jour sur PayPerWin :\n\n✅ ${won} prono${won>1?'s':''} gagné${won>1?'s':''}\n❌ ${lost} perdu${lost>1?'s':''}\n📊 Win rate global : ${winrate}%\n💰 ${remb}\n\nSur PayPerWin, si le prono est perdu, tu es remboursé. Simple.\n\n#PayPerWin`},
     { jour:2, heure:"20:00", pilier:"humour", pilierLabel:"😂 Humour", format:"Meme",
-      text:`Avant PayPerWin :\n💸 paye un tipster\n📉 prono perdu\n😢 solde dans les chaussettes\n\nAprès PayPerWin :\n💸 paye un tipster\n📉 prono perdu\n💰 remboursé automatiquement\n😌 solde intact\n\nRévolution ou simple bon sens ?\n\n→ payperwin.co`},
-    { jour:3, heure:"08:00", pilier:"coulisses", pilierLabel:"🛠️ Coulisses", format:"Thread dev",
-      text:`Pourquoi vanilla JS + Supabase + Stripe pour PayPerWin ? 🧵\n\n1/ Vanilla JS : zéro dépendance. Un bug = mon bug. Pas celui d'un framework.\n\n2/ Supabase : Postgres natif + auth. Tout ce qu'il faut sans serveur custom.\n\n3/ Stripe : la fiabilité des paiements n'est pas négociable quand ton modèle repose dessus.\n\nStack simple. Produit solide.`},
-    { jour:3, heure:"20:00", pilier:"resultats", pilierLabel:"🏆 Résultats", format:"Tweet simple",
+      text: pick(V.humour) },
+    { jour:3, heure:"08:00", pilier:"coulisses", pilierLabel:"🛠️ Coulisses", format:"Coulisses dev",
+      text: pick(V.coulisses_dev) },
+    { jour:3, heure:"20:00", pilier:"resultats", pilierLabel:"🏆 Résultats", format:"Tweet tipsters",
       text:`${tipsters} ${pl(tipsters,'tipster')} actif${tipsters>1?'s':''} sur PayPerWin.\n\nChaque prono posté = engagement total.\nIls ne sont payés que si le prono est gagné.\n\nC'est ça la différence avec un Telegram classique.\n\n→ payperwin.co`},
-    { jour:4, heure:"08:00", pilier:"education", pilierLabel:"📚 Éducation", format:"Tweet éducatif",
-      text:`Comment fonctionne la commission sur PayPerWin ?\n\nProno vendu 5€ → tipster gagne :\n→ Tipster reçoit 4,50€ (90%)\n→ Plateforme garde 0,50€ (10%)\n\nProno perdu :\n→ Acheteur remboursé 100%\n→ Tipster ne touche rien\n\nLe tipster est aligné avec toi.\nSon revenu dépend de sa performance.`},
+    { jour:4, heure:"08:00", pilier:"education", pilierLabel:"📚 Éducation", format:"Commission",
+      text: pick(V.education_commission) },
 
     // ── SEMAINE 2 ──
-    { jour:8, heure:"08:00", pilier:"coulisses", pilierLabel:"🛠️ Coulisses", format:"Bilan S1",
-      text:`Bilan semaine 1 de PayPerWin 🧵\n\n✅ ${won} pronos gagnés\n❌ ${lost} perdus\n📊 ${winrate}% win rate\n👥 ${total} membres\n💰 ${remb}\n\nLe modèle fonctionne. On continue.`},
+    { jour:8, heure:"08:00", pilier:"coulisses", pilierLabel:"🛠️ Coulisses", format:"Bilan semaine",
+      text: pick(V.coulisses_bilan) },
     { jour:8, heure:"20:00", pilier:"humour", pilierLabel:"😂 Humour", format:"Meme",
-      text:`Les 3 types de parieurs sur Twitter :\n\n1️⃣ "J'ai un système infaillible" → perd tout en mars\n2️⃣ "Mon tipster Telegram m'a sauvé" → abonné depuis 2 ans, toujours à -€\n3️⃣ Le PayPerWin user → ne paye que les pronos gagnants\n\nLequel tu es ? 👇`},
-    { jour:9, heure:"08:00", pilier:"resultats", pilierLabel:"🏆 Résultats", format:"Spotlight tipster",
-      text:`Sur PayPerWin, les tipsters n'ont aucun intérêt à publier des pronos douteux.\n\nPourquoi ?\n→ Ils ne sont payés que si le prono est gagné\n→ Chaque perte = 0€ pour eux\n\n${winrate}% de win rate global sur la plateforme.\n\nLe marché s'autorégule. 📊\n\n→ payperwin.co`},
-    { jour:9, heure:"20:00", pilier:"social", pilierLabel:"🗣️ Social Proof", format:"Angle remboursement",
-      text:`L'avantage du Pay-Per-Win en une phrase :\n\n"Je ne paye que si le tipster gagne. Sinon, je suis remboursé automatiquement."\n\nPas besoin d'un long argumentaire.\nLe modèle se défend tout seul.\n\nEssaie → payperwin.co`},
-    { jour:10, heure:"08:00", pilier:"education", pilierLabel:"📚 Éducation", format:"Thread éducatif",
-      text:`Comment choisir un tipster sur PayPerWin ? 🧵\n\n3 indicateurs à regarder :\n\n1/ Le win rate → au-dessus de 55% sur 20+ pronos, c'est solide\n2/ Le nombre de pronos → méfiance avant 10 pronos, l'échantillon est trop petit\n3/ La cote moyenne → 70% de win rate sur des cotes à 1.20 c'est moins impressionnant qu'il n'y paraît\n\nLa data ne ment pas.`},
-    { jour:10, heure:"20:00", pilier:"coulisses", pilierLabel:"🛠️ Coulisses", format:"Tweet dev",
-      text:`Derrière chaque prono validé "gagné" sur PayPerWin :\n→ Le tipster est crédité automatiquement (90%)\n→ L'acheteur est débité\n→ La commission plateforme est isolée\n\nZéro intervention manuelle. Tout est automatisé.\n\nLa tech au service de la confiance. 🔧`},
+      text: pick(V.humour) },
+    { jour:9, heure:"08:00", pilier:"resultats", pilierLabel:"🏆 Résultats", format:"Spotlight tipsters",
+      text:`Sur PayPerWin, les tipsters n'ont aucun intérêt à publier des pronos douteux.\n\n→ Ils ne sont payés que si le prono est gagné\n→ Chaque perte = 0€ pour eux\n\n${winrate}% de win rate global sur la plateforme.\n\nLe marché s'autorégule. 📊\n\n→ payperwin.co`},
+    { jour:9, heure:"20:00", pilier:"social", pilierLabel:"🗣️ Social Proof", format:"Social proof",
+      text: pick(V.social) },
+    { jour:10, heure:"08:00", pilier:"education", pilierLabel:"📚 Éducation", format:"Choisir un tipster",
+      text: pick(V.education_choisir) },
+    { jour:10, heure:"20:00", pilier:"coulisses", pilierLabel:"🛠️ Coulisses", format:"Coulisses dev",
+      text: pick(V.coulisses_dev) },
     { jour:11, heure:"08:00", pilier:"humour", pilierLabel:"😂 Humour", format:"Meme",
-      text:`Le tipster Telegram en janvier :\n"Janvier = mois de la remontada 🔥"\n\nLe tipster Telegram en février :\n"Février = mois du rebond 💪"\n\nLe tipster Telegram en mars :\n"Mars = mois du retour en force 🚀"\n\nLe tipster PayPerWin :\nIl est payé uniquement quand il gagne.\n\nCoïncidence ? 😏`},
+      text: pick(V.humour) },
 
     // ── SEMAINE 3 ──
-    { jour:15, heure:"08:00", pilier:"coulisses", pilierLabel:"🛠️ Coulisses", format:"Bilan S2",
-      text:`Bilan 2 semaines de PayPerWin 🧵\n\n✅ ${won} pronos gagnés · ❌ ${lost} perdus\n📊 ${winrate}% win rate global\n👥 ${total} membres · ${tipsters} tipsters\n💰 ${remb}\n\nLe Pay-Per-Win n'est pas un concept.\nC'est une réalité qui tourne.`},
-    { jour:15, heure:"20:00", pilier:"social", pilierLabel:"🗣️ Social Proof", format:"Thread tipster",
-      text:`Pourquoi un tipster choisit PayPerWin plutôt qu'un Telegram payant ? 🧵\n\n1/ Sa réputation est protégée : si les pronos sont mauvais, il gagne 0€.\n\n2/ Ses revenus sont directs : pas d'abonnement à gérer, pas de remboursements manuels.\n\n3/ Sa crédibilité est prouvée : les stats sont publiques.\n\nLe bon deal pour les bons tipsters.`},
+    { jour:15, heure:"08:00", pilier:"coulisses", pilierLabel:"🛠️ Coulisses", format:"Bilan semaine",
+      text: pick(V.coulisses_bilan) },
+    { jour:15, heure:"20:00", pilier:"social", pilierLabel:"🗣️ Social Proof", format:"Social proof",
+      text: pick(V.social) },
     { jour:16, heure:"08:00", pilier:"resultats", pilierLabel:"🏆 Résultats", format:"Stats plateforme",
       text:`Mi-parcours — ce qu'on a construit :\n\n→ ${pronos} pronos publiés\n→ ${won} gagnés · ${lost} perdus\n→ ${winrate}% de réussite globale\n→ ${total} membres inscrits\n→ ${tipsters} tipsters actifs\n\nLe modèle Pay-Per-Win prouve qu'il fonctionne.\n\n#PayPerWin`},
-    { jour:16, heure:"20:00", pilier:"education", pilierLabel:"📚 Éducation", format:"Comparatif",
-      text:`PayPerWin vs abonnement tipster classique — le calcul concret 🧵\n\nAbonnement 30€/mois :\n→ Tu paies même si 0 prono gagne\n→ Aucune garantie\n→ Risque 100% côté acheteur\n\nPayPerWin :\n→ Tu paies uniquement les pronos gagnants\n→ Prono perdu = remboursé automatiquement\n→ Risque 0 côté acheteur\n\nLes maths sont simples.`},
-    { jour:17, heure:"08:00", pilier:"coulisses", pilierLabel:"🛠️ Coulisses", format:"Tweet honnête",
-      text:`Ce que personne ne te dit quand tu lances une startup :\n\nLes 3 premières semaines, tu passes 80% de ton temps à débugger des trucs que tu pensais réglés.\n\nLe reste du temps : tu parles à tes premiers utilisateurs.\n\nC'est ça la vraie vie du builder.\n\nPayPerWin est vivant malgré tout. 🫀`},
+    { jour:16, heure:"20:00", pilier:"education", pilierLabel:"📚 Éducation", format:"Éducation",
+      text: pick(V.education_choisir) },
+    { jour:17, heure:"08:00", pilier:"coulisses", pilierLabel:"🛠️ Coulisses", format:"Coulisses dev",
+      text: pick(V.coulisses_dev) },
     { jour:17, heure:"20:00", pilier:"humour", pilierLabel:"😂 Humour", format:"Meme",
-      text:`"Mon tipster est en confiance à 95%"\n\n[match annulé pour brouillard]\n\n😶\n\nSur PayPerWin, match annulé = remboursement automatique.\n\nMême la météo ne peut pas te ruiner. ⛈️`},
+      text: pick(V.humour) },
 
     // ── SEMAINE 4 ──
-    { jour:22, heure:"08:00", pilier:"coulisses", pilierLabel:"🛠️ Coulisses", format:"Bilan S3",
-      text:`3 semaines de PayPerWin. Voilà ce que j'ai appris. 🧵\n\n1/ Le modèle Pay-Per-Win crée une confiance immédiate. Les users comprennent en 10 secondes.\n\n2/ Les tipsters qui performent adorent le système. Ceux qui veulent se cacher derrière un abonnement, non.\n\n3/ La tech est le nerf de la guerre : chaque bug de paiement = perte de confiance.\n\nOn continue. 💪`},
+    { jour:22, heure:"08:00", pilier:"coulisses", pilierLabel:"🛠️ Coulisses", format:"Bilan semaine",
+      text: pick(V.coulisses_bilan) },
     { jour:22, heure:"20:00", pilier:"resultats", pilierLabel:"🏆 Résultats", format:"Tweet impact",
       text:`Un chiffre qui résume PayPerWin :\n\n${refundTotal>0 ? refundTotal.toFixed(2)+'€' : 'Des dizaines d\'euros'} remboursés automatiquement aux parieurs depuis le lancement.\n\nSur un service classique, cet argent serait resté dans la poche du tipster.\n\nC'est ça le Pay-Per-Win. Le parieur n'est jamais perdant par défaut.\n\n→ payperwin.co`},
-    { jour:23, heure:"08:00", pilier:"social", pilierLabel:"🗣️ Social Proof", format:"Compilation retours",
-      text:`Ce qu'on entend le plus souvent de nos membres :\n\n"J'avais jamais vu un service comme ça."\n"Le remboursement auto, c'est ce qui m'a convaincu."\n"Enfin un tipster qui prend le risque avec toi."\n\nC'est exactement pour ça qu'on a construit PayPerWin.\n\n→ payperwin.co`},
-    { jour:23, heure:"20:00", pilier:"education", pilierLabel:"📚 Éducation", format:"Guide tipster",
-      text:`Comment devenir tipster sur PayPerWin ? 🧵\n\n1/ Tu crées un compte et demandes le statut tipster\n2/ Tu publies tes pronos avec ta cote et ton analyse\n3/ Un parieur achète → l'argent est bloqué\n4/ Le prono gagne ? Tu reçois 90% automatiquement\n5/ Le prono perd ? Le parieur est remboursé\n\nSimple. Transparent. Aligné.\n\n→ payperwin.co`},
+    { jour:23, heure:"08:00", pilier:"social", pilierLabel:"🗣️ Social Proof", format:"Social proof",
+      text: pick(V.social) },
+    { jour:23, heure:"20:00", pilier:"education", pilierLabel:"📚 Éducation", format:"Commission",
+      text: pick(V.education_commission) },
     { jour:24, heure:"08:00", pilier:"humour", pilierLabel:"😂 Humour", format:"Meme fin de mois",
       text:`Fin de mois chez le parieur classique :\n📉 solde en négatif\n😤 tipster qui répond plus\n🙏 attend les matchs du week-end pour "se refaire"\n\nFin de mois chez le PayPerWin user :\n✅ a payé que les pronos gagnants\n💰 les perdants remboursés automatiquement\n😌 solde préservé\n\nC'est ça la différence.`},
     { jour:24, heure:"20:00", pilier:"coulisses", pilierLabel:"🛠️ Coulisses", format:"Bilan 30 jours",
