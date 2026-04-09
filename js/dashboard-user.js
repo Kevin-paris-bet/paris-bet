@@ -1362,7 +1362,7 @@ async function renderPageDashboard(container) {
         ${avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover" />` : '🚀'}
       </div>
       <div style="flex:1;min-width:0">
-        <span style="background:#E1F5EE;color:#085041;font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:10px">En progression</span>
+        <span style="background:#E1F5EE;color:#085041;font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:10px">Tipster en progression</span>
         <div style="font-size:0.9rem;font-weight:700;color:var(--text-dark);margin-top:3px">${pseudo}</div>
         ${s.description ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px">${s.description}</div>` : ''}
       </div>
@@ -1509,7 +1509,7 @@ async function renderPageDashboard(container) {
         <button onclick="navigateTo('feedback')" style="width:100%;padding:9px;font-size:0.8rem;color:var(--primary);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer">Voir toutes les nouveautés →</button>
       </div>
       ${showStats ? statsPlateHtml : ''}
-      ${showRising && rising ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster en progression</div><div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorRisingHtml(rising)}</div>` : ''}
+      ${showRising && rising ? `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorRisingHtml(rising)}</div>` : ''}
       ${showSondage ? pollHtml() : ''}
     `;
   } else {
@@ -1541,7 +1541,7 @@ async function renderPageDashboard(container) {
             <button onclick="navigateTo('feedback')" style="width:100%;padding:9px;font-size:0.8rem;color:var(--primary);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer">Voir toutes les nouveautés →</button>
           </div>
           ${showStats ? statsPlateHtml : ''}
-          ${showRising && rising ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster en progression</div><div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorRisingHtml(rising)}</div>` : ''}
+          ${showRising && rising ? `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorRisingHtml(rising)}</div>` : ''}
         </div>
       </div>
     `;

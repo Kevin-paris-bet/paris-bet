@@ -2253,12 +2253,12 @@ async function renderPageSponsors(container) {
             <label style="font-size:0.78rem;color:var(--text-muted);display:block;margin-bottom:4px">Description courte</label>
             <input class="input" id="desc-${slot}" type="text" placeholder="Ex: Spécialiste Ligue 1 & Champions League" value="${sponsor?.description||''}" style="width:100%" />
           </div>
-          <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:var(--space-sm)">
+          <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:var(--space-sm)">
             ${sponsor
-              ? `<button class="btn btn-outline btn--sm" onclick="toggleSponsor('${sponsor.id}',${isActif})" style="flex-shrink:0">${isActif?'Désactiver':'Activer'}</button>
-                 <button class="btn btn-outline btn--sm" style="color:var(--error);border-color:var(--error);flex-shrink:0" onclick="deleteSponsor('${sponsor.id}')">Supprimer</button>`
+              ? `<button class="btn btn-outline" onclick="toggleSponsor('${sponsor.id}',${isActif})" style="flex-shrink:0;font-size:0.78rem;padding:5px 10px">${isActif?'Désactiver':'Activer'}</button>
+                 <button class="btn btn-outline" style="color:var(--error);border-color:var(--error);flex-shrink:0;font-size:0.78rem;padding:5px 10px" onclick="deleteSponsor('${sponsor.id}')">Supprimer</button>`
               : ''}
-            <button class="btn btn-primary btn--sm" onclick="saveSponsor('${slot}','${sponsor?.id||''}')" style="flex-shrink:0">${sponsor ? 'Mettre à jour' : 'Configurer'}</button>
+            <button class="btn btn-primary" onclick="saveSponsor('${slot}','${sponsor?.id||''}')" style="flex-shrink:0;font-size:0.78rem;padding:5px 10px">${sponsor ? 'Mettre à jour' : 'Configurer'}</button>
           </div>
         </div>`;
     }
