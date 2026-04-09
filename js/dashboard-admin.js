@@ -2146,7 +2146,7 @@ async function renderPageDashSettings(container) {
   container.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>';
 
   // Ordre fixe correspondant à l'affichage du dashboard user
-  const ORDER = ['bloc_twitter','bloc_objectif','bloc_alerte','bloc_stats_plate','bloc_sponsor_rising','bloc_sondage'];
+  const ORDER = ['bloc_featured','bloc_twitter','bloc_objectif','bloc_alerte','bloc_stats_plate','bloc_sponsor_rising','bloc_sondage'];
 
   async function loadAndRender() {
     const r = await fetch(`${SUPA}/rest/v1/dashboard_settings?select=id,key,label,actif&apikey=${ANON}`, { headers: { apikey: ANON } });
