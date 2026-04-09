@@ -2145,24 +2145,31 @@ async function renderPageDashSettings(container) {
   const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
   container.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>';
 
+  // Ordre fixe correspondant à l'affichage du dashboard user
+  const ORDER = ['bloc_twitter','bloc_objectif','bloc_alerte','bloc_stats_plate','bloc_sponsor_rising','bloc_sondage'];
+
   async function loadAndRender() {
     const r = await fetch(`${SUPA}/rest/v1/dashboard_settings?select=id,key,label,actif&apikey=${ANON}`, { headers: { apikey: ANON } });
-    const settings = await r.json();
+    const raw = await r.json();
+    // Trier selon l'ordre fixe
+    const settings = ORDER.map(k => (raw||[]).find(s => s.key === k)).filter(Boolean);
+    // Ajouter les clés non listées à la fin
+    (raw||[]).forEach(s => { if (!ORDER.includes(s.key)) settings.push(s); });
 
     container.innerHTML = `
       <div class="section-header">
         <div><h2>Paramètres du dashboard</h2><p>Choisissez les blocs visibles par les utilisateurs</p></div>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;max-width:560px">
-        ${(settings||[]).map(s => `
+        ${settings.map(s => `
           <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
             <div style="min-width:0;flex:1">
               <div style="font-size:0.9rem;font-weight:600;color:var(--text-dark)">${s.label || s.key}</div>
             </div>
-            <button onclick="toggleDashSetting('${s.id}', ${s.actif})"
-              style="flex-shrink:0;border:none;border-radius:20px;padding:6px 16px;font-size:0.82rem;font-weight:600;cursor:pointer;background:${s.actif?'var(--success-pale)':'var(--bg-soft)'};color:${s.actif?'var(--success)':'var(--text-muted)'}">
-              ${s.actif ? '✓ Visible' : '✕ Masqué'}
-            </button>
+            <div onclick="toggleDashSetting('${s.id}', ${s.actif})" style="width:52px;height:28px;border-radius:14px;background:${s.actif?'#22c55e':'#d1d5db'};position:relative;cursor:pointer;transition:background .25s;flex-shrink:0">
+              <div style="position:absolute;top:3px;left:${s.actif?'27px':'3px'};width:22px;height:22px;border-radius:50%;background:white;transition:left .25s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+              <span style="position:absolute;top:50%;transform:translateY(-50%);${s.actif?'left:7px':'right:7px'};font-size:0.55rem;font-weight:700;color:white;letter-spacing:.03em">${s.actif?'ON':'OFF'}</span>
+            </div>
           </div>`).join('')}
       </div>`;
   }
