@@ -1319,27 +1319,30 @@ async function renderPageDashboard(container) {
     const winRate = t.winRate != null ? t.winRate + '%' : '—';
     const nbPronos = t.nbPronos != null ? t.nbPronos : '—';
     const avgCote = t.avgCote != null ? parseFloat(t.avgCote).toFixed(2).replace('.',',') : '—';
-    return `<div style="display:flex;gap:12px;padding:12px">
-      <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')" style="text-decoration:none;flex-shrink:0">
-        <div style="width:${mob?'60px':'70px'};height:${mob?'85px':'100px'};background:var(--blue-pale);border-radius:var(--radius-md);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:1.6rem">
-          ${avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover" />` : '⭐'}
-        </div>
-      </a>
-      <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between">
-        <div>
-          <span style="background:#FAEEDA;color:#633806;font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:10px">Sponsorisé</span>
-          <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')" style="text-decoration:none">
-            <div style="font-size:${mob?'0.95rem':'1rem'};font-weight:700;color:var(--text-dark);margin-top:5px">${pseudo}</div>
-          </a>
-          ${s.description ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:3px">${s.description}</div>` : ''}
-          <div style="margin-top:8px">
-            <div style="font-size:1.3rem;font-weight:800;color:#0F6E56">${winRate} win rate</div>
-            <div style="font-size:0.78rem;color:var(--text-muted);margin-top:3px">${nbPronos} pronos · cote moy. ${avgCote}</div>
+    return `<div style="padding:0">
+      <div style="display:flex;gap:12px;padding:12px 12px 10px">
+        <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')" style="text-decoration:none;flex-shrink:0">
+          <div style="width:${mob?'58px':'68px'};height:${mob?'80px':'95px'};background:var(--blue-pale);border-radius:var(--radius-md);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:1.6rem;border:2px solid #E6F1FB">
+            ${avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover" />` : '⭐'}
           </div>
+        </a>
+        <div style="flex:1;min-width:0">
+          <span style="background:#FAEEDA;color:#633806;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.02em">Sponsorisé</span>
+          <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')" style="text-decoration:none">
+            <div style="font-size:${mob?'1rem':'1.05rem'};font-weight:800;color:var(--text-dark);margin-top:5px">${pseudo}</div>
+          </a>
+          ${s.description ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;line-height:1.3">${s.description}</div>` : ''}
+          <div style="margin-top:8px">
+            <span style="font-size:1.4rem;font-weight:800;color:#0F6E56">${winRate}</span>
+            <span style="font-size:0.82rem;font-weight:600;color:#0F6E56"> win rate</span>
+          </div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">${nbPronos} pronos · cote moy. ${avgCote}</div>
         </div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding:0">
         <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')"
-          style="display:inline-block;margin-top:8px;background:var(--primary);color:white;border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:600;text-decoration:none;align-self:flex-start">
-          Voir sa page →
+          style="display:block;text-align:center;padding:10px;font-size:0.85rem;font-weight:700;color:var(--primary);text-decoration:none;letter-spacing:.01em">
+          Voir ses pronos →
         </a>
       </div>
     </div>`;
