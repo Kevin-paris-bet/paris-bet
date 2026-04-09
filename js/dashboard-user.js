@@ -1336,9 +1336,10 @@ async function renderPageDashboard(container) {
             <div style="font-size:${mob?'1rem':'1.05rem'};font-weight:800;color:var(--text-dark);margin-top:5px">${pseudo}</div>
           </a>
           ${s.description ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;line-height:1.3">${s.description}</div>` : ''}
-          <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
-            <span style="font-size:1.3rem;font-weight:800;color:#0F6E56">🏆 ${winRate}</span>
-            <span style="font-size:0.78rem;color:var(--text-muted)">win rate · 📊 ${nbPronos} pronos · cote moy. ${avgCote}</span>
+          <div style="display:flex;align-items:center;gap:6px;margin-top:8px;white-space:nowrap;overflow:hidden">
+            <span style="font-size:1.1rem">🏆</span>
+            <span style="font-size:1.1rem;font-weight:800;color:#0F6E56">${winRate}</span>
+            <span style="font-size:0.75rem;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis">win rate · 📊 ${nbPronos} pronos · cote moy. ${avgCote}</span>
           </div>
         </div>
       </div>
