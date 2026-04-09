@@ -217,6 +217,7 @@ function navigateTo(page) {
     images:    'Validation des images',
     sondage:   'Sondages',
     dashsettings: 'Paramètres du dashboard',
+    sponsors: 'Gestion des sponsors',
   };
   document.getElementById('topbar-title').textContent = titles[page] || 'Admin';
   const content = document.getElementById('page-content');
@@ -232,6 +233,7 @@ function navigateTo(page) {
   if (page === 'images')    renderPageImages(content);
   if (page === 'sondage')   renderPageSondage(content);
   if (page === 'dashsettings') renderPageDashSettings(content);
+  if (page === 'sponsors')     renderPageSponsors(content);
 }
 
 // ══════════════════════════════════════════════════════════════
