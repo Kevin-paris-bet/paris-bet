@@ -1270,8 +1270,26 @@ async function renderPageDashboard(container) {
       const rTP = await fetch(`${SUPA}/rest/v1/profiles?id=in.(${tipsterIds.join(',')})&select=id,pseudo,first_name,avatar_url,balance&apikey=${ANON}`, { headers: { apikey: ANON } });
       const tProfiles = await rTP.json();
       const tMap = {};
-      (tProfiles||[]).forEach(t => tMap[t.id] = t);
-      sponsors = (sponsors||[]).map(s => ({ ...s, tipsterProfile: tMap[s.tipster_id] || {} }));
+      // Charger stats pronos pour chaque tipster sponsor
+      const tipsterStatsMap = {};
+      for (const t of (tProfiles||[])) {
+        try {
+          const rPr = await fetch(`${SUPA}/rest/v1/pronos?tipster_id=eq.${t.id}&select=status,cote&apikey=${ANON}`, { headers: { apikey: ANON } });
+          const pr = await rPr.json();
+          if (Array.isArray(pr)) {
+            const fin = pr.filter(p => p.status==='won'||p.status==='lost');
+            const won = pr.filter(p => p.status==='won');
+            const cotes = pr.filter(p => p.cote).map(p => parseFloat(p.cote));
+            tipsterStatsMap[t.id] = {
+              winRate: fin.length > 0 ? Math.round(won.length/fin.length*100) : null,
+              nbPronos: pr.length,
+              avgCote: cotes.length > 0 ? (cotes.reduce((a,b)=>a+b,0)/cotes.length) : null
+            };
+          }
+        } catch(e) {}
+        tMap[t.id] = t;
+      }
+      sponsors = (sponsors||[]).map(s => ({ ...s, tipsterProfile: { ...(tMap[s.tipster_id]||{}), ...(tipsterStatsMap[s.tipster_id]||{}) } }));
     }
   } catch(e) { console.error('Dashboard load error:', e); }
 
@@ -1296,20 +1314,32 @@ async function renderPageDashboard(container) {
     if (!s) return '';
     const t = s.tipsterProfile || {};
     const pseudo = t.pseudo || t.first_name || '—';
-    const avatar = s.image_url || t.avatar_url || '';
+    const avatar = t.avatar_url || '';
     const href = t.pseudo ? `https://payperwin.co/${t.pseudo}` : '#';
+    const winRate = t.winRate != null ? t.winRate + '%' : '—';
+    const nbPronos = t.nbPronos != null ? t.nbPronos : '—';
+    const avgCote = t.avgCote != null ? parseFloat(t.avgCote).toFixed(2).replace('.',',') : '—';
     return `<div style="display:flex;gap:12px;padding:12px">
-      <div style="width:${mob?'60px':'70px'};height:${mob?'85px':'100px'};background:var(--blue-pale);border-radius:var(--radius-md);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:1.6rem">
-        ${avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover" />` : '⭐'}
-      </div>
+      <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')" style="text-decoration:none;flex-shrink:0">
+        <div style="width:${mob?'60px':'70px'};height:${mob?'85px':'100px'};background:var(--blue-pale);border-radius:var(--radius-md);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:1.6rem">
+          ${avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover" />` : '⭐'}
+        </div>
+      </a>
       <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between">
         <div>
           <span style="background:#FAEEDA;color:#633806;font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:10px">Sponsorisé</span>
-          <div style="font-size:${mob?'0.95rem':'1rem'};font-weight:700;color:var(--text-dark);margin-top:5px">${pseudo}</div>
+          <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')" style="text-decoration:none">
+            <div style="font-size:${mob?'0.95rem':'1rem'};font-weight:700;color:var(--text-dark);margin-top:5px">${pseudo}</div>
+          </a>
           ${s.description ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:3px">${s.description}</div>` : ''}
+          <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
+            <span style="font-size:0.75rem;color:var(--text-muted)">🏆 <strong style="color:var(--text-dark)">${winRate}</strong> win rate</span>
+            <span style="font-size:0.75rem;color:var(--text-muted)">📊 <strong style="color:var(--text-dark)">${nbPronos}</strong> pronos</span>
+            <span style="font-size:0.75rem;color:var(--text-muted)">📈 cote moy. <strong style="color:var(--text-dark)">${avgCote}</strong></span>
+          </div>
         </div>
         <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')"
-          style="display:inline-block;margin-top:8px;background:var(--primary);color:white;border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:600;text-decoration:none">
+          style="display:inline-block;margin-top:8px;background:var(--primary);color:white;border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:600;text-decoration:none;align-self:flex-start">
           Voir sa page →
         </a>
       </div>
