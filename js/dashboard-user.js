@@ -42,13 +42,14 @@ const MOCK_TRANSACTIONS = [
 ];
 
 // ── État ──────────────────────────────────────────────────────
-const userState = { activePage:'achats', achatsFilter:'all', realAchats:[], availablePronos:[] };
+const userState = { activePage:'achats', achatsFilter:'all', realAchats:[], availablePronos:[], userId: null };
 
 // ── Init ──────────────────────────────────────────────────────
 // ── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   const user = await requireAuth(['user', 'admin']);
   if (!user) return;
+  userState.userId = user.id;
 
   // Remplacer les données de démo par le vrai profil
   MOCK_USER.firstName = user.profile.first_name;
@@ -1248,7 +1249,7 @@ async function renderPageDashboard(container) {
       poll = polls[0];
       const [rOpts, rVote] = await Promise.all([
         fetch(`${SUPA}/rest/v1/poll_options?poll_id=eq.${poll.id}&select=id,label,votes&order=votes.desc&apikey=${ANON}`, { headers: { apikey: ANON } }),
-        fetch(`${SUPA}/rest/v1/poll_votes?poll_id=eq.${poll.id}&user_id=eq.${(await getCurrentUser()).id}&select=option_id&apikey=${ANON}`, { headers: { apikey: ANON } }),
+        fetch(`${SUPA}/rest/v1/poll_votes?poll_id=eq.${poll.id}&user_id=eq.${userState.userId}&select=option_id&apikey=${ANON}`, { headers: { apikey: ANON } }),
       ]);
       pollOptions = await rOpts.json();
       const votes = await rVote.json();
@@ -1515,11 +1516,11 @@ async function votePoll(pollId, optionId, isCurrentVote) {
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
   const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
   try {
-    const user = await getCurrentUser();
-    if (!user) return;
+    const uid = userState.userId;
+    if (!uid) return;
     if (isCurrentVote) {
       // Annuler le vote
-      await fetch(`${SUPA}/rest/v1/poll_votes?poll_id=eq.${pollId}&user_id=eq.${user.id}`, {
+      await fetch(`${SUPA}/rest/v1/poll_votes?poll_id=eq.${pollId}&user_id=eq.${uid}`, {
         method: 'DELETE', headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON }
       });
       // Décrémenter
@@ -1532,7 +1533,7 @@ async function votePoll(pollId, optionId, isCurrentVote) {
       });
     } else {
       // Supprimer ancien vote si existant
-      const rv = await fetch(`${SUPA}/rest/v1/poll_votes?poll_id=eq.${pollId}&user_id=eq.${user.id}&select=option_id&apikey=${ANON}`, { headers: { apikey: ANON } });
+      const rv = await fetch(`${SUPA}/rest/v1/poll_votes?poll_id=eq.${pollId}&user_id=eq.${uid}&select=option_id&apikey=${ANON}`, { headers: { apikey: ANON } });
       const oldVotes = await rv.json();
       if (Array.isArray(oldVotes) && oldVotes.length > 0) {
         const oldOpt = oldVotes[0].option_id;
@@ -1550,7 +1551,7 @@ async function votePoll(pollId, optionId, isCurrentVote) {
       await fetch(`${SUPA}/rest/v1/poll_votes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + ANON, 'Prefer': 'return=minimal' },
-        body: JSON.stringify({ poll_id: pollId, user_id: user.id, option_id: optionId })
+        body: JSON.stringify({ poll_id: pollId, user_id: uid, option_id: optionId })
       });
       const ro3 = await fetch(`${SUPA}/rest/v1/poll_options?id=eq.${optionId}&select=votes&apikey=${ANON}`, { headers: { apikey: ANON } });
       const od3 = await ro3.json();
