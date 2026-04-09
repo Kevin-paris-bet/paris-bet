@@ -215,6 +215,7 @@ function navigateTo(page) {
     explorer:  'Explorer les tipsters',
     feedback:  'Feedback & Changelog',
     images:    'Validation des images',
+    sondage:   'Sondages',
   };
   document.getElementById('topbar-title').textContent = titles[page] || 'Admin';
   const content = document.getElementById('page-content');
@@ -228,6 +229,7 @@ function navigateTo(page) {
   if (page === 'explorer')  renderExplorerTipsters(content, 'https://payperwin.co/');
   if (page === 'feedback')  renderPageFeedbackAdmin(content);
   if (page === 'images')    renderPageImages(content);
+  if (page === 'sondage')   renderPageSondage(content);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1981,5 +1983,155 @@ async function validateImage(pronoId, status) {
   } catch(e) {
     showToast('Erreur : ' + e.message, 'error');
   }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE — SONDAGES (ADMIN)
+// ══════════════════════════════════════════════════════════════
+async function renderPageSondage(container) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  container.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>';
+
+  async function loadAndRender() {
+    const rP = await fetch(`${SUPA}/rest/v1/polls?select=id,question,actif,created_at&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const polls = await rP.json();
+
+    // Charger options et votes pour chaque sondage
+    const pollsWithData = await Promise.all((polls||[]).map(async poll => {
+      const [rO, rV] = await Promise.all([
+        fetch(`${SUPA}/rest/v1/poll_options?poll_id=eq.${poll.id}&select=id,label,votes&order=votes.desc&apikey=${ANON}`, { headers: { apikey: ANON } }),
+        fetch(`${SUPA}/rest/v1/poll_votes?poll_id=eq.${poll.id}&select=id&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      ]);
+      const options = await rO.json();
+      const votes   = await rV.json();
+      return { ...poll, options: options||[], totalVotes: (votes||[]).length };
+    }));
+
+    const mob = isMobile();
+
+    function pollCard(poll) {
+      const total = poll.totalVotes;
+      const optionsHtml = (poll.options||[]).map(o => {
+        const pct = total > 0 ? Math.round((o.votes||0) / total * 100) : 0;
+        return `<div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text-dark);margin-bottom:4px">
+            <span>${o.label}</span>
+            <span style="font-weight:600;color:var(--primary)">${pct}% (${o.votes||0} votes)</span>
+          </div>
+          <div style="background:var(--bg-soft);border-radius:10px;height:6px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:var(--primary);border-radius:10px"></div>
+          </div>
+        </div>`;
+      }).join('');
+
+      return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-md);margin-bottom:var(--space-md)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:var(--space-sm)">
+          <div>
+            <div style="font-size:0.95rem;font-weight:700;color:var(--text-dark)">${poll.question}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">${total} réponse(s) · Créé le ${formatDate(poll.created_at)}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;align-items:center">
+            <span style="background:${poll.actif?'var(--success-pale)':'var(--bg-soft)'};color:${poll.actif?'var(--success)':'var(--text-muted)'};font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:10px">${poll.actif?'✓ Actif':'Inactif'}</span>
+            <button onclick="togglePoll('${poll.id}',${poll.actif})" class="btn btn-outline btn--sm">${poll.actif?'Désactiver':'Activer'}</button>
+            <button onclick="deletePoll('${poll.id}')" class="btn-icon danger" title="Supprimer">🗑</button>
+          </div>
+        </div>
+        ${optionsHtml}
+      </div>`;
+    }
+
+    container.innerHTML = `
+      <div class="section-header">
+        <div><h2>Sondages</h2><p>${(polls||[]).length} sondage(s) au total</p></div>
+        <button class="btn btn-primary" onclick="openNewPollModal()">+ Nouveau sondage</button>
+      </div>
+
+      <div id="poll-modal-container"></div>
+
+      ${(polls||[]).length === 0
+        ? '<div class="empty-state"><div class="empty-state__icon">📊</div><h3>Aucun sondage</h3><p>Créez votre premier sondage !</p></div>'
+        : (pollsWithData||[]).map(p => pollCard(p)).join('')
+      }
+    `;
+  }
+
+  await loadAndRender();
+
+  window.openNewPollModal = function() {
+    const mc = document.getElementById('poll-modal-container');
+    if (!mc) return;
+    mc.innerHTML = `
+      <div style="background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-md);margin-bottom:var(--space-md)">
+        <h3 style="margin-bottom:var(--space-md)">Nouveau sondage</h3>
+        <div class="form-group">
+          <label>Question</label>
+          <input class="input" id="poll-question" type="text" placeholder="Ex: Quel sport préférez-vous ?" />
+        </div>
+        <div class="form-group">
+          <label>Options (une par ligne, minimum 2)</label>
+          <textarea class="input input-textarea" id="poll-options-text" rows="4" placeholder="Foot&#10;Tennis&#10;Basket&#10;Rugby"></textarea>
+        </div>
+        <div style="display:flex;gap:var(--space-sm);justify-content:flex-end;margin-top:var(--space-md)">
+          <button class="btn btn-outline" onclick="document.getElementById('poll-modal-container').innerHTML=''">Annuler</button>
+          <button class="btn btn-primary" onclick="submitNewPoll()">Créer le sondage</button>
+        </div>
+      </div>`;
+    document.getElementById('poll-question').focus();
+  };
+
+  window.submitNewPoll = async function() {
+    const q = document.getElementById('poll-question')?.value.trim();
+    const opts = (document.getElementById('poll-options-text')?.value || '').split('\n').map(o => o.trim()).filter(Boolean);
+    if (!q) { showToast('Veuillez saisir une question.', 'error'); return; }
+    if (opts.length < 2) { showToast('Minimum 2 options.', 'error'); return; }
+    try {
+      const rPoll = await fetch(`${SUPA}/rest/v1/polls`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + ANON, 'Prefer': 'return=representation' },
+        body: JSON.stringify({ question: q, actif: false })
+      });
+      const pollData = await rPoll.json();
+      const pollId = Array.isArray(pollData) ? pollData[0]?.id : pollData?.id;
+      if (!pollId) throw new Error('Erreur création sondage');
+      for (const label of opts) {
+        await fetch(`${SUPA}/rest/v1/poll_options`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + ANON, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ poll_id: pollId, label, votes: 0 })
+        });
+      }
+      showToast('Sondage créé ! Activez-le pour le rendre visible.', 'success');
+      await loadAndRender();
+    } catch(e) { showToast('Erreur : ' + e.message, 'error'); }
+  };
+
+  window.togglePoll = async function(pollId, currentActif) {
+    // Désactiver tous les autres d'abord si on active
+    if (!currentActif) {
+      await fetch(`${SUPA}/rest/v1/polls?actif=eq.true`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + ANON },
+        body: JSON.stringify({ actif: false })
+      });
+    }
+    await fetch(`${SUPA}/rest/v1/polls?id=eq.${pollId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + ANON },
+      body: JSON.stringify({ actif: !currentActif })
+    });
+    showToast(!currentActif ? 'Sondage activé ✓' : 'Sondage désactivé', 'info');
+    await loadAndRender();
+  };
+
+  window.deletePoll = async function(pollId) {
+    if (!confirm('Supprimer ce sondage et tous ses votes ?')) return;
+    await fetch(`${SUPA}/rest/v1/polls?id=eq.${pollId}`, {
+      method: 'DELETE',
+      headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON }
+    });
+    showToast('Sondage supprimé.', 'info');
+    await loadAndRender();
+  };
 }
 
