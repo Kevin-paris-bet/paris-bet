@@ -1379,7 +1379,7 @@ async function renderPageDashboard(container) {
 
   // Bloc stat card
   function statCard(label, val, sub, blue=false) {
-    return `<div style="background:${blue?'var(--blue-pale)':'var(--bg)'};border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px">
+    return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px">
       <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">${label}</div>
       <div style="font-size:${mob?'1.2rem':'1.4rem'};font-weight:800;color:${blue?'var(--primary)':'var(--text-dark)'}">${val}</div>
       ${sub ? `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">${sub}</div>` : ''}
