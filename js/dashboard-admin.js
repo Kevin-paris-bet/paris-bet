@@ -2200,3 +2200,122 @@ async function renderPageDashSettings(container) {
   };
 }
 
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE — GESTION DES SPONSORS (ADMIN)
+// ══════════════════════════════════════════════════════════════
+async function renderPageSponsors(container) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  container.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>';
+
+  async function loadAndRender() {
+    const [rTip, rSp] = await Promise.all([
+      fetch(`${SUPA}/rest/v1/profiles?role=eq.tipster&select=id,pseudo,first_name,last_name,avatar_url&order=pseudo.asc&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/sponsors?select=id,slot,tipster_id,description,image_url,actif,clicks&apikey=${ANON}`, { headers: { apikey: ANON } }),
+    ]);
+    const tipsters = await rTip.json();
+    const sponsors = await rSp.json();
+
+    const featured = (sponsors||[]).find(s => s.slot === 'featured');
+    const rising   = (sponsors||[]).find(s => s.slot === 'rising');
+
+    function tipsterOptions(selectedId) {
+      return '<option value="">-- Aucun --</option>' +
+        (tipsters||[]).map(t => {
+          const name = t.pseudo || (t.first_name + ' ' + t.last_name);
+          return `<option value="${t.id}" ${t.id === selectedId ? 'selected' : ''}>${name}</option>`;
+        }).join('');
+    }
+
+    function sponsorCard(slot, label, sponsor) {
+      const tip = (tipsters||[]).find(t => t.id === sponsor?.tipster_id);
+      const tipName = tip ? (tip.pseudo || tip.first_name) : '—';
+      const isActif = sponsor?.actif || false;
+      return `
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-md);margin-bottom:var(--space-md)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md)">
+            <h3 style="font-size:1rem;font-weight:700;color:var(--text-dark)">${label}</h3>
+            ${sponsor
+              ? `<span style="background:${isActif?'var(--success-pale)':'var(--bg-soft)'};color:${isActif?'var(--success)':'var(--text-muted)'};font-size:0.75rem;font-weight:600;padding:3px 10px;border-radius:10px">${isActif?'✓ Actif':'Inactif'}</span>`
+              : '<span style="font-size:0.78rem;color:var(--text-muted)">Non configuré</span>'}
+          </div>
+          ${sponsor ? `<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:var(--space-md)">Tipster actuel : <strong style="color:var(--text-dark)">${tipName}</strong> · ${sponsor.clicks||0} clic(s)</div>` : ''}
+          <div class="form-group" style="margin-bottom:10px">
+            <label style="font-size:0.78rem;color:var(--text-muted);display:block;margin-bottom:4px">Tipster</label>
+            <select class="input" id="select-${slot}" style="width:100%">
+              ${tipsterOptions(sponsor?.tipster_id)}
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:10px">
+            <label style="font-size:0.78rem;color:var(--text-muted);display:block;margin-bottom:4px">Description courte</label>
+            <input class="input" id="desc-${slot}" type="text" placeholder="Ex: Spécialiste Ligue 1 & Champions League" value="${sponsor?.description||''}" style="width:100%" />
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:var(--space-sm)">
+            ${sponsor
+              ? `<button class="btn btn-outline btn--sm" onclick="toggleSponsor('${sponsor.id}',${isActif})">${isActif?'Désactiver':'Activer'}</button>
+                 <button class="btn btn-outline btn--sm" style="color:var(--error);border-color:var(--error)" onclick="deleteSponsor('${sponsor.id}')">Supprimer</button>`
+              : ''}
+            <button class="btn btn-primary btn--sm" onclick="saveSponsor('${slot}','${sponsor?.id||''}')">${sponsor ? 'Mettre à jour' : 'Configurer'}</button>
+          </div>
+        </div>`;
+    }
+
+    container.innerHTML = `
+      <div class="section-header">
+        <div><h2>Gestion des sponsors</h2><p>Configurez les tipsters mis en avant sur le dashboard</p></div>
+      </div>
+      ${sponsorCard('featured', '⭐ Tipster à la une', featured)}
+      ${sponsorCard('rising', '🚀 Tipster en progression', rising)}
+    `;
+  }
+
+  await loadAndRender();
+
+  window.saveSponsor = async function(slot, existingId) {
+    const tipsterId = document.getElementById('select-' + slot)?.value;
+    const description = document.getElementById('desc-' + slot)?.value || '';
+    if (!tipsterId) { showToast('Veuillez sélectionner un tipster.', 'error'); return; }
+    const sess = await sb.auth.getSession();
+    const token = sess.data?.session?.access_token || ANON;
+    if (existingId) {
+      await fetch(`${SUPA}/rest/v1/sponsors?id=eq.${existingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ tipster_id: tipsterId, description, slot })
+      });
+    } else {
+      await fetch(`${SUPA}/rest/v1/sponsors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + token, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ tipster_id: tipsterId, description, slot, actif: true, clicks: 0 })
+      });
+    }
+    showToast('Sponsor enregistré ✓', 'success');
+    await loadAndRender();
+  };
+
+  window.toggleSponsor = async function(sponsorId, currentActif) {
+    const sess = await sb.auth.getSession();
+    const token = sess.data?.session?.access_token || ANON;
+    await fetch(`${SUPA}/rest/v1/sponsors?id=eq.${sponsorId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ actif: !currentActif })
+    });
+    showToast(!currentActif ? 'Sponsor activé ✓' : 'Sponsor désactivé', 'info');
+    await loadAndRender();
+  };
+
+  window.deleteSponsor = async function(sponsorId) {
+    if (!confirm('Supprimer ce sponsor ?')) return;
+    const sess = await sb.auth.getSession();
+    const token = sess.data?.session?.access_token || ANON;
+    await fetch(`${SUPA}/rest/v1/sponsors?id=eq.${sponsorId}`, {
+      method: 'DELETE',
+      headers: { apikey: ANON, 'Authorization': 'Bearer ' + token }
+    });
+    showToast('Sponsor supprimé.', 'info');
+    await loadAndRender();
+  };
+}
