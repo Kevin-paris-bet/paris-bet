@@ -1319,6 +1319,7 @@ async function renderPageDashboard(container) {
     const winRate = t.winRate != null ? t.winRate + '%' : '—';
     const nbPronos = t.nbPronos != null ? t.nbPronos : '—';
     const avgCote = t.avgCote != null ? parseFloat(t.avgCote).toFixed(2).replace('.',',') : '—';
+    const rank = `<div style="background:#FAEEDA;color:#633806;font-size:0.75rem;font-weight:700;padding:3px 10px;border-radius:10px">⭐ Top Tipster</div>`;
     return `<div style="padding:0">
       <div style="display:flex;gap:12px;padding:12px 12px 10px">
         <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')" style="text-decoration:none;flex-shrink:0">
@@ -1327,19 +1328,25 @@ async function renderPageDashboard(container) {
           </div>
         </a>
         <div style="flex:1;min-width:0">
-          <span style="background:#FAEEDA;color:#633806;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.02em">Sponsorisé</span>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
+            <span style="background:#FAEEDA;color:#633806;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.02em">Sponsorisé</span>
+            ${rank}
+          </div>
           <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')" style="text-decoration:none">
             <div style="font-size:${mob?'1rem':'1.05rem'};font-weight:800;color:var(--text-dark);margin-top:5px">${pseudo}</div>
           </a>
           ${s.description ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;line-height:1.3">${s.description}</div>` : ''}
-          <div style="margin-top:8px">
-            <span style="font-size:1.4rem;font-weight:800;color:#0F6E56">${winRate}</span>
-            <span style="font-size:0.82rem;font-weight:600;color:#0F6E56"> win rate</span>
+          <div style="display:flex;align-items:baseline;gap:12px;margin-top:8px;flex-wrap:wrap">
+            <div>
+              <span style="font-size:1.3rem;font-weight:800;color:#0F6E56">${winRate}</span>
+              <span style="font-size:0.78rem;font-weight:600;color:#0F6E56"> 🏆 win rate</span>
+            </div>
+            <span style="font-size:0.78rem;color:var(--text-muted)">📊 ${nbPronos} pronos</span>
+            <span style="font-size:0.78rem;color:var(--text-muted)">cote moy. ${avgCote}</span>
           </div>
-          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">${nbPronos} pronos · cote moy. ${avgCote}</div>
         </div>
       </div>
-      <div style="border-top:1px solid var(--border);padding:0">
+      <div style="border-top:1px solid var(--border)">
         <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')"
           style="display:block;text-align:center;padding:10px;font-size:0.85rem;font-weight:700;color:var(--primary);text-decoration:none;letter-spacing:.01em">
           Voir ses pronos →
