@@ -2177,13 +2177,26 @@ async function renderPageDashSettings(container) {
   await loadAndRender();
 
   window.toggleDashSetting = async function(settingId, currentActif) {
-    await fetch(`${SUPA}/rest/v1/dashboard_settings?id=eq.${settingId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + ANON },
-      body: JSON.stringify({ actif: !currentActif })
-    });
-    showToast(!currentActif ? 'Bloc activé ✓' : 'Bloc masqué', 'info');
-    await loadAndRender();
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      const token = session?.access_token || ANON;
+      const r = await fetch(`${SUPA}/rest/v1/dashboard_settings?id=eq.${settingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + token, 'Prefer': 'return=representation' },
+        body: JSON.stringify({ actif: !currentActif })
+      });
+      const result = await r.json();
+      console.log('PATCH result:', r.status, result);
+      if (r.ok) {
+        showToast(!currentActif ? 'Bloc activé ✓' : 'Bloc masqué', 'info');
+        await loadAndRender();
+      } else {
+        showToast('Erreur : ' + JSON.stringify(result), 'error');
+      }
+    } catch(e) {
+      showToast('Erreur : ' + e.message, 'error');
+      console.error(e);
+    }
   };
 }
 
