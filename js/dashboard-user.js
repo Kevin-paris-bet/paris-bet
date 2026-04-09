@@ -1329,20 +1329,16 @@ async function renderPageDashboard(container) {
         </a>
         <div style="flex:1;min-width:0">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">
-            <span style="background:#FAEEDA;color:#633806;font-size:0.7rem;font-weight:700;padding:2px 8px;border-radius:10px;letter-spacing:.02em">Sponsorisé</span>
+            <span style="background:#FAEEDA;color:#633806;font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:10px;letter-spacing:.02em">Sponsorisé</span>
             ${rank}
           </div>
           <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')" style="text-decoration:none">
             <div style="font-size:${mob?'1rem':'1.05rem'};font-weight:800;color:var(--text-dark);margin-top:5px">${pseudo}</div>
           </a>
           ${s.description ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px;line-height:1.3">${s.description}</div>` : ''}
-          <div style="display:flex;align-items:baseline;gap:12px;margin-top:8px;flex-wrap:wrap">
-            <div>
-              <span style="font-size:1.3rem;font-weight:800;color:#0F6E56">${winRate}</span>
-              <span style="font-size:0.78rem;font-weight:600;color:#0F6E56"> 🏆 win rate</span>
-            </div>
-            <span style="font-size:0.78rem;color:var(--text-muted)">📊 ${nbPronos} pronos</span>
-            <span style="font-size:0.78rem;color:var(--text-muted)">cote moy. ${avgCote}</span>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
+            <span style="font-size:1.3rem;font-weight:800;color:#0F6E56">🏆 ${winRate}</span>
+            <span style="font-size:0.78rem;color:var(--text-muted)">win rate · 📊 ${nbPronos} pronos · cote moy. ${avgCote}</span>
           </div>
         </div>
       </div>
