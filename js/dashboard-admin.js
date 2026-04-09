@@ -2156,16 +2156,13 @@ async function renderPageDashSettings(container) {
       <div style="display:flex;flex-direction:column;gap:8px;max-width:560px">
         ${(settings||[]).map(s => `
           <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
-            <div>
+            <div style="min-width:0;flex:1">
               <div style="font-size:0.9rem;font-weight:600;color:var(--text-dark)">${s.label || s.key}</div>
-              <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">Clé : ${s.key}</div>
             </div>
-            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-              <span style="font-size:0.82rem;color:var(--text-muted)">${s.actif ? 'Visible' : 'Masqué'}</span>
-              <div onclick="toggleDashSetting('${s.id}', ${s.actif})" style="width:42px;height:24px;border-radius:12px;background:${s.actif?'var(--primary)':'var(--border)'};position:relative;cursor:pointer;transition:background .2s;flex-shrink:0">
-                <div style="position:absolute;top:3px;left:${s.actif?'21px':'3px'};width:18px;height:18px;border-radius:50%;background:white;transition:left .2s"></div>
-              </div>
-            </label>
+            <button onclick="toggleDashSetting('${s.id}', ${s.actif})"
+              style="flex-shrink:0;border:none;border-radius:20px;padding:6px 16px;font-size:0.82rem;font-weight:600;cursor:pointer;background:${s.actif?'var(--success-pale)':'var(--bg-soft)'};color:${s.actif?'var(--success)':'var(--text-muted)'}">
+              ${s.actif ? '✓ Visible' : '✕ Masqué'}
+            </button>
           </div>`).join('')}
       </div>`;
   }
