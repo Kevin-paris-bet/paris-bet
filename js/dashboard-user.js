@@ -1,4 +1,5 @@
 // ── Sidebar mobile ───────────────────────────────────────────
+function isMobile() { return window.innerWidth < 900; }
 function toggleSidebar() {
   const sidebar = document.querySelector('.sidebar');
   const overlay = document.getElementById('sidebar-overlay');
