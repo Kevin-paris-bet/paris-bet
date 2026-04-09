@@ -1332,10 +1332,9 @@ async function renderPageDashboard(container) {
             <div style="font-size:${mob?'0.95rem':'1rem'};font-weight:700;color:var(--text-dark);margin-top:5px">${pseudo}</div>
           </a>
           ${s.description ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:3px">${s.description}</div>` : ''}
-          <div style="display:flex;gap:10px;margin-top:8px;flex-wrap:wrap">
-            <span style="font-size:0.75rem;color:var(--text-muted)">🏆 <strong style="color:var(--text-dark)">${winRate}</strong> win rate</span>
-            <span style="font-size:0.75rem;color:var(--text-muted)">📊 <strong style="color:var(--text-dark)">${nbPronos}</strong> pronos</span>
-            <span style="font-size:0.75rem;color:var(--text-muted)">📈 cote moy. <strong style="color:var(--text-dark)">${avgCote}</strong></span>
+          <div style="margin-top:8px">
+            <div style="font-size:1.3rem;font-weight:800;color:#0F6E56">${winRate} win rate</div>
+            <div style="font-size:0.78rem;color:var(--text-muted);margin-top:3px">${nbPronos} pronos · cote moy. ${avgCote}</div>
           </div>
         </div>
         <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')"
