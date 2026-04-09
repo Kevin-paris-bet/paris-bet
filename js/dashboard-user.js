@@ -1227,18 +1227,19 @@ async function renderPageDashboard(container) {
   let sponsors = [], changelog = [], poll = null, pollOptions = [], userVote = null;
   let nbTipsters = 0, nbPronos = 0, globalWinRate = 0;
   try {
-    const [rSp, rCl, rPoll, rTip, rPr] = await Promise.all([
+    const safeJson = async (r) => { try { return await r.json(); } catch(e) { return []; } };
+    const [rSp, rCl, rPoll, rTip, rPr] = await Promise.allSettled([
       fetch(`${SUPA}/rest/v1/sponsors?actif=eq.true&select=id,slot,image_url,description,clicks,tipster_id&apikey=${ANON}`, { headers: { apikey: ANON } }),
-      fetch(`${SUPA}/rest/v1/changelog?select=id,titre,description,created_at&order=created_at.desc&limit=3&apikey=${ANON}`, { headers: { apikey: ANON } }),
-      fetch(`${SUPA}/rest/v1/polls?actif=eq.true&select=id,question&limit=1&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/changelog?select=id,titre,description,created_at&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/polls?actif=eq.true&select=id,question&apikey=${ANON}`, { headers: { apikey: ANON } }),
       fetch(`${SUPA}/rest/v1/profiles?role=eq.tipster&select=id&apikey=${ANON}`, { headers: { apikey: ANON } }),
       fetch(`${SUPA}/rest/v1/pronos?select=status&apikey=${ANON}`, { headers: { apikey: ANON } }),
     ]);
-    sponsors    = await rSp.json();
-    changelog   = await rCl.json();
-    const polls = await rPoll.json();
-    nbTipsters  = (await rTip.json())?.length || 0;
-    const allPr = await rPr.json();
+    sponsors    = rSp.status === 'fulfilled' ? await safeJson(rSp.value) : [];
+    changelog   = rCl.status === 'fulfilled' ? await safeJson(rCl.value) : [];
+    const polls = rPoll.status === 'fulfilled' ? await safeJson(rPoll.value) : [];
+    nbTipsters  = rTip.status === 'fulfilled' ? ((await safeJson(rTip.value))?.length || 0) : 0;
+    const allPr = rPr.status === 'fulfilled' ? await safeJson(rPr.value) : [];
     if (Array.isArray(allPr)) {
       nbPronos = allPr.length;
       const fin = allPr.filter(p => p.status === 'won' || p.status === 'lost').length;
@@ -1428,6 +1429,8 @@ async function renderPageDashboard(container) {
       </div>
     </div>`;
 
+  // Vérifier que le container est toujours dans le DOM avant de rendre
+  if (!document.getElementById('page-content')) return;
   if (mob) {
     container.innerHTML = `
       <style>
@@ -1537,7 +1540,7 @@ async function votePoll(pollId, optionId, isCurrentVote) {
       const oldVotes = await rv.json();
       if (Array.isArray(oldVotes) && oldVotes.length > 0) {
         const oldOpt = oldVotes[0].option_id;
-        await fetch(`${SUPA}/rest/v1/poll_votes?poll_id=eq.${pollId}&user_id=eq.${user.id}`, {
+        await fetch(`${SUPA}/rest/v1/poll_votes?poll_id=eq.${pollId}&user_id=eq.${uid}`, {
           method: 'DELETE', headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON }
         });
         const ro2 = await fetch(`${SUPA}/rest/v1/poll_options?id=eq.${oldOpt}&select=votes&apikey=${ANON}`, { headers: { apikey: ANON } });
