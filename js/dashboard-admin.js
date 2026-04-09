@@ -216,6 +216,7 @@ function navigateTo(page) {
     feedback:  'Feedback & Changelog',
     images:    'Validation des images',
     sondage:   'Sondages',
+    dashsettings: 'Paramètres du dashboard',
   };
   document.getElementById('topbar-title').textContent = titles[page] || 'Admin';
   const content = document.getElementById('page-content');
@@ -230,6 +231,7 @@ function navigateTo(page) {
   if (page === 'feedback')  renderPageFeedbackAdmin(content);
   if (page === 'images')    renderPageImages(content);
   if (page === 'sondage')   renderPageSondage(content);
+  if (page === 'dashsettings') renderPageDashSettings(content);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -2131,6 +2133,52 @@ async function renderPageSondage(container) {
       headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON }
     });
     showToast('Sondage supprimé.', 'info');
+    await loadAndRender();
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE — PARAMÈTRES DASHBOARD (ADMIN)
+// ══════════════════════════════════════════════════════════════
+async function renderPageDashSettings(container) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  container.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>';
+
+  async function loadAndRender() {
+    const r = await fetch(`${SUPA}/rest/v1/dashboard_settings?select=id,key,label,actif&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const settings = await r.json();
+
+    container.innerHTML = `
+      <div class="section-header">
+        <div><h2>Paramètres du dashboard</h2><p>Choisissez les blocs visibles par les utilisateurs</p></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:560px">
+        ${(settings||[]).map(s => `
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div>
+              <div style="font-size:0.9rem;font-weight:600;color:var(--text-dark)">${s.label || s.key}</div>
+              <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">Clé : ${s.key}</div>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <span style="font-size:0.82rem;color:var(--text-muted)">${s.actif ? 'Visible' : 'Masqué'}</span>
+              <div onclick="toggleDashSetting('${s.id}', ${s.actif})" style="width:42px;height:24px;border-radius:12px;background:${s.actif?'var(--primary)':'var(--border)'};position:relative;cursor:pointer;transition:background .2s;flex-shrink:0">
+                <div style="position:absolute;top:3px;left:${s.actif?'21px':'3px'};width:18px;height:18px;border-radius:50%;background:white;transition:left .2s"></div>
+              </div>
+            </label>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  await loadAndRender();
+
+  window.toggleDashSetting = async function(settingId, currentActif) {
+    await fetch(`${SUPA}/rest/v1/dashboard_settings?id=eq.${settingId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + ANON },
+      body: JSON.stringify({ actif: !currentActif })
+    });
+    showToast(!currentActif ? 'Bloc activé ✓' : 'Bloc masqué', 'info');
     await loadAndRender();
   };
 }
