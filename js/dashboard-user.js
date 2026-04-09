@@ -1227,20 +1227,27 @@ async function renderPageDashboard(container) {
   // Charger en parallèle : sponsors, changelog, sondage actif, stats plateforme
   let sponsors = [], changelog = [], poll = null, pollOptions = [], userVote = null;
   let nbTipsters = 0, nbPronos = 0, globalWinRate = 0;
+  let settings = {};
   try {
     const safeJson = async (r) => { try { return await r.json(); } catch(e) { return []; } };
-    const [rSp, rCl, rPoll, rTip, rPr] = await Promise.allSettled([
+    const [rSp, rCl, rPoll, rTip, rPr, rSettings] = await Promise.allSettled([
       fetch(`${SUPA}/rest/v1/sponsors?actif=eq.true&select=id,slot,image_url,description,clicks,tipster_id&apikey=${ANON}`, { headers: { apikey: ANON } }),
       fetch(`${SUPA}/rest/v1/changelog?select=id,titre,description,created_at&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON } }),
       fetch(`${SUPA}/rest/v1/polls?actif=eq.true&select=id,question&apikey=${ANON}`, { headers: { apikey: ANON } }),
       fetch(`${SUPA}/rest/v1/profiles?role=eq.tipster&select=id&apikey=${ANON}`, { headers: { apikey: ANON } }),
       fetch(`${SUPA}/rest/v1/pronos?select=status&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/dashboard_settings?select=key,actif&apikey=${ANON}`, { headers: { apikey: ANON } }),
     ]);
     sponsors    = rSp.status === 'fulfilled' ? await safeJson(rSp.value) : [];
     changelog   = rCl.status === 'fulfilled' ? await safeJson(rCl.value) : [];
     const polls = rPoll.status === 'fulfilled' ? await safeJson(rPoll.value) : [];
     nbTipsters  = rTip.status === 'fulfilled' ? ((await safeJson(rTip.value))?.length || 0) : 0;
     const allPr = rPr.status === 'fulfilled' ? await safeJson(rPr.value) : [];
+    const settingsArr = rSettings.status === 'fulfilled' ? await safeJson(rSettings.value) : [];
+    console.log('dashboard_settings reçus:', settingsArr);
+    settings = {};
+    (settingsArr||[]).forEach(s => { settings[s.key] = (s.actif === true); });
+    console.log('settings parsés:', settings);
     if (Array.isArray(allPr)) {
       nbPronos = allPr.length;
       const fin = allPr.filter(p => p.status === 'won' || p.status === 'lost').length;
@@ -1270,6 +1277,14 @@ async function renderPageDashboard(container) {
 
   const featured = (sponsors||[]).find(s => s.slot === 'featured');
   const rising   = (sponsors||[]).find(s => s.slot === 'rising');
+  // Settings blocs — false si explicitement désactivé, true si non défini (défaut)
+  const showObjectif   = settings['bloc_objectif']      !== undefined ? settings['bloc_objectif']      : true;
+  const showAlerte     = settings['bloc_alerte']         !== undefined ? settings['bloc_alerte']         : true;
+  const showStats      = settings['bloc_stats_plate']    !== undefined ? settings['bloc_stats_plate']    : true;
+  const showSondage    = settings['bloc_sondage']        !== undefined ? settings['bloc_sondage']        : true;
+  const showTwitter    = settings['bloc_twitter']        !== undefined ? settings['bloc_twitter']        : true;
+  const showRising     = settings['bloc_sponsor_rising'] !== undefined ? settings['bloc_sponsor_rising'] : true;
+  console.log('show vars:', {showObjectif, showAlerte, showStats, showSondage, showTwitter, showRising});
   const derniers = achats.slice(0, 3);
   const mob = isMobile();
 
@@ -1339,14 +1354,16 @@ async function renderPageDashboard(container) {
     }).join('');
     return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
       <div style="padding:12px 12px 8px;font-size:0.88rem;font-weight:700;color:var(--text-dark)">${poll.question}</div>
-      ${options}
-      <div style="padding:6px 12px 10px;font-size:0.75rem;color:var(--text-muted)">${totalVotes} réponse(s) · ${userVote ? 'Cliquez pour changer votre vote' : 'Votez !'}</div>
+      <div id="poll-block">
+        ${options}
+        <div style="padding:6px 12px 10px;font-size:0.75rem;color:var(--text-muted)">${totalVotes} réponse(s) · ${userVote ? 'Cliquez pour changer votre vote' : 'Votez !'}</div>
+      </div>
     </div>`;
   }
 
   function changelogHtml() {
     if (!Array.isArray(changelog) || !changelog.length) return '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px">Aucune nouveauté.</p>';
-    return changelog.map(c => `
+    return changelog.slice(0, 3).map(c => `
       <div class="dash-news-item" onclick="this.classList.toggle('open')" style="padding:10px 12px;border-bottom:0.5px solid var(--border);cursor:pointer">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
           <div style="font-size:0.85rem;font-weight:600;color:var(--text-dark)">${c.titre}</div>
@@ -1361,7 +1378,7 @@ async function renderPageDashboard(container) {
 
   // Bloc stat card
   function statCard(label, val, sub, blue=false) {
-    return `<div style="background:${blue?'var(--blue-pale)':'var(--bg-soft)'};border-radius:var(--radius-md);padding:10px 12px">
+    return `<div style="background:${blue?'var(--blue-pale)':'var(--bg)'};border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px">
       <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">${label}</div>
       <div style="font-size:${mob?'1.2rem':'1.4rem'};font-weight:800;color:${blue?'var(--primary)':'var(--text-dark)'}">${val}</div>
       ${sub ? `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">${sub}</div>` : ''}
@@ -1416,7 +1433,7 @@ async function renderPageDashboard(container) {
         <div style="font-size:0.88rem;font-weight:700;color:var(--text-dark)">Suivez-nous sur X</div>
         <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">Actus, alertes pronos et offres exclusives</div>
       </div>
-      <a href="https://x.com/payperwin" target="_blank" style="background:#000;color:white;border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:600;text-decoration:none;white-space:nowrap">Suivre</a>
+      <a href="https://x.com/payperwin_co" target="_blank" style="background:#000;color:white;border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:600;text-decoration:none;white-space:nowrap">Suivre</a>
     </div>`;
 
   const statsPlateHtml = `
@@ -1441,26 +1458,23 @@ async function renderPageDashboard(container) {
       </style>
       <div class="section-header"><div><h2>Tableau de bord</h2></div></div>
       ${statsHtml}
-      <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster à la une</div>
-      ${featured ? `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorFeaturedHtml(featured)}</div>` : ''}
-      <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nous suivre</div>
-      ${xHtml}
+      ${featured ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster à la une</div><div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorFeaturedHtml(featured)}</div>` : ''}
+      ${showTwitter ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nous suivre</div>${xHtml}` : ''}
       <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Mes derniers achats</div>
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
         ${derniersHtml}
         <button onclick="navigateTo('achats')" style="width:100%;padding:9px;font-size:0.8rem;color:var(--primary);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer">Voir tous mes achats →</button>
       </div>
-      ${alerteHtml}
-      ${objectifHtml}
+      ${showAlerte ? alerteHtml : ''}
+      ${showObjectif ? objectifHtml : ''}
       <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nouveautés</div>
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
         ${changelogHtml()}
         <button onclick="navigateTo('feedback')" style="width:100%;padding:9px;font-size:0.8rem;color:var(--primary);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer">Voir toutes les nouveautés →</button>
       </div>
-      ${statsPlateHtml}
-      <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster en progression</div>
-      ${rising ? `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorRisingHtml(rising)}</div>` : ''}
-      ${pollHtml()}
+      ${showStats ? statsPlateHtml : ''}
+      ${showRising && rising ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster en progression</div><div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorRisingHtml(rising)}</div>` : ''}
+      ${showSondage ? pollHtml() : ''}
     `;
   } else {
     container.innerHTML = `
@@ -1473,28 +1487,25 @@ async function renderPageDashboard(container) {
       ${statsHtml}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-lg)">
         <div>
-          <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster à la une</div>
-          ${featured ? `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorFeaturedHtml(featured)}</div>` : ''}
-          <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nous suivre</div>
-          ${xHtml}
+          ${featured ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster à la une</div><div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorFeaturedHtml(featured)}</div>` : ''}
+          ${showTwitter ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nous suivre</div>${xHtml}` : ''}
           <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Mes derniers achats</div>
           <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
             ${derniersHtml}
             <button onclick="navigateTo('achats')" style="width:100%;padding:9px;font-size:0.8rem;color:var(--primary);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer">Voir tous mes achats →</button>
           </div>
-          ${pollHtml()}
+          ${showSondage ? pollHtml() : ''}
         </div>
         <div>
-          ${alerteHtml}
-          ${objectifHtml}
+          ${showAlerte ? alerteHtml : ''}
+          ${showObjectif ? objectifHtml : ''}
           <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nouveautés</div>
           <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
             ${changelogHtml()}
             <button onclick="navigateTo('feedback')" style="width:100%;padding:9px;font-size:0.8rem;color:var(--primary);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer">Voir toutes les nouveautés →</button>
           </div>
-          ${statsPlateHtml}
-          <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster en progression</div>
-          ${rising ? `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorRisingHtml(rising)}</div>` : ''}
+          ${showStats ? statsPlateHtml : ''}
+          ${showRising && rising ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster en progression</div><div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorRisingHtml(rising)}</div>` : ''}
         </div>
       </div>
     `;
@@ -1564,8 +1575,37 @@ async function votePoll(pollId, optionId, isCurrentVote) {
         body: JSON.stringify({ votes: (od3[0]?.votes || 0) + 1 })
       });
     }
-    // Recharger le dashboard
-    renderPageDashboard(document.getElementById('page-content'));
+    // Recharger uniquement le bloc sondage
+    await refreshPollBlock(pollId);
   } catch(e) { showToast('Erreur lors du vote', 'error'); console.error(e); }
+}
+
+async function refreshPollBlock(pollId) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  try {
+    const [rOpts, rVote] = await Promise.all([
+      fetch(`${SUPA}/rest/v1/poll_options?poll_id=eq.${pollId}&select=id,label,votes&order=votes.desc&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/poll_votes?poll_id=eq.${pollId}&user_id=eq.${userState.userId}&select=option_id&apikey=${ANON}`, { headers: { apikey: ANON } }),
+    ]);
+    const opts = await rOpts.json();
+    const votes = await rVote.json();
+    const uVote = Array.isArray(votes) && votes.length > 0 ? votes[0].option_id : null;
+    const total = (opts||[]).reduce((s,o) => s + (o.votes||0), 0);
+    const pollBlock = document.getElementById('poll-block');
+    if (!pollBlock) return;
+    pollBlock.innerHTML = (opts||[]).map(o => {
+      const pct = total > 0 ? Math.round((o.votes||0) / total * 100) : 0;
+      const isSel = o.id === uVote;
+      return `<div onclick="votePoll('${pollId}','${o.id}',${isSel})"
+        style="margin:0 12px 8px;border:0.5px solid ${isSel?'var(--primary)':'var(--border)'};border-radius:var(--radius-md);padding:9px 12px;font-size:0.85rem;cursor:pointer;position:relative;overflow:hidden;${isSel?'background:var(--blue-xpale,#eef3ff)':''}">
+        <div style="position:absolute;top:0;left:0;height:100%;width:${pct}%;background:var(--blue-pale);z-index:0;border-radius:var(--radius-md)"></div>
+        <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center">
+          <span style="color:var(--text-dark)">${o.label}</span>
+          <span style="font-size:0.78rem;font-weight:600;color:var(--primary)">${pct}%</span>
+        </div>
+      </div>`;
+    }).join('') + `<div style="padding:6px 12px 10px;font-size:0.75rem;color:var(--text-muted)">${total} réponse(s) · ${uVote ? 'Cliquez pour changer votre vote' : 'Votez !'}</div>`;
+  } catch(e) { console.error('refreshPollBlock:', e); }
 }
 
