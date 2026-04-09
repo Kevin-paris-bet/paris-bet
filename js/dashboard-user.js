@@ -1278,6 +1278,7 @@ async function renderPageDashboard(container) {
   const featured = (sponsors||[]).find(s => s.slot === 'featured');
   const rising   = (sponsors||[]).find(s => s.slot === 'rising');
   // Settings blocs — false si explicitement désactivé, true si non défini (défaut)
+  const showFeatured   = settings['bloc_featured']       !== undefined ? settings['bloc_featured']       : true;
   const showObjectif   = settings['bloc_objectif']      !== undefined ? settings['bloc_objectif']      : true;
   const showAlerte     = settings['bloc_alerte']         !== undefined ? settings['bloc_alerte']         : true;
   const showStats      = settings['bloc_stats_plate']    !== undefined ? settings['bloc_stats_plate']    : true;
@@ -1458,7 +1459,7 @@ async function renderPageDashboard(container) {
       </style>
       <div class="section-header"><div><h2>Tableau de bord</h2></div></div>
       ${statsHtml}
-      ${featured ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster à la une</div><div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorFeaturedHtml(featured)}</div>` : ''}
+      ${showFeatured && featured ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster à la une</div><div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorFeaturedHtml(featured)}</div>` : ''}
       ${showTwitter ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nous suivre</div>${xHtml}` : ''}
       <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Mes derniers achats</div>
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
@@ -1487,7 +1488,7 @@ async function renderPageDashboard(container) {
       ${statsHtml}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-lg)">
         <div>
-          ${featured ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster à la une</div><div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorFeaturedHtml(featured)}</div>` : ''}
+          ${showFeatured && featured ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster à la une</div><div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorFeaturedHtml(featured)}</div>` : ''}
           ${showTwitter ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nous suivre</div>${xHtml}` : ''}
           <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Mes derniers achats</div>
           <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
