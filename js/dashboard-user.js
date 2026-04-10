@@ -1484,10 +1484,10 @@ async function renderPageDashboard(container) {
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
       <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px">
         ${[
+          { key:'parieurs', label:'Parieurs',    val: nbParieurs },
           { key:'tipsters', label:'Tipsters',    val: nbTipsters },
           { key:'pronos',   label:'Pronos joués',val: nbPronos },
           { key:'winrate',  label:'Taux global', val: globalWinRate+'%' },
-          { key:'parieurs', label:'Parieurs',    val: nbParieurs },
         ].map(s => `
           <div onclick="showStatsPlatePopup('${s.key}')" style="background:var(--bg-soft);border-radius:var(--radius-md);padding:8px 6px;text-align:center;cursor:pointer;position:relative">
             <div style="position:absolute;top:4px;right:5px;font-size:9px;color:var(--text-muted);opacity:.5">?</div>
