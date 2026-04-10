@@ -47,6 +47,10 @@
 
       <div class="sidebar__section-label">Menu</div>
 
+      <button class="sidebar__link" data-page="dashboard" onclick="navigateTo('dashboard')">
+        <span class="sidebar__link-icon">🏠</span>
+        Tableau de bord
+      </button>
       <button class="sidebar__link" data-page="pronos" onclick="navigateTo('pronos')">
         <span class="sidebar__link-icon">🎯</span>
         Mes pronostics
@@ -287,6 +291,7 @@
 </div>
 
 <!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="../js/supabase.js"></script>
   <script src="../js/config.js"></script>
