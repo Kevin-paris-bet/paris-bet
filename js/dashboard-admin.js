@@ -2263,12 +2263,41 @@ async function renderPageSponsors(container) {
         </div>`;
     }
 
+    // Charger historique
+    const rH = await fetch(`${SUPA}/rest/v1/sponsors_history?select=slot,tipster_id,description,clicks,actif_from&order=actif_from.desc&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const history = await rH.json();
+    // Enrichir avec noms tipsters
+    const allTipIds = [...new Set((history||[]).map(h => h.tipster_id).filter(Boolean))];
+    const tipMap = {};
+    if (allTipIds.length > 0) {
+      const rTN = await fetch(`${SUPA}/rest/v1/profiles?id=in.(${allTipIds.join(',')})&select=id,pseudo,first_name&apikey=${ANON}`, { headers: { apikey: ANON } });
+      const tns = await rTN.json();
+      (tns||[]).forEach(t => tipMap[t.id] = t.pseudo || t.first_name || '—');
+    }
+    const historyHtml = (history||[]).length === 0 ? '<p style="color:var(--text-muted);font-size:0.85rem">Aucun historique.</p>' :
+      (history||[]).map(h => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border)">
+          <div>
+            <span style="font-size:0.75rem;background:${h.slot==='featured'?'#FAEEDA':'#E1F5EE'};color:${h.slot==='featured'?'#633806':'#085041'};padding:2px 7px;border-radius:10px;font-weight:600">${h.slot==='featured'?'À la une':'En progression'}</span>
+            <div style="font-size:0.88rem;font-weight:600;color:var(--text-dark);margin-top:4px">${tipMap[h.tipster_id]||'—'}</div>
+            ${h.description ? `<div style="font-size:0.75rem;color:var(--text-muted)">${h.description}</div>` : ''}
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:0.82rem;font-weight:600;color:var(--primary)">${h.clicks||0} clic(s)</div>
+            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">${formatDate(h.actif_from)}</div>
+          </div>
+        </div>`).join('');
+
     container.innerHTML = `
       <div class="section-header">
         <div><h2>Gestion des sponsors</h2><p>Configurez les tipsters mis en avant sur le dashboard</p></div>
       </div>
       ${sponsorCard('featured', '⭐ Tipster à la une', featured)}
       ${sponsorCard('rising', '🚀 Tipster en progression', rising)}
+      <div style="margin-top:var(--space-lg)">
+        <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-dark);margin-bottom:var(--space-md)">Historique</h3>
+        ${historyHtml}
+      </div>
     `;
   }
 
@@ -2281,10 +2310,24 @@ async function renderPageSponsors(container) {
     const sess = await sb.auth.getSession();
     const token = sess.data?.session?.access_token || ANON;
     if (existingId) {
+      // Récupérer l'ancien tipster + clics pour historique
+      const rOld = await fetch(`${SUPA}/rest/v1/sponsors?id=eq.${existingId}&select=tipster_id,clicks,description&apikey=${ANON}`, { headers: { apikey: ANON } });
+      const oldData = await rOld.json();
+      const old = Array.isArray(oldData) && oldData.length > 0 ? oldData[0] : null;
+      // Sauvegarder dans l'historique si changement de tipster
+      if (old && old.tipster_id && old.tipster_id !== tipsterId) {
+        await fetch(`${SUPA}/rest/v1/sponsors_history`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + token, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ slot, tipster_id: old.tipster_id, description: old.description, clicks: old.clicks || 0 })
+        });
+      }
+      // Mettre à jour avec reset clics si nouveau tipster
+      const resetClicks = old && old.tipster_id !== tipsterId;
       await fetch(`${SUPA}/rest/v1/sponsors?id=eq.${existingId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify({ tipster_id: tipsterId, description, slot })
+        body: JSON.stringify({ tipster_id: tipsterId, description, slot, ...(resetClicks ? { clicks: 0 } : {}) })
       });
     } else {
       await fetch(`${SUPA}/rest/v1/sponsors`, {
