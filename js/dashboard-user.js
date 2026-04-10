@@ -1226,7 +1226,7 @@ async function renderPageDashboard(container) {
 
   // Charger en parallèle : sponsors, changelog, sondage actif, stats plateforme
   let sponsors = [], changelog = [], poll = null, pollOptions = [], userVote = null;
-  let nbTipsters = 0, nbPronos = 0, globalWinRate = 0;
+  let nbTipsters = 0, nbPronos = 0, globalWinRate = 0, nbParieurs = 0;
   let settings = {};
   try {
     const safeJson = async (r) => { try { return await r.json(); } catch(e) { return []; } };
@@ -1245,7 +1245,7 @@ async function renderPageDashboard(container) {
     nbTipsters  = rTip.status === 'fulfilled' ? ((await safeJson(rTip.value))?.length || 0) : 0;
     const allPr = rPr.status === 'fulfilled' ? await safeJson(rPr.value) : [];
     const settingsArr = rSettings.status === 'fulfilled' ? await safeJson(rSettings.value) : [];
-    const nbParieurs  = rUsers.status === 'fulfilled' ? ((await safeJson(rUsers.value))?.length || 0) : 0;
+    nbParieurs = rUsers.status === 'fulfilled' ? ((await safeJson(rUsers.value))?.length || 0) : 0;
     console.log('dashboard_settings reçus:', settingsArr);
     settings = {};
     (settingsArr||[]).forEach(s => { settings[s.key] = (s.actif === true); });
