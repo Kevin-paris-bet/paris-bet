@@ -2240,7 +2240,7 @@ async function renderPageSponsors(container) {
             <h3 style="font-size:1rem;font-weight:700;color:var(--text-dark)">${label}</h3>
             ${sponsor
               ? `<span style="background:${isActif?'var(--success-pale)':'var(--bg-soft)'};color:${isActif?'var(--success)':'var(--text-muted)'};font-size:0.75rem;font-weight:600;padding:3px 10px;border-radius:10px">${isActif?'✓ Actif':'Inactif'}</span>`
-              : '<span style="font-size:0.78rem;color:var(--text-muted)">Non configuré</span>'}
+              : '<span style="font-size:0.78rem;color:var(--text-muted)">Aucun tipster configuré</span>'}
           </div>
           ${sponsor ? `<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:var(--space-md)">Tipster actuel : <strong style="color:var(--text-dark)">${tipName}</strong> · ${sponsor.clicks||0} clic(s)</div>` : ''}
           <div class="form-group" style="margin-bottom:10px">
@@ -2253,12 +2253,12 @@ async function renderPageSponsors(container) {
             <label style="font-size:0.78rem;color:var(--text-muted);display:block;margin-bottom:4px">Description courte</label>
             <textarea class="input" id="desc-${slot}" rows="2" placeholder="Ex: Spécialiste Ligue 1 & Champions League" style="width:100%;resize:vertical">${sponsor?.description||''}</textarea>
           </div>
-          <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:var(--space-sm)">
+          <div style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;margin-top:var(--space-sm)">
             ${sponsor
-              ? `<button class="btn btn-outline" onclick="toggleSponsor('${sponsor.id}',${isActif})" style="flex-shrink:0;font-size:0.78rem;padding:5px 10px">${isActif?'Désactiver':'Activer'}</button>
-                 <button class="btn btn-outline" style="color:var(--error);border-color:var(--error);flex-shrink:0;font-size:0.78rem;padding:5px 10px" onclick="deleteSponsor('${sponsor.id}')">Supprimer</button>`
+              ? `<button class="btn btn-outline" onclick="activerSponsor('${sponsor.id}',${isActif})" style="font-size:0.78rem;padding:5px 12px">${isActif?'Désactiver':'Activer'}</button>
+                 <button class="btn btn-outline" style="color:var(--error);border-color:var(--error);font-size:0.78rem;padding:5px 12px" onclick="terminerSponsor('${sponsor.id}','${slot}')">Terminé</button>`
               : ''}
-            <button class="btn btn-primary" onclick="saveSponsor('${slot}','${sponsor?.id||''}')" style="flex-shrink:0;font-size:0.78rem;padding:5px 10px">${sponsor ? 'Mettre à jour' : 'Configurer'}</button>
+            <button class="btn btn-primary" onclick="saveSponsor('${slot}','${sponsor?.id||''}')" style="font-size:0.78rem;padding:5px 12px">${sponsor ? 'Mettre à jour' : 'Configurer'}</button>
           </div>
         </div>`;
     }
@@ -2340,7 +2340,7 @@ async function renderPageSponsors(container) {
     await loadAndRender();
   };
 
-  window.toggleSponsor = async function(sponsorId, currentActif) {
+  window.activerSponsor = async function(sponsorId, currentActif) {
     const sess = await sb.auth.getSession();
     const token = sess.data?.session?.access_token || ANON;
     await fetch(`${SUPA}/rest/v1/sponsors?id=eq.${sponsorId}`, {
@@ -2349,6 +2349,31 @@ async function renderPageSponsors(container) {
       body: JSON.stringify({ actif: !currentActif })
     });
     showToast(!currentActif ? 'Sponsor activé ✓' : 'Sponsor désactivé', 'info');
+    await loadAndRender();
+  };
+
+  window.terminerSponsor = async function(sponsorId, slot) {
+    if (!confirm("Archiver ce sponsor dans l'historique et vider le slot ?")) return;
+    const sess = await sb.auth.getSession();
+    const token = sess.data?.session?.access_token || ANON;
+    // Récupérer les infos actuelles
+    const rOld = await fetch(`${SUPA}/rest/v1/sponsors?id=eq.${sponsorId}&select=tipster_id,clicks,description&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const oldData = await rOld.json();
+    const old = Array.isArray(oldData) && oldData.length > 0 ? oldData[0] : null;
+    // Sauvegarder dans l'historique
+    if (old) {
+      await fetch(`${SUPA}/rest/v1/sponsors_history`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + token, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ slot, tipster_id: old.tipster_id, description: old.description, clicks: old.clicks || 0 })
+      });
+    }
+    // Supprimer le sponsor actuel
+    await fetch(`${SUPA}/rest/v1/sponsors?id=eq.${sponsorId}`, {
+      method: 'DELETE',
+      headers: { apikey: ANON, 'Authorization': 'Bearer ' + token }
+    });
+    showToast("Tipster archivé dans l'historique ✓", 'success');
     await loadAndRender();
   };
 
