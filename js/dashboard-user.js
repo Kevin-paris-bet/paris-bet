@@ -1469,7 +1469,7 @@ async function renderPageDashboard(container) {
         <div style="font-size:0.88rem;font-weight:700;color:var(--text-dark)">Suivez-nous sur X</div>
         <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">Actus, alertes pronos et offres exclusives</div>
       </div>
-      <a href="https://x.com/payperwin_co" target="_blank" style="background:var(--primary);color:white;border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:600;text-decoration:none;white-space:nowrap;flex-shrink:0">Suivre</a>
+      <a href="https://x.com/payperwin_co" target="_blank" style="background:#2563EB;color:#ffffff;border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:600;text-decoration:none;white-space:nowrap;flex-shrink:0">Suivre</a>
     </div>`;
 
   const statsPlateHtml = `
