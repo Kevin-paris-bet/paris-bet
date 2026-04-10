@@ -1537,6 +1537,27 @@ async function renderPageDashboardTipster(container) {
     changelog = await rCL.json();
   } catch(e) {}
 
+  // Stats plateforme
+  let platNbTipsters = 0, platNbPronos = 0, platWinRate = 0, platNbParieurs = 0;
+  try {
+    const [rPT, rPP, rPU] = await Promise.all([
+      fetch(`${SUPA}/rest/v1/profiles?role=eq.tipster&select=id&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/pronos?select=status&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/profiles?role=eq.user&select=id&apikey=${ANON}`, { headers: { apikey: ANON } }),
+    ]);
+    const tipsArr  = await rPT.json().catch(()=>[]);
+    const pronosArr= await rPP.json().catch(()=>[]);
+    const usersArr = await rPU.json().catch(()=>[]);
+    platNbTipsters = Array.isArray(tipsArr)  ? tipsArr.length  : 0;
+    platNbParieurs = Array.isArray(usersArr) ? usersArr.length : 0;
+    if (Array.isArray(pronosArr)) {
+      platNbPronos = pronosArr.length;
+      const fin = pronosArr.filter(p => p.status==='won'||p.status==='lost').length;
+      const w   = pronosArr.filter(p => p.status==='won').length;
+      platWinRate = fin > 0 ? Math.round(w/fin*100) : 0;
+    }
+  } catch(e) {}
+
   // Graphiques performance : achats cumulés + gains cumulés vs moyenne plateforme
   // Trier les pronos par date croissante
   const pronosSorted = [...pronos].sort((a, b) => new Date(a.created_at||a.match_date||0) - new Date(b.created_at||b.match_date||0));
@@ -1916,6 +1937,31 @@ async function renderPageDashboardTipster(container) {
       </div>`;
   }
 
+  // Bloc stats plateforme pour le dashboard tipster
+  const statsPlatePopupsTip = {
+    parieurs: { title: 'Parieurs', text: 'Nombre total de membres inscrits sur PayPerWin qui achètent des pronostics.' },
+    tipsters: { title: 'Tipsters', text: 'Nombre de tipsters actifs inscrits sur PayPerWin qui publient des pronostics.' },
+    pronos:   { title: 'Pronos joués', text: 'Nombre total de pronostics publiés sur la plateforme depuis le lancement.' },
+    winrate:  { title: 'Taux global', text: 'Pourcentage de pronostics terminés gagnants, sur l\'ensemble des tipsters.' },
+  };
+  const statsPlateHtmlTip = `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px">
+        ${[
+          { key:'parieurs', label:'Parieurs',    val: platNbParieurs },
+          { key:'tipsters', label:'Tipsters',    val: platNbTipsters },
+          { key:'pronos',   label:'Pronos joués',val: platNbPronos },
+          { key:'winrate',  label:'Taux global', val: platWinRate+'%' },
+        ].map(s => `
+          <div onclick="showStatsPlateTipsterPopup('${s.key}')" style="background:var(--bg-soft);border-radius:var(--radius-md);padding:8px 6px;text-align:center;cursor:pointer;position:relative">
+            <div style="position:absolute;top:4px;right:5px;font-size:9px;color:var(--text-muted);opacity:.5">?</div>
+            <div style="font-size:${mob?'0.95rem':'1rem'};font-weight:700;color:var(--text-dark)">${s.val}</div>
+            <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">${s.label}</div>
+          </div>`).join('')}
+      </div>
+      <div id="stats-plate-tipster-popup" style="padding:0"></div>
+    </div>`;
+
   // Charger les données sponsor pour les 2 slots en parallèle
   const user = await getCurrentUser();
   const [dataFeatured, dataRising] = await Promise.all([
@@ -1945,6 +1991,8 @@ async function renderPageDashboardTipster(container) {
       ${chartHtml}
       <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Mes derniers pronos</div>
       ${derniersHtml}
+      <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Statistiques plateforme</div>
+      ${statsPlateHtmlTip}
       <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nouveautés plateforme</div>
       ${changelogHtml}
       ${sponsorHtml}`;
@@ -1961,6 +2009,8 @@ async function renderPageDashboardTipster(container) {
         <div>
           <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Mes derniers pronos</div>
           ${derniersHtml}
+          <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Statistiques plateforme</div>
+          ${statsPlateHtmlTip}
           <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nouveautés plateforme</div>
           ${changelogHtml}
         </div>
@@ -1968,6 +2018,22 @@ async function renderPageDashboardTipster(container) {
   }
 
   // Fonctions popup stat
+  window.showStatsPlateTipsterPopup = function(key) {
+    const area = document.getElementById('stats-plate-tipster-popup');
+    if (!area) return;
+    if (area.dataset.open === key) { area.style.padding='0'; area.innerHTML=''; area.dataset.open=''; return; }
+    area.dataset.open = key;
+    const p = statsPlatePopupsTip[key];
+    area.style.padding = '0 12px 10px';
+    area.innerHTML = `<div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 12px;border:1px solid var(--border);display:flex;justify-content:space-between;gap:8px">
+      <div>
+        <div style="font-size:0.85rem;font-weight:700;color:var(--text-dark);margin-bottom:3px">${p.title}</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);line-height:1.5">${p.text}</div>
+      </div>
+      <button onclick="const a=document.getElementById('stats-plate-tipster-popup');a.innerHTML='';a.style.padding='0';a.dataset.open='';" style="font-size:1rem;color:var(--text-muted);background:none;border:none;cursor:pointer;flex-shrink:0">×</button>
+    </div>`;
+  };
+
   window.showTipsterStatPopup = function(key) {
     const row1Keys = ['solde', 'winrate'];
     const areaId = row1Keys.includes(key) ? 'tipster-popup-row1' : 'tipster-popup-row2';
