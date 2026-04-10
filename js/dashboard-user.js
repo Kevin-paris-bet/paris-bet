@@ -1230,13 +1230,14 @@ async function renderPageDashboard(container) {
   let settings = {};
   try {
     const safeJson = async (r) => { try { return await r.json(); } catch(e) { return []; } };
-    const [rSp, rCl, rPoll, rTip, rPr, rSettings] = await Promise.allSettled([
+    const [rSp, rCl, rPoll, rTip, rPr, rSettings, rUsers] = await Promise.allSettled([
       fetch(`${SUPA}/rest/v1/sponsors?actif=eq.true&select=id,slot,image_url,description,clicks,tipster_id&apikey=${ANON}`, { headers: { apikey: ANON } }),
       fetch(`${SUPA}/rest/v1/changelog?select=id,titre,description,created_at&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON } }),
       fetch(`${SUPA}/rest/v1/polls?actif=eq.true&select=id,question&apikey=${ANON}`, { headers: { apikey: ANON } }),
       fetch(`${SUPA}/rest/v1/profiles?role=eq.tipster&select=id&apikey=${ANON}`, { headers: { apikey: ANON } }),
       fetch(`${SUPA}/rest/v1/pronos?select=status&apikey=${ANON}`, { headers: { apikey: ANON } }),
       fetch(`${SUPA}/rest/v1/dashboard_settings?select=key,actif&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/profiles?role=eq.user&select=id&apikey=${ANON}`, { headers: { apikey: ANON } }),
     ]);
     sponsors    = rSp.status === 'fulfilled' ? await safeJson(rSp.value) : [];
     changelog   = rCl.status === 'fulfilled' ? await safeJson(rCl.value) : [];
@@ -1244,6 +1245,7 @@ async function renderPageDashboard(container) {
     nbTipsters  = rTip.status === 'fulfilled' ? ((await safeJson(rTip.value))?.length || 0) : 0;
     const allPr = rPr.status === 'fulfilled' ? await safeJson(rPr.value) : [];
     const settingsArr = rSettings.status === 'fulfilled' ? await safeJson(rSettings.value) : [];
+    const nbParieurs  = rUsers.status === 'fulfilled' ? ((await safeJson(rUsers.value))?.length || 0) : 0;
     console.log('dashboard_settings reçus:', settingsArr);
     settings = {};
     (settingsArr||[]).forEach(s => { settings[s.key] = (s.actif === true); });
@@ -1472,16 +1474,46 @@ async function renderPageDashboard(container) {
       <a href="https://x.com/payperwin_co" target="_blank" style="background:#2563EB;color:#ffffff;border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:600;text-decoration:none;white-space:nowrap;flex-shrink:0">Suivre</a>
     </div>`;
 
+  const statsPlatePopups = {
+    tipsters:   { title: 'Tipsters', text: 'Nombre de tipsters actifs inscrits sur PayPerWin qui publient des pronostics.' },
+    pronos:     { title: 'Pronos joués', text: 'Nombre total de pronostics publiés sur la plateforme depuis le lancement.' },
+    winrate:    { title: 'Taux global', text: 'Pourcentage de pronostics terminés qui ont été gagnants, sur l\'ensemble des tipsters.' },
+    parieurs:   { title: 'Parieurs', text: 'Nombre total de membres inscrits sur PayPerWin qui achètent des pronostics.' },
+  };
   const statsPlateHtml = `
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:12px">
-        ${['Tipsters', 'Pronos joués', 'Taux global'].map((l,i) => `
-          <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:8px 10px;text-align:center">
-            <div style="font-size:${mob?'1rem':'1.1rem'};font-weight:700;color:var(--text-dark)">${[nbTipsters, nbPronos, globalWinRate+'%'][i]}</div>
-            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">${l}</div>
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px">
+        ${[
+          { key:'tipsters', label:'Tipsters',    val: nbTipsters },
+          { key:'pronos',   label:'Pronos joués',val: nbPronos },
+          { key:'winrate',  label:'Taux global', val: globalWinRate+'%' },
+          { key:'parieurs', label:'Parieurs',    val: nbParieurs },
+        ].map(s => `
+          <div onclick="showStatsPlatePopup('${s.key}')" style="background:var(--bg-soft);border-radius:var(--radius-md);padding:8px 6px;text-align:center;cursor:pointer;position:relative">
+            <div style="position:absolute;top:4px;right:5px;font-size:9px;color:var(--text-muted);opacity:.5">?</div>
+            <div style="font-size:${mob?'0.95rem':'1rem'};font-weight:700;color:var(--text-dark)">${s.val}</div>
+            <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">${s.label}</div>
           </div>`).join('')}
       </div>
+      <div id="stats-plate-popup" style="padding:0"></div>
     </div>`;
+
+  // Fonction popup stats plateforme (globale pour onclick inline)
+  window.showStatsPlatePopup = function(key) {
+    const area = document.getElementById('stats-plate-popup');
+    if (!area) return;
+    if (area.dataset.open === key) { area.style.padding='0'; area.innerHTML = ''; area.dataset.open = ''; return; }
+    area.dataset.open = key;
+    const p = statsPlatePopups[key];
+    area.style.padding = '0 12px 10px';
+    area.innerHTML = `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;display:flex;justify-content:space-between;gap:8px">
+      <div>
+        <div style="font-size:0.85rem;font-weight:700;color:var(--text-dark);margin-bottom:3px">${p.title}</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);line-height:1.5">${p.text}</div>
+      </div>
+      <button onclick="const a=document.getElementById('stats-plate-popup');a.innerHTML='';a.style.padding='0';a.dataset.open='';" style="font-size:1rem;color:var(--text-muted);background:none;border:none;cursor:pointer;flex-shrink:0">×</button>
+    </div>`;
+  };
 
   // Vérifier que le container est toujours dans le DOM avant de rendre
   if (!document.getElementById('page-content')) return;
