@@ -2251,7 +2251,7 @@ async function renderPageSponsors(container) {
           </div>
           <div class="form-group" style="margin-bottom:10px">
             <label style="font-size:0.78rem;color:var(--text-muted);display:block;margin-bottom:4px">Description courte</label>
-            <input class="input" id="desc-${slot}" type="text" placeholder="Ex: Spécialiste Ligue 1 & Champions League" value="${sponsor?.description||''}" style="width:100%" />
+            <textarea class="input" id="desc-${slot}" rows="2" placeholder="Ex: Spécialiste Ligue 1 & Champions League" style="width:100%;resize:vertical">${sponsor?.description||''}</textarea>
           </div>
           <div style="display:flex;gap:6px;justify-content:flex-end;margin-top:var(--space-sm)">
             ${sponsor

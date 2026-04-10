@@ -1469,7 +1469,7 @@ async function renderPageDashboard(container) {
         <div style="font-size:0.88rem;font-weight:700;color:var(--text-dark)">Suivez-nous sur X</div>
         <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">Actus, alertes pronos et offres exclusives</div>
       </div>
-      <a href="https://x.com/payperwin_co" target="_blank" style="background:#000;color:white;border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:600;text-decoration:none;white-space:nowrap">Suivre</a>
+      <a href="https://x.com/payperwin_co" target="_blank" style="background:var(--primary);color:white;border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:600;text-decoration:none;white-space:nowrap">Suivre</a>
     </div>`;
 
   const statsPlateHtml = `
@@ -1495,7 +1495,7 @@ async function renderPageDashboard(container) {
       <div class="section-header"><div><h2>Tableau de bord</h2></div></div>
       ${statsHtml}
       ${showFeatured && featured ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster à la une</div><div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorFeaturedHtml(featured)}</div>` : ''}
-      ${showTwitter ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nous suivre</div>${xHtml}` : ''}
+      ${showTwitter ? xHtml : ''}
       <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Mes derniers achats</div>
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
         ${derniersHtml}
@@ -1524,7 +1524,7 @@ async function renderPageDashboard(container) {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-lg)">
         <div>
           ${showFeatured && featured ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster à la une</div><div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorFeaturedHtml(featured)}</div>` : ''}
-          ${showTwitter ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nous suivre</div>${xHtml}` : ''}
+          ${showTwitter ? xHtml : ''}
           <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Mes derniers achats</div>
           <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
             ${derniersHtml}
