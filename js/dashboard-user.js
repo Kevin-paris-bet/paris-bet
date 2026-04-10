@@ -1451,12 +1451,12 @@ async function renderPageDashboard(container) {
 
   const derniersHtml = derniers.length > 0
     ? derniers.map(a => `
-      <div style="padding:10px 12px;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-size:0.85rem;font-weight:600;color:var(--text-dark)">${a.game}</div>
-          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">${a.tipster} · ${a.sport} · ${formatDate(a.date)}</div>
+      <div style="padding:10px 12px;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div style="min-width:0;flex:1">
+          <div style="font-size:0.85rem;font-weight:600;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.game}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.tipster} · ${a.sport} · ${formatDate(a.date)}</div>
         </div>
-        ${statusBadgeD[a.status] || ''}
+        <div style="flex-shrink:0">${statusBadgeD[a.status] || ''}</div>
       </div>`).join('')
     : '<div style="padding:12px;font-size:0.85rem;color:var(--text-muted)">Aucun achat pour le moment.</div>';
 
