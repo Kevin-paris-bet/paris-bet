@@ -1256,42 +1256,6 @@ async function renderPageDashboard(container) {
     }
   }
 
-  // HTML bloc meilleur tipster
-  let meilleurTipsterHtml = '';
-  if (meilleurTipster) {
-    const t = meilleurTipster;
-    const mtWinRate = t.total > 0 ? Math.round(t.wins / t.total * 100) : 0;
-    const mtAvgCote = t.cotes.length > 0 ? (t.cotes.reduce((s,c)=>s+c,0)/t.cotes.length).toFixed(2).replace('.',',') : '—';
-    const mtAvatar = t.avatar
-      ? '<img src="' + t.avatar + '" style="width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0" />'
-      : '<div style="width:46px;height:46px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;flex-shrink:0">' + (t.name||'?')[0].toUpperCase() + '</div>';
-    const mtHref = t.pseudo ? 'https://payperwin.co/' + t.pseudo : '../pages/tipster-public.html?id=' + t.id;
-    const mtDesc = t.desc ? '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + t.desc + '</div>' : '';
-    const mtFontSize = mob ? '1rem' : '1.05rem';
-    meilleurTipsterHtml = '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">'
-      + '<div style="display:flex;align-items:center;gap:12px;padding:14px 14px 12px">'
-      + mtAvatar
-      + '<div style="flex:1;min-width:0"><div style="font-size:0.95rem;font-weight:700;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + t.name + '</div>' + mtDesc + '</div>'
-      + '<a href="' + mtHref + '" target="_blank" style="background:#EAF3DE;color:#27500A;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:20px;flex-shrink:0;text-decoration:none;white-space:nowrap">Voir →</a>'
-      + '</div>'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border-top:0.5px solid var(--border)">'
-      + '<div onclick="showMeilleurTipsterPopup(\'tip-victoires\')" style="padding:10px 6px;text-align:center;cursor:pointer;position:relative;border-right:0.5px solid var(--border)"><div style="position:absolute;top:4px;right:4px;font-size:8px;color:var(--text-muted);opacity:.45">?</div><div style="font-size:' + mtFontSize + ';font-weight:700;color:#27500A">' + t.wins + '</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">Victoires</div></div>'
-      + '<div onclick="showMeilleurTipsterPopup(\'tip-pronos\')" style="padding:10px 6px;text-align:center;cursor:pointer;position:relative;border-right:0.5px solid var(--border)"><div style="position:absolute;top:4px;right:4px;font-size:8px;color:var(--text-muted);opacity:.45">?</div><div style="font-size:' + mtFontSize + ';font-weight:700;color:var(--text-dark)">' + (t.totalAchats || t.total) + '</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">Pronos achetés</div></div>'
-      + '<div onclick="showMeilleurTipsterPopup(\'tip-winrate\')" style="padding:10px 6px;text-align:center;cursor:pointer;position:relative;border-right:0.5px solid var(--border)"><div style="position:absolute;top:4px;right:4px;font-size:8px;color:var(--text-muted);opacity:.45">?</div><div style="font-size:' + mtFontSize + ';font-weight:700;color:var(--text-dark)">' + mtWinRate + '%</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">Win rate</div></div>'
-      + '<div onclick="showMeilleurTipsterPopup(\'tip-cote\')" style="padding:10px 6px;text-align:center;cursor:pointer;position:relative"><div style="position:absolute;top:4px;right:4px;font-size:8px;color:var(--text-muted);opacity:.45">?</div><div style="font-size:' + mtFontSize + ';font-weight:700;color:var(--text-dark)">' + mtAvgCote + '</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">Cote moy.</div></div>'
-      + '</div>'
-      + '<div id="popup-meilleur-tipster" style="padding:0"></div>'
-      + '</div>';
-  }
-
-  // Defs popup meilleur tipster
-  window._meilleurTipsterPopupDefs = {
-    'tip-victoires': { title:'Victoires',     text:'Nombre de pronos achetés chez ce tipster qui se sont avérés gagnants.' },
-    'tip-pronos':    { title:'Pronos achetés', text:'Nombre total de pronos achetés chez ce tipster, tous statuts confondus.' },
-    'tip-winrate':   { title:'Win rate',       text:'Pourcentage de vos pronos terminés chez ce tipster qui ont été gagnants (hors annulés).' },
-    'tip-cote':      { title:'Cote moyenne',   text:'Cote moyenne des pronos terminés achetés chez ce tipster.' },
-  };
-
   // Charger en parallèle : sponsors, changelog, sondage actif, stats plateforme
   let sponsors = [], changelog = [], poll = null, pollOptions = [], userVote = null;
   let nbTipsters = 0, nbPronos = 0, globalWinRate = 0, nbParieurs = 0;
@@ -1376,6 +1340,34 @@ async function renderPageDashboard(container) {
   console.log('show vars:', {showObjectif, showAlerte, showStats, showSondage, showTwitter, showRising});
   const derniers = achats.slice(0, 3);
   const mob = isMobile();
+
+  // HTML bloc meilleur tipster — construit ici car nécessite mob
+  let meilleurTipsterHtml = '';
+  if (meilleurTipster) {
+    const t = meilleurTipster;
+    const mtWinRate = t.total > 0 ? Math.round(t.wins / t.total * 100) : 0;
+    const mtAvgCote = t.cotes.length > 0 ? (t.cotes.reduce((s,c)=>s+c,0)/t.cotes.length).toFixed(2).replace('.',',') : '—';
+    const mtAvatar = t.avatar
+      ? '<img src="' + t.avatar + '" style="width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0" />'
+      : '<div style="width:46px;height:46px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;flex-shrink:0">' + (t.name||'?')[0].toUpperCase() + '</div>';
+    const mtHref = t.pseudo ? 'https://payperwin.co/' + t.pseudo : '../pages/tipster-public.html?id=' + t.id;
+    const mtDesc = t.desc ? '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + t.desc + '</div>' : '';
+    const mtFontSize = mob ? '1rem' : '1.05rem';
+    meilleurTipsterHtml = '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">'
+      + '<div style="display:flex;align-items:center;gap:12px;padding:14px 14px 12px">'
+      + mtAvatar
+      + '<div style="flex:1;min-width:0"><div style="font-size:0.95rem;font-weight:700;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + t.name + '</div>' + mtDesc + '</div>'
+      + '<a href="' + mtHref + '" target="_blank" style="background:#EAF3DE;color:#27500A;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:20px;flex-shrink:0;text-decoration:none;white-space:nowrap">Voir \u2192</a>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border-top:0.5px solid var(--border)">'
+      + '<div onclick="showMeilleurTipsterPopup(\'tip-victoires\')" style="padding:10px 6px;text-align:center;cursor:pointer;position:relative;border-right:0.5px solid var(--border)"><div style="position:absolute;top:4px;right:4px;font-size:8px;color:var(--text-muted);opacity:.45">?</div><div style="font-size:' + mtFontSize + ';font-weight:700;color:#27500A">' + t.wins + '</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">Victoires</div></div>'
+      + '<div onclick="showMeilleurTipsterPopup(\'tip-pronos\')" style="padding:10px 6px;text-align:center;cursor:pointer;position:relative;border-right:0.5px solid var(--border)"><div style="position:absolute;top:4px;right:4px;font-size:8px;color:var(--text-muted);opacity:.45">?</div><div style="font-size:' + mtFontSize + ';font-weight:700;color:var(--text-dark)">' + (t.totalAchats || t.total) + '</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">Pronos achetés</div></div>'
+      + '<div onclick="showMeilleurTipsterPopup(\'tip-winrate\')" style="padding:10px 6px;text-align:center;cursor:pointer;position:relative;border-right:0.5px solid var(--border)"><div style="position:absolute;top:4px;right:4px;font-size:8px;color:var(--text-muted);opacity:.45">?</div><div style="font-size:' + mtFontSize + ';font-weight:700;color:var(--text-dark)">' + mtWinRate + '%</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">Win rate</div></div>'
+      + '<div onclick="showMeilleurTipsterPopup(\'tip-cote\')" style="padding:10px 6px;text-align:center;cursor:pointer;position:relative"><div style="position:absolute;top:4px;right:4px;font-size:8px;color:var(--text-muted);opacity:.45">?</div><div style="font-size:' + mtFontSize + ';font-weight:700;color:var(--text-dark)">' + mtAvgCote + '</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">Cote moy.</div></div>'
+      + '</div>'
+      + '<div id="popup-meilleur-tipster" style="padding:0"></div>'
+      + '</div>';
+  }
 
   // Helpers
   const statusBadgeD = { pending:'<span style="background:#E6F1FB;color:#0C447C;font-size:0.75rem;padding:2px 8px;border-radius:10px">⏳ En attente</span>', won:'<span style="background:#EAF3DE;color:#27500A;font-size:0.75rem;padding:2px 8px;border-radius:10px">✓ Gagné</span>', lost:'<span style="background:#FCEBEB;color:#791F1F;font-size:0.75rem;padding:2px 8px;border-radius:10px">✕ Perdu</span>', cancelled:'<span style="background:#FFF3E0;color:#E65100;font-size:0.75rem;padding:2px 8px;border-radius:10px">⊘ Annulé</span>' };
