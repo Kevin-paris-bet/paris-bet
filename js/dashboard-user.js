@@ -1336,7 +1336,8 @@ async function renderPageDashboard(container) {
   const showStats      = settings['bloc_stats_plate']    !== undefined ? settings['bloc_stats_plate']    : true;
   const showSondage    = settings['bloc_sondage']        !== undefined ? settings['bloc_sondage']        : true;
   const showTwitter    = settings['bloc_twitter']        !== undefined ? settings['bloc_twitter']        : true;
-  const showRising     = settings['bloc_sponsor_rising'] !== undefined ? settings['bloc_sponsor_rising'] : true;
+  const showRising          = settings['bloc_sponsor_rising']    !== undefined ? settings['bloc_sponsor_rising']    : true;
+  const showMeilleurTipster = settings['bloc_meilleur_tipster'] !== undefined ? settings['bloc_meilleur_tipster'] : true;
   console.log('show vars:', {showObjectif, showAlerte, showStats, showSondage, showTwitter, showRising});
   const derniers = achats.slice(0, 3);
   const mob = isMobile();
@@ -1611,7 +1612,7 @@ async function renderPageDashboard(container) {
         ${derniersHtml}
         <button onclick="navigateTo('achats')" style="width:100%;padding:9px;font-size:0.8rem;color:var(--primary);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer">Voir tous mes achats →</button>
       </div>
-      ${meilleurTipster ? '<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Votre meilleur tipster</div>' + meilleurTipsterHtml : ''}
+      ${showMeilleurTipster && meilleurTipster ? '<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Votre meilleur tipster</div>' + meilleurTipsterHtml : ''}
       ${showAlerte ? alerteHtml : ''}
       ${showObjectif ? objectifHtml : ''}
       <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nouveautés</div>
@@ -1641,7 +1642,7 @@ async function renderPageDashboard(container) {
             ${derniersHtml}
             <button onclick="navigateTo('achats')" style="width:100%;padding:9px;font-size:0.8rem;color:var(--primary);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer">Voir tous mes achats →</button>
           </div>
-          ${meilleurTipster ? '<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Votre meilleur tipster</div>' + meilleurTipsterHtml : ''}
+          ${showMeilleurTipster && meilleurTipster ? '<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Votre meilleur tipster</div>' + meilleurTipsterHtml : ''}
           ${showSondage ? pollHtml() : ''}
         </div>
         <div>
