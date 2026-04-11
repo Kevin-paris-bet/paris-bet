@@ -98,12 +98,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const tipsterIds = [...new Set(Object.values(pronosMap).map(p => p.tipster_id).filter(Boolean))];
         if (tipsterIds.length > 0) {
           const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-          const rp = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id,first_name,last_name,pseudo&apikey=' + ANON);
+          const rp = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id,first_name,last_name,pseudo,avatar_url,description&apikey=' + ANON);
           const profiles = await rp.json();
           if (Array.isArray(profiles)) {
             const profilesMap = {};
-            profiles.forEach(p => profilesMap[p.id] = p.pseudo || (p.first_name + ' ' + p.last_name));
-            Object.values(pronosMap).forEach(p => p.tipsterName = profilesMap[p.tipster_id] || '—');
+            profiles.forEach(p => { profilesMap[p.id] = { name: p.pseudo || (p.first_name + ' ' + p.last_name), avatar: p.avatar_url || '', pseudo: p.pseudo || '', description: p.description || '' }; });
+            Object.values(pronosMap).forEach(p => {
+              const prof = profilesMap[p.tipster_id] || {};
+              p.tipsterName   = prof.name   || '—';
+              p.tipsterAvatar = prof.avatar || '';
+              p.tipsterPseudo = prof.pseudo || '';
+              p.tipsterDesc   = prof.description || '';
+            });
           }
         }
       }
@@ -112,18 +118,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     userState.realAchats = achats.map(a => {
       const p = pronosMap[a.prono_id] || {};
       return {
-        id:           a.id,
-        game:         p.game || "—",
-        sport:        p.sport || '—',
-        date:         p.match_date || '—',
-        tipster:      (pronosMap[a.prono_id] || {}).tipsterName || '—',
-        price:        parseFloat(a.amount) || 0,
-        status:       a.status || 'pending',
-        content:      p.content || '',
-        cote:         p.cote || null,
-        image_url:    p.image_url || null,
-        image_status: p.image_status || 'none',
-        pronoId:      a.prono_id,
+        id:             a.id,
+        game:           p.game || "—",
+        sport:          p.sport || '—',
+        date:           p.match_date || '—',
+        tipster:        p.tipsterName   || '—',
+        tipsterId:      p.tipster_id    || '',
+        tipsterAvatar:  p.tipsterAvatar || '',
+        tipsterPseudo:  p.tipsterPseudo || '',
+        tipsterDesc:    p.tipsterDesc   || '',
+        price:          parseFloat(a.amount) || 0,
+        status:         a.status || 'pending',
+        content:        p.content || '',
+        cote:           p.cote || null,
+        image_url:      p.image_url || null,
+        image_status:   p.image_status || 'none',
+        pronoId:        a.prono_id,
       };
     });
   } else {
@@ -1224,6 +1234,73 @@ async function renderPageDashboard(container) {
   const weekGoal  = 20;
   const weekPct   = Math.min(100, Math.round(weekSpent / weekGoal * 100));
 
+  // Calcul du meilleur tipster (celui avec le plus de victoires)
+  let meilleurTipster = null;
+  {
+    const achatsTermines = achats.filter(a => a.status === 'won' || a.status === 'lost');
+    if (achatsTermines.length > 0) {
+      const byTipster = {};
+      achatsTermines.forEach(a => {
+        if (!a.tipsterId) return;
+        if (!byTipster[a.tipsterId]) byTipster[a.tipsterId] = { id: a.tipsterId, name: a.tipster, avatar: a.tipsterAvatar, pseudo: a.tipsterPseudo, desc: a.tipsterDesc, wins: 0, total: 0, cotes: [] };
+        if (a.status === 'won') byTipster[a.tipsterId].wins++;
+        byTipster[a.tipsterId].total++;
+        if (a.cote) byTipster[a.tipsterId].cotes.push(parseFloat(a.cote));
+      });
+      // Tous les achats (pas seulement terminés) pour le total pronos achetés
+      achats.forEach(a => {
+        if (byTipster[a.tipsterId]) byTipster[a.tipsterId].totalAchats = (byTipster[a.tipsterId].totalAchats || 0) + 1;
+      });
+      const sorted = Object.values(byTipster).sort((a, b) => b.wins - a.wins || b.total - a.total);
+      if (sorted.length > 0 && sorted[0].wins > 0) meilleurTipster = sorted[0];
+    }
+  }
+
+  // HTML bloc meilleur tipster
+  const meilleurTipsterHtml = meilleurTipster ? (() => {
+    const t = meilleurTipster;
+    const winRate = t.total > 0 ? Math.round(t.wins / t.total * 100) : 0;
+    const avgCote = t.cotes.length > 0 ? (t.cotes.reduce((s,c)=>s+c,0)/t.cotes.length).toFixed(2).replace('.',',') : '—';
+    const avatarHtml = t.avatar
+      ? `<img src="${t.avatar}" style="width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
+      : `<div style="width:46px;height:46px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;flex-shrink:0">${(t.name||'?')[0].toUpperCase()}</div>`;
+    const href = t.pseudo ? 'https://payperwin.co/' + t.pseudo : '../pages/tipster-public.html?id=' + t.id;
+    const descHtml = t.desc ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.desc}</div>` : '';
+    return `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 14px 12px">
+        ${avatarHtml}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.95rem;font-weight:700;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
+          ${descHtml}
+        </div>
+        <a href="${href}" target="_blank" style="background:#EAF3DE;color:#27500A;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:20px;flex-shrink:0;text-decoration:none;white-space:nowrap">Voir →</a>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border-top:0.5px solid var(--border)">
+        ${[
+          { key:'tip-victoires', val: t.wins,                     label: 'Victoires',     color:'#27500A', title:'Victoires',     text:'Nombre de pronos achetés chez ce tipster qui se sont avérés gagnants.' },
+          { key:'tip-pronos',   val: t.totalAchats || t.total,   label: 'Pronos achetés', color:'',        title:'Pronos achetés', text:'Nombre total de pronos achetés chez ce tipster, tous statuts confondus.' },
+          { key:'tip-winrate',  val: winRate + '%',               label: 'Win rate',       color:'',        title:'Win rate',       text:'Pourcentage de vos pronos terminés chez ce tipster qui ont été gagnants (hors annulés).' },
+          { key:'tip-cote',     val: avgCote,                     label: 'Cote moy.',      color:'',        title:'Cote moyenne',   text:'Cote moyenne des pronos terminés achetés chez ce tipster.' },
+        ].map((s,i) => `
+          <div onclick="showMeilleurTipsterPopup('${s.key}')" style="padding:10px 6px;text-align:center;cursor:pointer;position:relative${i<3?';border-right:0.5px solid var(--border)':''}">
+            <div style="position:absolute;top:4px;right:4px;font-size:8px;color:var(--text-muted);opacity:.45">?</div>
+            <div style="font-size:${mob?'1rem':'1.05rem'};font-weight:700;color:${s.color||'var(--text-dark)'};">${s.val}</div>
+            <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">${s.label}</div>
+          </div>`).join('')}
+      </div>
+      <div id="popup-meilleur-tipster" style="padding:0"></div>
+    </div>`;
+  })() : '';
+
+  // Stocker les defs popup pour accès global
+  window._meilleurTipsterPopupDefs = {
+    'tip-victoires': { title:'Victoires',     text:'Nombre de pronos achetés chez ce tipster qui se sont avérés gagnants.' },
+    'tip-pronos':    { title:'Pronos achetés', text:'Nombre total de pronos achetés chez ce tipster, tous statuts confondus.' },
+    'tip-winrate':   { title:'Win rate',       text:'Pourcentage de vos pronos terminés chez ce tipster qui ont été gagnants (hors annulés).' },
+    'tip-cote':      { title:'Cote moyenne',   text:'Cote moyenne des pronos terminés achetés chez ce tipster.' },
+  };
+
   // Charger en parallèle : sponsors, changelog, sondage actif, stats plateforme
   let sponsors = [], changelog = [], poll = null, pollOptions = [], userVote = null;
   let nbTipsters = 0, nbPronos = 0, globalWinRate = 0, nbParieurs = 0;
@@ -1499,6 +1576,24 @@ async function renderPageDashboard(container) {
     </div>`;
 
   // Fonction popup stats plateforme (globale pour onclick inline)
+  window.showMeilleurTipsterPopup = function(key) {
+    const area = document.getElementById('popup-meilleur-tipster');
+    if (!area) return;
+    const defs = window._meilleurTipsterPopupDefs || {};
+    if (area.dataset.open === key) { area.style.padding='0'; area.innerHTML=''; area.dataset.open=''; return; }
+    area.dataset.open = key;
+    const p = defs[key];
+    if (!p) return;
+    area.style.padding = '0 12px 10px';
+    area.innerHTML = `<div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 12px;border:1px solid var(--border);display:flex;justify-content:space-between;gap:8px">
+      <div>
+        <div style="font-size:0.85rem;font-weight:700;color:var(--text-dark);margin-bottom:3px">${p.title}</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);line-height:1.5">${p.text}</div>
+      </div>
+      <button onclick="const a=document.getElementById('popup-meilleur-tipster');a.innerHTML='';a.style.padding='0';a.dataset.open='';" style="font-size:1rem;color:var(--text-muted);background:none;border:none;cursor:pointer;flex-shrink:0">×</button>
+    </div>`;
+  };
+
   window.showStatsPlatePopup = function(key) {
     const area = document.getElementById('stats-plate-popup');
     if (!area) return;
@@ -1533,6 +1628,7 @@ async function renderPageDashboard(container) {
         ${derniersHtml}
         <button onclick="navigateTo('achats')" style="width:100%;padding:9px;font-size:0.8rem;color:var(--primary);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer">Voir tous mes achats →</button>
       </div>
+      ${meilleurTipster ? '<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Votre meilleur tipster</div>' + meilleurTipsterHtml : ''}
       ${showAlerte ? alerteHtml : ''}
       ${showObjectif ? objectifHtml : ''}
       <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nouveautés</div>
@@ -1562,6 +1658,7 @@ async function renderPageDashboard(container) {
             ${derniersHtml}
             <button onclick="navigateTo('achats')" style="width:100%;padding:9px;font-size:0.8rem;color:var(--primary);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer">Voir tous mes achats →</button>
           </div>
+          ${meilleurTipster ? '<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Votre meilleur tipster</div>' + meilleurTipsterHtml : ''}
           ${showSondage ? pollHtml() : ''}
         </div>
         <div>
