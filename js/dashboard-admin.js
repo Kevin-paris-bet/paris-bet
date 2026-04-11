@@ -810,9 +810,10 @@ function renderUserRows() {
             <div class="prono-meta">${u.email}</div>
           </div>
           <div style="display:flex;gap:6px;align-items:center">
-            ${u.freebet > 0 ? `<span style="background:#FAEEDA;color:#633806;font-size:0.7rem;font-weight:600;padding:2px 7px;border-radius:10px;border:0.5px solid #EF9F27">${formatEuros(u.freebet)}</span>` : `<span style="background:var(--bg-soft);color:var(--text-muted);font-size:0.7rem;padding:2px 7px;border-radius:10px;border:0.5px solid var(--border)">0 €</span>`}
-            <button class="btn-icon" title="Ajouter freebet" onclick="openFreebetModal('${u.id}','${u.name}',${u.freebet})" style="border-color:#EF9F27;color:#854F0B">+FB</button>
-            ${voirBtn}${roleBtn(u)}
+            <button onclick="openFreebetModal('${u.id}','${u.name}',${u.freebet})" style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;border:0.5px solid ${u.freebet > 0 ? '#EF9F27' : 'var(--border)'};background:${u.freebet > 0 ? '#FFF8EE' : 'var(--bg-soft)'};cursor:pointer">
+              <span style="font-size:0.72rem;font-weight:600;color:${u.freebet > 0 ? '#633806' : 'var(--text-muted)'}">Fbet ${u.freebet > 0 ? formatEuros(u.freebet) : '0 €'}</span>
+            </button>
+            ${voirBtn}
           </div>
         </div>
         <div style="display:flex;gap:var(--space-lg);font-size:0.82rem;color:var(--text-muted);flex-wrap:wrap">
@@ -833,9 +834,10 @@ function renderUserRows() {
         <div style="font-weight:600;color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</div>
         <div style="font-size:0.8rem;color:var(--text-muted)">${u.joined}</div>
         <div style="display:flex;gap:6px;align-items:center">
-          ${u.freebet > 0 ? `<span style="background:#FAEEDA;color:#633806;font-size:0.7rem;font-weight:600;padding:2px 6px;border-radius:10px;border:0.5px solid #EF9F27">${formatEuros(u.freebet)}</span>` : ''}
-          <button class="btn-icon" title="Ajouter freebet" onclick="openFreebetModal('${u.id}','${u.name}',${u.freebet})" style="border-color:#EF9F27;color:#854F0B">+FB</button>
-          ${voirBtn}${roleBtn(u)}
+          <button onclick="openFreebetModal('${u.id}','${u.name}',${u.freebet})" style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;border:0.5px solid ${u.freebet > 0 ? '#EF9F27' : 'var(--border)'};background:${u.freebet > 0 ? '#FFF8EE' : 'var(--bg-soft)'};cursor:pointer">
+            <span style="font-size:0.72rem;font-weight:600;color:${u.freebet > 0 ? '#633806' : 'var(--text-muted)'}">Fbet ${u.freebet > 0 ? formatEuros(u.freebet) : '0 €'}</span>
+          </button>
+          ${voirBtn}
         </div>
       </div>`;
   }).join('');
@@ -1583,8 +1585,15 @@ async function openFicheTipster(id){
     const wr=(won+lost)>0?Math.round(won/(won+lost)*100):0;
     const badge={won:'<span class="badge badge-won">✓ Gagné</span>',lost:'<span class="badge badge-lost">✕ Perdu</span>',cancelled:'<span class="badge badge-cancelled">⊘ Annulé</span>',pending:'<span class="badge badge-pending">⏳ En attente</span>'};
     modal.innerHTML=`
-      <h2 style="margin-bottom:4px">${p.first_name} ${p.last_name}</h2>
-      <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">Membre depuis ${formatDate(p.created_at?.split('T')[0])}</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+        <h2>${p.first_name} ${p.last_name}</h2>
+        ${p.role === 'moderator'
+          ? `<div style="display:flex;align-items:center;gap:6px"><span style="font-size:0.72rem;padding:3px 10px;border-radius:20px;background:var(--warning-pale,#fff8e1);color:var(--warning);font-weight:600">⚖️ Modérateur</span><button onclick="setModerator('${id}','user');document.getElementById('fiche-modal-overlay').style.display='none'" style="font-size:0.72rem;padding:3px 8px;border:1px solid var(--border);border-radius:20px;background:none;color:var(--text-muted);cursor:pointer">Retirer</button></div>`
+          : `<button onclick="setModerator('${id}','moderator');document.getElementById('fiche-modal-overlay').style.display='none'" style="font-size:0.72rem;padding:3px 10px;border:1px solid var(--border);border-radius:20px;background:none;color:var(--text-muted);cursor:pointer">+ Modo</button>`
+        }
+      </div>
+      <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-md)">Membre depuis ${formatDate(p.created_at?.split('T')[0])}</div>
+      ${parseFloat(p.freebet_balance||0) > 0 ? `<div style="display:flex;align-items:center;justify-content:space-between;background:#FFF8EE;border:0.5px solid #EF9F27;border-radius:var(--radius-md);padding:8px 12px;margin-bottom:var(--space-lg)"><span style="font-size:0.82rem;color:#633806">💛 Solde freebet</span><strong style="color:#412402">${formatEuros(parseFloat(p.freebet_balance||0))}</strong></div>` : '<div style="margin-bottom:var(--space-lg)"></div>'}
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-card__label">Pronos</div><div class="stat-card__value">${(pronos||[]).length}</div></div>
         <div class="stat-card"><div class="stat-card__label">Win Rate</div><div class="stat-card__value" style="color:var(--success)">${wr}%</div></div>
@@ -1622,17 +1631,23 @@ function openFreebetModal(userId, userName, currentFreebet) {
   overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center';
   overlay.innerHTML = `
     <div style="background:var(--bg);border-radius:var(--radius-lg);padding:var(--space-xl);max-width:380px;width:90%;border:1px solid var(--border)">
-      <h3 style="margin-bottom:6px">Ajouter un freebet</h3>
-      <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">${userName} · Solde freebet actuel : <strong style="color:#633806">${formatEuros(currentFreebet)}</strong></p>
-      <div class="form-group">
-        <label>Montant à ajouter (€)</label>
-        <div class="input-wrap">
-          <input class="input" type="number" id="freebet-amount" min="0.5" step="0.5" placeholder="Ex: 5" style="padding-left:var(--space-md)" />
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:var(--space-md)">
+        <div style="width:34px;height:34px;border-radius:50%;background:#B5D4F4;display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;color:#0C447C;flex-shrink:0">${userName[0].toUpperCase()}</div>
+        <div>
+          <div style="font-size:0.95rem;font-weight:700;color:var(--text-dark)">${userName}</div>
+          <div style="font-size:0.78rem;color:var(--text-muted)">Solde freebet actuel : <strong style="color:#633806">${formatEuros(currentFreebet)}</strong></div>
         </div>
       </div>
+      <div class="form-group">
+        <label>Montant à ajouter</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:var(--space-sm)">
+          ${[2,5,10,20].map(v => `<button type="button" onclick="document.getElementById('freebet-amount').value=${v};document.querySelectorAll('.freebet-quick-btn').forEach(b=>b.style.background='var(--bg-soft)');this.style.background='#FFF8EE';this.style.borderColor='#EF9F27'" class="freebet-quick-btn" style="padding:7px 4px;border:0.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);font-size:0.82rem;font-weight:600;color:var(--text-dark);cursor:pointer">${v} €</button>`).join('')}
+        </div>
+        <input class="input" type="number" id="freebet-amount" min="0.5" step="0.5" placeholder="Autre montant (€)" />
+      </div>
       <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-lg)">
-        <button class="btn btn-outline" onclick="document.getElementById('freebet-modal-overlay').remove()">Annuler</button>
-        <button class="btn btn-primary" onclick="saveFreebetModal('${userId}',${currentFreebet})">Créditer le freebet</button>
+        <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('freebet-modal-overlay').remove()">Annuler</button>
+        <button class="btn btn-primary" style="flex:2;background:#EF9F27;border-color:#EF9F27;color:#412402" onclick="saveFreebetModal('${userId}',${currentFreebet})">Créditer le freebet</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -1678,7 +1693,7 @@ async function openFicheUser(id){
   modal.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Chargement...</div>';
   try{
     // Profil (avec total_deposits)
-    const rP=await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,total_deposits,created_at&id=eq.${id}&apikey=${ANON}`,{headers:{apikey:ANON,'Authorization':'Bearer '+ANON}});
+    const rP=await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,total_deposits,created_at,role,freebet_balance&id=eq.${id}&apikey=${ANON}`,{headers:{apikey:ANON,'Authorization':'Bearer '+ANON}});
     const profiles=await rP.json(); const p=profiles[0]||{};
 
     // Achats
@@ -1723,7 +1738,12 @@ async function openFicheUser(id){
       :'<div style="font-size:0.85rem;color:var(--text-muted);margin-top:var(--space-sm)">Aucun dépôt enregistré.</div>';
 
     modal.innerHTML=`
-      <h2 style="margin-bottom:4px">${p.first_name} ${p.last_name}</h2>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+        <h2 style="margin:0">${p.first_name} ${p.last_name}</h2>
+        ${p.role==='moderator'
+          ? `<div style="display:flex;align-items:center;gap:6px"><span style="font-size:0.75rem;padding:3px 10px;border-radius:20px;background:var(--warning-pale,#fff8e1);color:var(--warning);font-weight:600">⚖️ Modo</span><button onclick="setModerator('${p.id}','user');document.getElementById('fiche-modal-overlay').style.display='none'" style="font-size:0.72rem;padding:3px 8px;border:1px solid var(--border);border-radius:20px;background:none;color:var(--text-muted);cursor:pointer">Retirer</button></div>`
+          : `<button onclick="setModerator('${p.id}','moderator');document.getElementById('fiche-modal-overlay').style.display='none'" style="font-size:0.75rem;padding:3px 10px;border:1px solid var(--border);border-radius:20px;background:none;color:var(--text-muted);cursor:pointer">+ Modo</button>`}
+      </div>
       <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">Membre depuis ${formatDate(p.created_at?.split('T')[0])}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-sm);margin-bottom:var(--space-lg)">
 
