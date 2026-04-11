@@ -1647,7 +1647,7 @@ function openFreebetModal(userId, userName, currentFreebet) {
       </div>
       <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-lg)">
         <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('freebet-modal-overlay').remove()">Annuler</button>
-        <button class="btn btn-primary" style="flex:2;background:#EF9F27;border-color:#EF9F27;color:#412402" onclick="saveFreebetModal('${userId}',${currentFreebet})">Créditer le freebet</button>
+        <button class="btn btn-primary" style="flex:2;background:#EF9F27;border-color:#EF9F27;color:#412402" onclick="saveFreebetModal('${userId}',${currentFreebet})">Créditer le Fbet</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
