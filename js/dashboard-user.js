@@ -56,8 +56,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   MOCK_USER.firstName = user.profile.first_name;
   MOCK_USER.lastName  = user.profile.last_name;
   MOCK_USER.email     = user.email;
-  MOCK_USER.balance   = parseFloat(user.profile.balance) || 0;
-  MOCK_USER.pending   = parseFloat(user.profile.pending) || 0;
+  MOCK_USER.balance  = parseFloat(user.profile.balance) || 0;
+  MOCK_USER.pending  = parseFloat(user.profile.pending) || 0;
+  MOCK_USER.freebet  = parseFloat(user.profile.freebet_balance) || 0;
 
   // Mettre à jour la sidebar avec le vrai nom
   const fullName = MOCK_USER.firstName + ' ' + MOCK_USER.lastName;
@@ -619,47 +620,130 @@ function renderPageExplorer(container) {
 }
 
 async function buyProno(pronoId, price, matchName) {
-  if (MOCK_USER.balance < price) {
+  const hasFreebet = MOCK_USER.freebet > 0;
+  const hasBalance = MOCK_USER.balance >= price;
+  const hasFreebetEnough = MOCK_USER.freebet >= price;
+
+  if (!hasBalance && !hasFreebetEnough) {
     showToast('Solde insuffisant. Rechargez votre compte !', 'error');
     return;
   }
-  if (!confirm('Acheter le prono "' + matchName + '" pour ' + price + ' € ?')) return;
 
+  // Si l'user a du freebet suffisant, on lui propose le choix via une modal
+  if (hasFreebet && hasFreebetEnough) {
+    showBuyModal(pronoId, price, matchName, hasBalance);
+    return;
+  }
+
+  // Sinon achat direct avec le solde normal
+  await executeBuyProno(pronoId, price, matchName, false);
+}
+
+function showBuyModal(pronoId, price, matchName, hasBalance) {
+  const existing = document.getElementById('buy-modal-overlay');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'buy-modal-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px';
+
+  overlay.innerHTML = `
+    <div style="background:var(--bg);border-radius:var(--radius-lg);width:100%;max-width:380px;overflow:hidden;border:1px solid var(--border)">
+      <div style="padding:16px 16px 12px;border-bottom:0.5px solid var(--border)">
+        <div style="font-size:1rem;font-weight:700;color:var(--text-dark)">Acheter ce pronostic</div>
+        <div style="font-size:0.82rem;color:var(--text-muted);margin-top:4px">${matchName} — ${formatEuros(price)}</div>
+      </div>
+      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:0.82rem;color:var(--text-muted)">Choisissez votre mode de paiement :</div>
+        ${hasBalance ? `
+        <label id="opt-solde" onclick="selectPayMode('solde')" style="display:flex;align-items:center;gap:10px;padding:11px 12px;border:1.5px solid var(--primary);border-radius:var(--radius-md);cursor:pointer;background:var(--blue-xpale,#eef3ff)">
+          <div id="radio-solde" style="width:16px;height:16px;border-radius:50%;border:2px solid var(--primary);background:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <div style="width:6px;height:6px;border-radius:50%;background:white"></div>
+          </div>
+          <div>
+            <div style="font-size:0.82rem;font-weight:700;color:var(--primary)">Solde (${formatEuros(MOCK_USER.balance)})</div>
+            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:1px">Si perdu : remboursé automatiquement</div>
+          </div>
+        </label>` : ''}
+        <label id="opt-freebet" onclick="selectPayMode('freebet')" style="display:flex;align-items:center;gap:10px;padding:11px 12px;border:1.5px solid ${hasBalance ? 'var(--border)' : '#EF9F27'};border-radius:var(--radius-md);cursor:pointer;background:${hasBalance ? 'var(--bg)' : '#FFF8EE'}">
+          <div id="radio-freebet" style="width:16px;height:16px;border-radius:50%;border:2px solid #EF9F27;background:${hasBalance ? 'white' : '#EF9F27'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            ${!hasBalance ? '<div style="width:6px;height:6px;border-radius:50%;background:white"></div>' : ''}
+          </div>
+          <div>
+            <div style="font-size:0.82rem;font-weight:700;color:#633806">Freebet (${formatEuros(MOCK_USER.freebet)})</div>
+            <div style="font-size:0.72rem;color:#854F0B;margin-top:1px">Si perdu : non remboursé</div>
+          </div>
+        </label>
+        <button onclick="confirmBuyModal('${pronoId}',${price},'${matchName.replace(/'/g, "\'")}')" style="width:100%;background:var(--primary);color:white;border:none;border-radius:var(--radius-md);padding:11px;font-size:0.88rem;font-weight:700;cursor:pointer;margin-top:2px">Acheter — ${formatEuros(price)}</button>
+        <button onclick="document.getElementById('buy-modal-overlay').remove()" style="width:100%;background:none;border:none;color:var(--text-muted);font-size:0.82rem;cursor:pointer;padding:4px">Annuler</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  // Sélection initiale
+  window._buyPayMode = !document.getElementById ? 'freebet' : (document.getElementById('opt-solde') ? 'solde' : 'freebet');
+}
+
+window.selectPayMode = function(mode) {
+  window._buyPayMode = mode;
+  const soldeOpt = document.getElementById('opt-solde');
+  const fbOpt    = document.getElementById('opt-freebet');
+  const radioS   = document.getElementById('radio-solde');
+  const radioFB  = document.getElementById('radio-freebet');
+  if (soldeOpt) {
+    soldeOpt.style.border = mode === 'solde' ? '1.5px solid var(--primary)' : '1.5px solid var(--border)';
+    soldeOpt.style.background = mode === 'solde' ? 'var(--blue-xpale,#eef3ff)' : 'var(--bg)';
+    radioS.style.background = mode === 'solde' ? 'var(--primary)' : 'white';
+    radioS.innerHTML = mode === 'solde' ? '<div style="width:6px;height:6px;border-radius:50%;background:white"></div>' : '';
+  }
+  fbOpt.style.border = mode === 'freebet' ? '1.5px solid #EF9F27' : '1.5px solid var(--border)';
+  fbOpt.style.background = mode === 'freebet' ? '#FFF8EE' : 'var(--bg)';
+  radioFB.style.background = mode === 'freebet' ? '#EF9F27' : 'white';
+  radioFB.innerHTML = mode === 'freebet' ? '<div style="width:6px;height:6px;border-radius:50%;background:white"></div>' : '';
+};
+
+window.confirmBuyModal = async function(pronoId, price, matchName) {
+  const useFreebet = window._buyPayMode === 'freebet';
+  document.getElementById('buy-modal-overlay')?.remove();
+  await executeBuyProno(pronoId, price, matchName, useFreebet);
+};
+
+async function executeBuyProno(pronoId, price, matchName, useFreebet) {
   try {
     const user = await getCurrentUser();
+    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+    const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
 
     // Vérifier qu'il n'a pas déjà acheté
-    const { data: existing } = await sb
-      .from('purchases')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('prono_id', pronoId)
-      .maybeSingle();
-
+    const { data: existing } = await sb.from('purchases').select('id').eq('user_id', user.id).eq('prono_id', pronoId).maybeSingle();
     if (existing) { showToast('Vous avez déjà acheté ce prono.', 'info'); return; }
 
-    // Débiter le solde et incrémenter pending
-    const newBalance = MOCK_USER.balance - price;
-    const newPending = (MOCK_USER.pending || 0) + price;
-    const { error: balErr } = await sb
-      .from('profiles')
-      .update({ balance: newBalance, pending: newPending })
-      .eq('id', user.id);
+    // Préparer la mise à jour du profil
+    let profileUpdate = {};
+    if (useFreebet) {
+      const newFreebet = Math.round((MOCK_USER.freebet - price) * 100) / 100;
+      profileUpdate = { freebet_balance: newFreebet };
+    } else {
+      const newBalance = MOCK_USER.balance - price;
+      const newPending = (MOCK_USER.pending || 0) + price;
+      profileUpdate = { balance: newBalance, pending: newPending };
+    }
 
+    // Mettre à jour le profil
+    const { error: balErr } = await sb.from('profiles').update(profileUpdate).eq('id', user.id);
     if (balErr) throw balErr;
 
-    // Créer l'achat
-    const { error: purchErr } = await sb
-      .from('purchases')
-      .insert({ user_id: user.id, prono_id: pronoId, amount: price, status: 'pending' });
-
+    // Créer l'achat avec le flag is_freebet
+    const { error: purchErr } = await sb.from('purchases').insert({
+      user_id: user.id,
+      prono_id: pronoId,
+      amount: price,
+      status: 'pending',
+      is_freebet: useFreebet
+    });
     if (purchErr) throw purchErr;
 
-    // Incrémenter le nb d'acheteurs sur le prono
+    // Incrémenter buyers sur le prono
     try {
-      const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-      const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
-      // Lire le buyers actuel puis incrémenter
       const rB = await fetch(SUPA + '/rest/v1/pronos?select=buyers&id=eq.' + pronoId + '&apikey=' + ANON);
       const bData = await rB.json();
       const currentBuyers = (Array.isArray(bData) && bData.length > 0) ? (parseInt(bData[0].buyers) || 0) : 0;
@@ -671,18 +755,17 @@ async function buyProno(pronoId, price, matchName) {
     } catch(e) { console.error('Erreur increment buyers:', e); }
 
     // Mettre à jour l'état local
-    MOCK_USER.balance = newBalance;
-    MOCK_USER.pending = newPending;
-    const topbarBalance = document.getElementById('topbar-balance');
-    if (topbarBalance) topbarBalance.textContent = '🔥 ' + formatEuros(newBalance);
+    if (useFreebet) {
+      MOCK_USER.freebet = Math.round((MOCK_USER.freebet - price) * 100) / 100;
+    } else {
+      MOCK_USER.balance = MOCK_USER.balance - price;
+      MOCK_USER.pending = (MOCK_USER.pending || 0) + price;
+      const topbarBalance = document.getElementById('topbar-balance');
+      if (topbarBalance) topbarBalance.textContent = '🔥 ' + formatEuros(MOCK_USER.balance);
+    }
 
     // Recharger les achats
-    const { data: achats } = await sb
-      .from('purchases')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
+    const { data: achats } = await sb.from('purchases').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
     if (achats && achats.length > 0) {
       const pronoIds = achats.map(a => a.prono_id);
       const { data: pronosData } = await sb.from('pronos').select('id, game, sport, match_date, content').in('id', pronoIds);
@@ -690,11 +773,11 @@ async function buyProno(pronoId, price, matchName) {
       (pronosData || []).forEach(p => pronosMap[p.id] = p);
       userState.realAchats = achats.map(a => {
         const p = pronosMap[a.prono_id] || {};
-        return { id: a.id, game: p.game||"—", sport: p.sport||'—', date: p.match_date||'—', tipster:'—', price: parseFloat(a.amount)||0, status: a.status||'pending', prediction: p.content||'', content_odds: ''||'', image_url: p.image_url||null, image_status: p.image_status||'none', pronoId: a.prono_id };
+        return { id: a.id, game: p.game||'—', sport: p.sport||'—', date: p.match_date||'—', tipster:'—', price: parseFloat(a.amount)||0, status: a.status||'pending', prediction: p.content||'', content_odds: '', image_url: p.image_url||null, image_status: p.image_status||'none', pronoId: a.prono_id, isFreebet: a.is_freebet||false };
       });
     } else { userState.realAchats = []; }
 
-    showToast('Prono acheté ! Bonne chance 🎯', 'success');
+    showToast(useFreebet ? 'Prono acheté avec votre freebet ! 🎯' : 'Prono acheté ! Bonne chance 🎯', 'success');
     navigateTo('explorer');
 
   } catch (err) {
@@ -1476,20 +1559,58 @@ async function renderPageDashboard(container) {
   }
 
   // Bloc stat card
-  function statCard(label, val, sub, blue=false) {
-    return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px">
-      <div style="font-size:0.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">${label}</div>
-      <div style="font-size:${mob?'1.2rem':'1.4rem'};font-weight:800;color:${blue?'var(--primary)':'var(--text-dark)'}">${val}</div>
-      ${sub ? `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">${sub}</div>` : ''}
-    </div>`;
-  }
+  const hasFreebet = MOCK_USER.freebet > 0;
 
-  const statsHtml = `<div style="display:grid;grid-template-columns:${mob?'1fr 1fr':'1fr 1fr 1fr 1fr'};gap:8px;margin-bottom:var(--space-md)">
-    ${statCard('Solde disponible', formatEuros(MOCK_USER.balance), 'Prêt à investir', true)}
-    ${statCard('Pronos achetés', achats.length, `${won}V · ${lost}D · ${canc} annulés`)}
-    ${statCard('Taux de réussite', finished>0?winRate+'%':'—', 'Sur pronos terminés')}
-    ${statCard('Remboursé', formatEuros(remboursed), 'Perdus + annulés')}
-  </div>`;
+  const statsHtml = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px">
+        <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Solde disponible</div>
+        <div style="font-size:${mob?'1.3rem':'1.4rem'};font-weight:800;color:var(--primary)">${formatEuros(MOCK_USER.balance)}</div>
+        <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px">Rechargeable</div>
+      </div>
+      ${hasFreebet ? `
+      <div id="freebet-card" onclick="toggleFreebetPopup()" style="background:#FFF8EE;border:1px solid #EF9F27;border-radius:var(--radius-md);padding:10px 12px;cursor:pointer;position:relative">
+        <div style="position:absolute;top:5px;right:7px;width:16px;height:16px;border-radius:50%;border:1.5px solid #EF9F27;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#854F0B">i</div>
+        <div style="font-size:0.68rem;color:#633806;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Freebet</div>
+        <div style="font-size:${mob?'1.3rem':'1.4rem'};font-weight:800;color:#633806">${formatEuros(MOCK_USER.freebet)}</div>
+        <div style="font-size:0.68rem;color:#854F0B;margin-top:2px">Offert par PayPerWin</div>
+      </div>` : `
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px">
+        <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Pronos achetés</div>
+        <div style="font-size:${mob?'1.3rem':'1.4rem'};font-weight:800;color:var(--text-dark)">${achats.length}</div>
+        <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px">${won}V · ${lost}D · ${canc} annulés</div>
+      </div>`}
+    </div>
+    <div id="freebet-popup" style="display:none;background:#FFF8EE;border:1px solid #EF9F27;border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="font-size:0.78rem;color:#633806;line-height:1.5">Le freebet est un crédit offert par PayPerWin. Si le prono est perdu, vous n'êtes pas remboursé. Si annulé, votre freebet est restitué.</div>
+        <button onclick="toggleFreebetPopup()" style="font-size:1rem;color:#854F0B;background:none;border:none;cursor:pointer;flex-shrink:0;padding:0">×</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:${hasFreebet?'1fr 1fr 1fr':'1fr 1fr 1fr'};gap:8px;margin-bottom:var(--space-md)">
+      ${hasFreebet ? `
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 10px">
+        <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px">Pronos</div>
+        <div style="font-size:1.1rem;font-weight:800;color:var(--text-dark)">${achats.length}</div>
+        <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">achetés</div>
+      </div>` : ''}
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 10px">
+        <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px">Taux</div>
+        <div style="font-size:1.1rem;font-weight:800;color:var(--text-dark)">${finished>0?winRate+'%':'—'}</div>
+        <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">win rate</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 10px">
+        <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px">Remboursé</div>
+        <div style="font-size:1.1rem;font-weight:800;color:var(--text-dark)">${formatEuros(remboursed)}</div>
+        <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">perdus + annulés</div>
+      </div>
+      ${!hasFreebet ? `
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 10px">
+        <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px">Pronos</div>
+        <div style="font-size:1.1rem;font-weight:800;color:var(--text-dark)">${achats.length}</div>
+        <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">achetés</div>
+      </div>` : ''}
+    </div>`;
 
   const alerteHtml = newPronos.length > 0 ? `
     <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:var(--space-md)">
@@ -1560,6 +1681,11 @@ async function renderPageDashboard(container) {
     </div>`;
 
   // Fonction popup stats plateforme (globale pour onclick inline)
+  window.toggleFreebetPopup = function() {
+    const p = document.getElementById('freebet-popup');
+    if (p) p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  };
+
   window.showMeilleurTipsterPopup = function(key) {
     const area = document.getElementById('popup-meilleur-tipster');
     if (!area) return;

@@ -181,6 +181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       email:   u.email || '—',
       balance: parseFloat(u.balance) || 0,
       pending: parseFloat(u.pending) || 0,
+      freebet: parseFloat(u.freebet_balance) || 0,
       spent:   0,
       joined:  u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '—',
       achats:  purchaseCountMap[u.id] || 0,
@@ -808,7 +809,11 @@ function renderUserRows() {
             <div class="prono-title">${u.name}</div>
             <div class="prono-meta">${u.email}</div>
           </div>
-          <div style="display:flex;gap:6px;align-items:center">${voirBtn}${roleBtn(u)}</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            ${u.freebet > 0 ? `<span style="background:#FAEEDA;color:#633806;font-size:0.7rem;font-weight:600;padding:2px 7px;border-radius:10px;border:0.5px solid #EF9F27">${formatEuros(u.freebet)}</span>` : `<span style="background:var(--bg-soft);color:var(--text-muted);font-size:0.7rem;padding:2px 7px;border-radius:10px;border:0.5px solid var(--border)">0 €</span>`}
+            <button class="btn-icon" title="Ajouter freebet" onclick="openFreebetModal('${u.id}','${u.name}',${u.freebet})" style="border-color:#EF9F27;color:#854F0B">+FB</button>
+            ${voirBtn}${roleBtn(u)}
+          </div>
         </div>
         <div style="display:flex;gap:var(--space-lg);font-size:0.82rem;color:var(--text-muted);flex-wrap:wrap">
           <span>Achats : <strong style="color:var(--text-dark)">${u.achats}</strong></span>
@@ -827,7 +832,11 @@ function renderUserRows() {
         <div style="font-weight:700;color:var(--blue)">${formatEuros(u.balance)}</div>
         <div style="font-weight:600;color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</div>
         <div style="font-size:0.8rem;color:var(--text-muted)">${u.joined}</div>
-        <div style="display:flex;gap:6px;align-items:center">${voirBtn}${roleBtn(u)}</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${u.freebet > 0 ? `<span style="background:#FAEEDA;color:#633806;font-size:0.7rem;font-weight:600;padding:2px 6px;border-radius:10px;border:0.5px solid #EF9F27">${formatEuros(u.freebet)}</span>` : ''}
+          <button class="btn-icon" title="Ajouter freebet" onclick="openFreebetModal('${u.id}','${u.name}',${u.freebet})" style="border-color:#EF9F27;color:#854F0B">+FB</button>
+          ${voirBtn}${roleBtn(u)}
+        </div>
       </div>`;
   }).join('');
 }
@@ -1600,6 +1609,64 @@ async function openFicheTipster(id){
           </div>`).join('')}
         </div>`}`;
   }catch(e){modal.innerHTML=`<div style="color:var(--error)">Erreur de chargement.</div>`;}
+}
+
+// ══════════════════════════════════════════════════════════════
+//  FREEBET
+// ══════════════════════════════════════════════════════════════
+function openFreebetModal(userId, userName, currentFreebet) {
+  const existing = document.getElementById('freebet-modal-overlay');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'freebet-modal-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--bg);border-radius:var(--radius-lg);padding:var(--space-xl);max-width:380px;width:90%;border:1px solid var(--border)">
+      <h3 style="margin-bottom:6px">Ajouter un freebet</h3>
+      <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">${userName} · Solde freebet actuel : <strong style="color:#633806">${formatEuros(currentFreebet)}</strong></p>
+      <div class="form-group">
+        <label>Montant à ajouter (€)</label>
+        <div class="input-wrap">
+          <input class="input" type="number" id="freebet-amount" min="0.5" step="0.5" placeholder="Ex: 5" style="padding-left:var(--space-md)" />
+        </div>
+      </div>
+      <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-lg)">
+        <button class="btn btn-outline" onclick="document.getElementById('freebet-modal-overlay').remove()">Annuler</button>
+        <button class="btn btn-primary" onclick="saveFreebetModal('${userId}',${currentFreebet})">Créditer le freebet</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  setTimeout(() => document.getElementById('freebet-amount')?.focus(), 100);
+}
+
+async function saveFreebetModal(userId, currentFreebet) {
+  const amountEl = document.getElementById('freebet-amount');
+  const amount = parseFloat(amountEl?.value);
+  if (!amount || amount <= 0) { showToast('Veuillez saisir un montant valide.', 'error'); return; }
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  const newFreebet = Math.round((currentFreebet + amount) * 100) / 100;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const token = session?.access_token || ANON;
+    const r = await fetch(`${SUPA}/rest/v1/profiles?id=eq.${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ freebet_balance: newFreebet })
+    });
+    if (r.ok || r.status === 204) {
+      const u = adminState.users.find(u => u.id === userId);
+      if (u) u.freebet = newFreebet;
+      document.getElementById('freebet-modal-overlay')?.remove();
+      showToast('Freebet crédité : ' + formatEuros(newFreebet) + ' ✓', 'success');
+      renderUserRows();
+    } else {
+      showToast('Erreur lors du crédit freebet.', 'error');
+    }
+  } catch(e) {
+    showToast('Erreur : ' + e.message, 'error');
+  }
 }
 
 async function openFicheUser(id){

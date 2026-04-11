@@ -1611,6 +1611,48 @@ async function renderPageDashboardTipster(container) {
     }
   } catch(e) {}
 
+  // Achats via freebet pour ce tipster
+  let freebetAchats = [], freebetWon = 0, freebetLost = 0;
+  try {
+    const pronoIds = pronos.map(p => p.id).filter(Boolean);
+    if (pronoIds.length > 0) {
+      const rFB = await fetch(`${SUPA}/rest/v1/purchases?select=prono_id,is_freebet&is_freebet=eq.true&apikey=${ANON}`, { headers: { apikey: ANON } });
+      const allFB = await rFB.json();
+      if (Array.isArray(allFB)) {
+        const pronoSet = new Set(pronoIds);
+        freebetAchats = allFB.filter(a => pronoSet.has(a.prono_id));
+        freebetAchats.forEach(a => {
+          const p = pronos.find(pr => pr.id === a.prono_id);
+          if (p) {
+            if (p.status === 'won') freebetWon++;
+            else if (p.status === 'lost') freebetLost++;
+          }
+        });
+      }
+    }
+  } catch(e) {}
+
+  const freebetHtml = freebetAchats.length > 0 ? `
+    <div style="background:var(--bg);border:1px solid #EF9F27;border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
+      <div style="padding:12px 12px 8px;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:0.88rem;font-weight:700;color:var(--text-dark)">Achats via freebet</div>
+        <span style="background:#FFF8EE;color:#633806;font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:20px;border:0.5px solid #EF9F27">${freebetAchats.length} achat${freebetAchats.length > 1 ? 's' : ''}</span>
+      </div>
+      <div style="padding:0 12px 12px">
+        <div style="background:#FFF8EE;border:0.5px solid #EF9F27;border-radius:var(--radius-md);padding:10px 12px;font-size:0.78rem;color:#633806;line-height:1.5">
+          Ces ${freebetAchats.length} prono${freebetAchats.length > 1 ? 's ont été achetés' : ' a été acheté'} avec un freebet. Conformément aux CGV, <strong style="color:#412402">vous ne percevez aucune commission</strong> sur ces achats.
+        </div>
+      </div>
+      <div style="padding:8px 12px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:0.82rem;color:var(--text-muted)">Dont gagnés</span>
+        <span style="font-size:0.82rem;font-weight:700;color:#27500A">${freebetWon} prono${freebetWon > 1 ? 's' : ''}</span>
+      </div>
+      <div style="padding:8px 12px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:0.82rem;color:var(--text-muted)">Dont perdus</span>
+        <span style="font-size:0.82rem;font-weight:700;color:#791F1F">${freebetLost} prono${freebetLost > 1 ? 's' : ''}</span>
+      </div>
+    </div>` : '';
+
   // Graphiques performance : achats cumulés + gains cumulés vs moyenne plateforme
   // Trier les pronos par date croissante
   const pronosSorted = [...pronos].sort((a, b) => new Date(a.created_at||a.match_date||0) - new Date(b.created_at||b.match_date||0));
@@ -2048,6 +2090,7 @@ async function renderPageDashboardTipster(container) {
       ${statsPlateHtmlTip}
       <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nouveautés plateforme</div>
       ${changelogHtml}
+      ${freebetHtml}
       ${sponsorHtml}`;
   } else {
     container.innerHTML = `${styleTag}
@@ -2066,6 +2109,7 @@ async function renderPageDashboardTipster(container) {
           ${statsPlateHtmlTip}
           <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nouveautés plateforme</div>
           ${changelogHtml}
+          ${freebetHtml}
         </div>
       </div>`;
   }
