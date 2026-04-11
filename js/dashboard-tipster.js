@@ -620,13 +620,47 @@ async function saveRIB() {
 // ══════════════════════════════════════════════════════════════
 //  PAGE — STATISTIQUES
 // ══════════════════════════════════════════════════════════════
-function renderPageStats(container) {
+async function renderPageStats(container) {
   const won       = state.pronos.filter(p => p.status === CONFIG.betStatus.WON).length;
   const lost      = state.pronos.filter(p => p.status === CONFIG.betStatus.LOST).length;
   const pending   = state.pronos.filter(p => p.status === CONFIG.betStatus.PENDING).length;
   const cancelled = state.pronos.filter(p => p.status === CONFIG.betStatus.CANCELLED).length;
   const total     = state.pronos.length;
   const totalBuyers = state.pronos.reduce((sum, p) => sum + p.buyers, 0);
+
+  // Calcul du nombre d'acheteurs qui classent ce tipster comme leur meilleur
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  let nbMeilleur = 0;
+  try {
+    const user = await getCurrentUser();
+    // Charger tous les purchases avec prono_id et status
+    const rP = await fetch(`${SUPA}/rest/v1/purchases?select=user_id,prono_id,status&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const allPurchases = await rP.json();
+    // Charger tous les pronos pour avoir le tipster_id
+    const rPr = await fetch(`${SUPA}/rest/v1/pronos?select=id,tipster_id,status&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const allPronos = await rPr.json();
+    if (Array.isArray(allPurchases) && Array.isArray(allPronos)) {
+      const pronosMap = {};
+      allPronos.forEach(p => { pronosMap[p.id] = p; });
+      // Grouper les achats terminés par user
+      const byUser = {};
+      allPurchases.forEach(a => {
+        const prono = pronosMap[a.prono_id];
+        if (!prono) return;
+        const status = prono.status;
+        if (status !== 'won' && status !== 'lost') return;
+        if (!byUser[a.user_id]) byUser[a.user_id] = {};
+        if (!byUser[a.user_id][prono.tipster_id]) byUser[a.user_id][prono.tipster_id] = 0;
+        if (status === 'won') byUser[a.user_id][prono.tipster_id]++;
+      });
+      // Pour chaque user, trouver son meilleur tipster
+      Object.values(byUser).forEach(tipsterWins => {
+        const sorted = Object.entries(tipsterWins).sort((a,b) => b[1]-a[1]);
+        if (sorted.length > 0 && sorted[0][1] > 0 && sorted[0][0] === user.id) nbMeilleur++;
+      });
+    }
+  } catch(e) { console.error('nbMeilleur:', e); }
 
   container.innerHTML = `
     <div class="stats-grid">
@@ -649,6 +683,25 @@ function renderPageStats(container) {
         <div class="stat-card__label">👥 Acheteurs total</div>
         <div class="stat-card__value">${totalBuyers}</div>
         <div class="stat-card__sub">Sur tous les pronos</div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-lg)">
+      <div onclick="document.getElementById('notoriete-popup').style.display=document.getElementById('notoriete-popup').style.display==='none'?'block':'none'" style="display:flex;align-items:center;gap:14px;padding:16px;cursor:pointer;position:relative">
+        <div style="width:48px;height:48px;border-radius:50%;background:#EAF3DE;border:2px solid #639922;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:1.7rem;font-weight:800;color:var(--text-dark);line-height:1">${nbMeilleur}</div>
+          <div style="font-size:0.85rem;color:var(--text-muted);margin-top:4px">acheteur${nbMeilleur > 1 ? 's' : ''} vous classent comme leur <strong style="color:var(--text-dark)">meilleur tipster</strong></div>
+        </div>
+        <div style="width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text-muted);font-size:0.72rem;font-weight:700;align-self:flex-start">i</div>
+      </div>
+      <div id="notoriete-popup" style="display:none;padding:10px 16px 14px;border-top:0.5px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div style="font-size:0.8rem;color:var(--text-muted);line-height:1.5">Ce chiffre correspond au nombre d'acheteurs pour lesquels vous êtes le tipster ayant généré le plus de victoires.</div>
+          <button onclick="event.stopPropagation();document.getElementById('notoriete-popup').style.display='none'" style="font-size:1rem;color:var(--text-muted);background:none;border:none;cursor:pointer;flex-shrink:0;padding:0">×</button>
+        </div>
       </div>
     </div>
 
