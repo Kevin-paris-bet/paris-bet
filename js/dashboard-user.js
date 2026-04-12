@@ -1577,32 +1577,25 @@ async function renderPageDashboard(container) {
         <div style="font-size:${mob?'1.3rem':'1.4rem'};font-weight:800;color:var(--primary)">${formatEuros(MOCK_USER.balance)}</div>
         <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px">Rechargeable</div>
       </div>
-      ${hasFreebet ? `
-      <div id="freebet-card" onclick="toggleFreebetPopup()" style="background:#FFF8EE;border:1px solid #EF9F27;border-radius:var(--radius-md);padding:10px 12px;cursor:pointer;position:relative">
-        <div style="position:absolute;top:5px;right:7px;width:16px;height:16px;border-radius:50%;border:1.5px solid #EF9F27;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#854F0B">i</div>
-        <div style="font-size:0.68rem;color:#633806;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Freebet</div>
-        <div style="font-size:${mob?'1.3rem':'1.4rem'};font-weight:800;color:#633806">${formatEuros(MOCK_USER.freebet)}</div>
-        <div style="font-size:0.68rem;color:#854F0B;margin-top:2px">Offert par PayPerWin</div>
-      </div>` : `
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px">
-        <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Pronos achetés</div>
-        <div style="font-size:${mob?'1.3rem':'1.4rem'};font-weight:800;color:var(--text-dark)">${achats.length}</div>
-        <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px">${won}V · ${lost}D · ${canc} annulés</div>
-      </div>`}
+      <div id="freebet-card" onclick="${hasFreebet ? 'toggleFreebetPopup()' : ''}" style="background:${hasFreebet?'#FFF8EE':'var(--bg)'};border:1px solid ${hasFreebet?'#EF9F27':'var(--border)'};border-radius:var(--radius-md);padding:10px 12px;${hasFreebet?'cursor:pointer;':''}position:relative">
+        <div onclick="event.stopPropagation();toggleFreebetPopup()" style="position:absolute;top:5px;right:7px;width:16px;height:16px;border-radius:50%;border:1.5px solid ${hasFreebet?'#EF9F27':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:${hasFreebet?'#854F0B':'var(--text-muted)'};cursor:pointer">i</div>
+        <div style="font-size:0.68rem;color:${hasFreebet?'#633806':'var(--text-muted)'};text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Freebet</div>
+        <div style="font-size:${mob?'1.3rem':'1.4rem'};font-weight:800;color:${hasFreebet?'#633806':'var(--text-muted)'}">${formatEuros(MOCK_USER.freebet)}</div>
+        <div style="font-size:0.68rem;color:${hasFreebet?'#854F0B':'var(--text-muted)'};margin-top:2px">${hasFreebet?'Offert par PayPerWin':'Aucun freebet disponible'}</div>
+      </div>
     </div>
     <div id="freebet-popup" style="display:none;background:#FFF8EE;border:1px solid #EF9F27;border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-        <div style="font-size:0.78rem;color:#633806;line-height:1.5">Le freebet est un crédit offert par PayPerWin. Si le prono est perdu, vous n'êtes pas remboursé. Si annulé, votre freebet est restitué.</div>
+        <div style="font-size:0.78rem;color:#633806;line-height:1.5">${hasFreebet ? 'Le freebet est un crédit offert par PayPerWin. Si le prono est perdu, vous n\'êtes pas remboursé. Si annulé, votre freebet est restitué.' : 'PayPerWin offre régulièrement des freebets à ses membres. Suivez-nous sur X et restez à l\'affût des prochaines offres !'}</div>
         <button onclick="toggleFreebetPopup()" style="font-size:1rem;color:#854F0B;background:none;border:none;cursor:pointer;flex-shrink:0;padding:0">×</button>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:${hasFreebet?'1fr 1fr 1fr':'1fr 1fr 1fr'};gap:8px;margin-bottom:var(--space-md)">
-      ${hasFreebet ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:var(--space-md)">
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 10px">
         <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px">Pronos</div>
         <div style="font-size:1.1rem;font-weight:800;color:var(--text-dark)">${achats.length}</div>
         <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">achetés</div>
-      </div>` : ''}
+      </div>
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 10px">
         <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px">Taux</div>
         <div style="font-size:1.1rem;font-weight:800;color:var(--text-dark)">${finished>0?winRate+'%':'—'}</div>
@@ -1613,12 +1606,6 @@ async function renderPageDashboard(container) {
         <div style="font-size:1.1rem;font-weight:800;color:var(--text-dark)">${formatEuros(remboursed)}</div>
         <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">perdus + annulés</div>
       </div>
-      ${!hasFreebet ? `
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 10px">
-        <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px">Pronos</div>
-        <div style="font-size:1.1rem;font-weight:800;color:var(--text-dark)">${achats.length}</div>
-        <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">achetés</div>
-      </div>` : ''}
     </div>`;
 
   const alerteHtml = newPronos.length > 0 ? `
