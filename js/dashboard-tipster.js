@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   renderSidebar();
   renderTopbar();
-  navigateTo('pronos');
+  navigateTo('dashboard');
 });
 
 // ── Sidebar ───────────────────────────────────────────────────
@@ -191,9 +191,9 @@ function navigateTo(page) {
 
   // Mettre à jour le titre
   const titles = {
+    dashboard: 'Tableau de bord',
     pronos: 'Mes pronostics',
     solde:  'Solde & Virements',
-    rib:    'Mes informations bancaires',
     stats:  'Mes statistiques',
     compte: 'Mon compte',
     explorer: 'Explorer les tipsters',
@@ -205,9 +205,10 @@ function navigateTo(page) {
   const content = document.getElementById('page-content');
   content.innerHTML = '';
 
+  if (page === 'dashboard') renderPageDashboardTipster(content);
+  if (page === 'dashboard') renderPageDashboardTipster(content);
   if (page === 'pronos')   renderPagePronos(content);
   if (page === 'solde')    renderPageSolde(content);
-  if (page === 'rib')      renderPageRIB(content);
   if (page === 'stats')    renderPageStats(content);
   if (page === 'compte')   renderPageCompte(content);
   if (page === 'explorer') renderPageExplorer(content);
@@ -380,7 +381,7 @@ async function submitProno() {
 
     state.pronos.unshift(data);
     closeModal();
-    navigateTo('pronos');
+    navigateTo('dashboard');
     showToast('Pronostic publié ! Il est maintenant verrouillé. 🔒', 'success');
   } catch (err) {
     showToast('Erreur : ' + err.message, 'error');
@@ -504,7 +505,7 @@ function renderPageSolde(container) {
 
     <p style="font-size:0.78rem;color:var(--text-muted);margin-top:var(--space-md);text-align:center;">
       Les virements sont effectués chaque lundi matin sur votre RIB enregistré.
-      <a href="#" onclick="navigateTo('rib')" style="color:var(--blue)">Modifier mon RIB →</a>
+      <a href="#" onclick="navigateTo('compte')" style="color:var(--blue)">Modifier mon RIB →</a>
     </p>
   `;
 }
@@ -588,21 +589,28 @@ async function saveRIB() {
   }
 
   const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-  const { data: { user } } = await sb.auth.getUser();
-  if (!user) { showToast('Erreur : non connecté', 'error'); return; }
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { showToast('Erreur : non connecté', 'error'); return; }
+  const JWT = session.access_token;
+  const userId = session.user.id;
 
   try {
-    const r = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?id=eq.' + user.id, {
+    const r = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?id=eq.' + userId, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON },
+      headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + JWT },
       body: JSON.stringify({ rib_name: name, rib_iban: iban, rib_bic: bic })
     });
     if (r.ok || r.status === 204) {
       MOCK_TIPSTER.ribSaved = true;
+      MOCK_TIPSTER.ribName  = name;
+      MOCK_TIPSTER.ribIban  = iban;
+      MOCK_TIPSTER.ribBic   = bic;
       showToast('Coordonnées bancaires enregistrées ! ✓', 'success');
-      navigateTo('rib');
+      navigateTo('compte');
     } else {
+      const err = await r.text();
       showToast('Erreur lors de la sauvegarde', 'error');
+      console.error('saveRIB error:', r.status, err);
     }
   } catch(e) {
     showToast('Erreur réseau', 'error');
@@ -612,13 +620,47 @@ async function saveRIB() {
 // ══════════════════════════════════════════════════════════════
 //  PAGE — STATISTIQUES
 // ══════════════════════════════════════════════════════════════
-function renderPageStats(container) {
+async function renderPageStats(container) {
   const won       = state.pronos.filter(p => p.status === CONFIG.betStatus.WON).length;
   const lost      = state.pronos.filter(p => p.status === CONFIG.betStatus.LOST).length;
   const pending   = state.pronos.filter(p => p.status === CONFIG.betStatus.PENDING).length;
   const cancelled = state.pronos.filter(p => p.status === CONFIG.betStatus.CANCELLED).length;
   const total     = state.pronos.length;
   const totalBuyers = state.pronos.reduce((sum, p) => sum + p.buyers, 0);
+
+  // Calcul du nombre d'acheteurs qui classent ce tipster comme leur meilleur
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  let nbMeilleur = 0;
+  try {
+    const user = await getCurrentUser();
+    // Charger tous les purchases avec prono_id et status
+    const rP = await fetch(`${SUPA}/rest/v1/purchases?select=user_id,prono_id,status&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const allPurchases = await rP.json();
+    // Charger tous les pronos pour avoir le tipster_id
+    const rPr = await fetch(`${SUPA}/rest/v1/pronos?select=id,tipster_id,status&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const allPronos = await rPr.json();
+    if (Array.isArray(allPurchases) && Array.isArray(allPronos)) {
+      const pronosMap = {};
+      allPronos.forEach(p => { pronosMap[p.id] = p; });
+      // Grouper les achats terminés par user
+      const byUser = {};
+      allPurchases.forEach(a => {
+        const prono = pronosMap[a.prono_id];
+        if (!prono) return;
+        const status = prono.status;
+        if (status !== 'won' && status !== 'lost') return;
+        if (!byUser[a.user_id]) byUser[a.user_id] = {};
+        if (!byUser[a.user_id][prono.tipster_id]) byUser[a.user_id][prono.tipster_id] = 0;
+        if (status === 'won') byUser[a.user_id][prono.tipster_id]++;
+      });
+      // Pour chaque user, trouver son meilleur tipster
+      Object.values(byUser).forEach(tipsterWins => {
+        const sorted = Object.entries(tipsterWins).sort((a,b) => b[1]-a[1]);
+        if (sorted.length > 0 && sorted[0][1] > 0 && sorted[0][0] === user.id) nbMeilleur++;
+      });
+    }
+  } catch(e) { console.error('nbMeilleur:', e); }
 
   container.innerHTML = `
     <div class="stats-grid">
@@ -641,6 +683,25 @@ function renderPageStats(container) {
         <div class="stat-card__label">👥 Acheteurs total</div>
         <div class="stat-card__value">${totalBuyers}</div>
         <div class="stat-card__sub">Sur tous les pronos</div>
+      </div>
+    </div>
+
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-lg)">
+      <div onclick="document.getElementById('notoriete-popup').style.display=document.getElementById('notoriete-popup').style.display==='none'?'block':'none'" style="display:flex;align-items:center;gap:14px;padding:16px;cursor:pointer;position:relative">
+        <div style="width:48px;height:48px;border-radius:50%;background:#EAF3DE;border:2px solid #639922;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:1.7rem;font-weight:800;color:var(--text-dark);line-height:1">${nbMeilleur}</div>
+          <div style="font-size:0.85rem;color:var(--text-muted);margin-top:4px">acheteur${nbMeilleur > 1 ? 's' : ''} vous classent comme leur <strong style="color:var(--text-dark)">meilleur tipster</strong></div>
+        </div>
+        <div style="width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text-muted);font-size:0.72rem;font-weight:700;align-self:flex-start">i</div>
+      </div>
+      <div id="notoriete-popup" style="display:none;padding:10px 16px 14px;border-top:0.5px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div style="font-size:0.8rem;color:var(--text-muted);line-height:1.5">Ce chiffre correspond au nombre d'acheteurs pour lesquels vous êtes le tipster ayant généré le plus de victoires.</div>
+          <button onclick="event.stopPropagation();document.getElementById('notoriete-popup').style.display='none'" style="font-size:1rem;color:var(--text-muted);background:none;border:none;cursor:pointer;flex-shrink:0;padding:0">×</button>
+        </div>
       </div>
     </div>
 
@@ -771,6 +832,62 @@ function renderPageCompte(container) {
         </div>
         <button class="btn btn-primary" style="width:100%" onclick="savePseudo()">
           Mettre à jour le pseudo
+        </button>
+      </div>
+
+      <!-- Informations bancaires -->
+      <div class="rib-card">
+        <div class="rib-card__header">
+          <div style="font-size:1.6rem;">🏦</div>
+          <div>
+            <h3>Informations bancaires</h3>
+            <p>Vos coordonnées pour recevoir vos virements chaque lundi</p>
+          </div>
+        </div>
+
+        ${MOCK_TIPSTER.ribSaved ? `
+          <div class="rib-saved">
+            ✓ RIB enregistré — vos virements seront effectués sur ce compte
+          </div>
+        ` : ''}
+
+        <div class="form-group">
+          <label>👤 Titulaire du compte</label>
+          <div class="input-wrap rib-input-wrap">
+            <input class="input" type="text" id="rib-name"
+              placeholder="Prénom NOM"
+              value="${MOCK_TIPSTER.ribName || ''}"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>🏦 IBAN</label>
+          <div class="input-wrap rib-input-wrap">
+            <input class="input" type="text" id="rib-iban"
+              placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"
+              value="${MOCK_TIPSTER.ribIban || ''}"
+              oninput="formatIBAN(this)"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>🔢 BIC / SWIFT</label>
+          <div class="input-wrap rib-input-wrap">
+            <input class="input" type="text" id="rib-bic"
+              placeholder="BNPAFRPPXXX"
+              value="${MOCK_TIPSTER.ribBic || ''}"
+            />
+          </div>
+        </div>
+
+        <div style="background:var(--blue-xpale);border:1px solid rgba(26,86,255,0.15);border-radius:var(--radius-md);padding:var(--space-md);font-size:0.8rem;color:var(--text-muted);line-height:1.6;margin-bottom:var(--space-lg);">
+          🔒 Vos coordonnées bancaires sont chiffrées et sécurisées. Elles ne sont jamais partagées et uniquement utilisées pour vos virements hebdomadaires.
+        </div>
+
+        <button class="btn btn-primary" style="width:100%" onclick="saveRIB()">
+          Enregistrer mes coordonnées bancaires
         </button>
       </div>
 
@@ -1426,3 +1543,738 @@ function clearPronoImage() {
   if (icon) icon.textContent = '📁';
 }
 
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE — TABLEAU DE BORD TIPSTER
+// ══════════════════════════════════════════════════════════════
+function isMobile() { return window.innerWidth < 900; }
+
+async function renderPageDashboardTipster(container) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  const mob = isMobile();
+
+  container.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>';
+
+  // Stats depuis les pronos déjà chargés
+  const pronos = state.pronos;
+  const won       = pronos.filter(p => p.status === 'won').length;
+  const lost      = pronos.filter(p => p.status === 'lost').length;
+  const pending   = pronos.filter(p => p.status === 'pending').length;
+  const finished  = won + lost;
+  const winRate   = finished > 0 ? Math.round(won / finished * 100) : 0;
+  const totalAchats    = pronos.reduce((s,p) => s + (parseInt(p.buyers)||0), 0);
+  const derniers3      = pronos.slice(0, 3);
+
+  // Acheteurs uniques via fetch
+  let uniqueBuyers = 0;
+  try {
+    const rB = await fetch(`${SUPA}/rest/v1/purchases?select=user_id&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const purchases = await rB.json();
+    if (Array.isArray(purchases)) {
+      // On filtre les pronos du tipster
+      const pronoIds = new Set(pronos.map(p => p.id));
+      const rBAll = await fetch(`${SUPA}/rest/v1/purchases?select=user_id,prono_id&apikey=${ANON}`, { headers: { apikey: ANON } });
+      const allPurch = await rBAll.json();
+      if (Array.isArray(allPurch)) {
+        const myPurch = allPurch.filter(a => pronoIds.has(a.prono_id));
+        uniqueBuyers = new Set(myPurch.map(a => a.user_id)).size;
+      }
+    }
+  } catch(e) {}
+
+  // Changelog
+  let changelog = [];
+  try {
+    const rCL = await fetch(`${SUPA}/rest/v1/changelog?select=id,titre,description,created_at&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON } });
+    changelog = await rCL.json();
+  } catch(e) {}
+
+  // Stats plateforme
+  let platNbTipsters = 0, platNbPronos = 0, platWinRate = 0, platNbParieurs = 0;
+  try {
+    const [rPT, rPP, rPU] = await Promise.all([
+      fetch(`${SUPA}/rest/v1/profiles?role=eq.tipster&select=id&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/pronos?select=status&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/profiles?role=eq.user&select=id&apikey=${ANON}`, { headers: { apikey: ANON } }),
+    ]);
+    const tipsArr  = await rPT.json().catch(()=>[]);
+    const pronosArr= await rPP.json().catch(()=>[]);
+    const usersArr = await rPU.json().catch(()=>[]);
+    platNbTipsters = Array.isArray(tipsArr)  ? tipsArr.length  : 0;
+    platNbParieurs = Array.isArray(usersArr) ? usersArr.length : 0;
+    if (Array.isArray(pronosArr)) {
+      platNbPronos = pronosArr.length;
+      const fin = pronosArr.filter(p => p.status==='won'||p.status==='lost').length;
+      const w   = pronosArr.filter(p => p.status==='won').length;
+      platWinRate = fin > 0 ? Math.round(w/fin*100) : 0;
+    }
+  } catch(e) {}
+
+  // Achats via freebet pour ce tipster
+  let freebetAchats = [], freebetWon = 0, freebetLost = 0;
+  try {
+    const pronoIds = pronos.map(p => p.id).filter(Boolean);
+    if (pronoIds.length > 0) {
+      const rFB = await fetch(`${SUPA}/rest/v1/purchases?select=prono_id,is_freebet&is_freebet=eq.true&apikey=${ANON}`, { headers: { apikey: ANON } });
+      const allFB = await rFB.json();
+      if (Array.isArray(allFB)) {
+        const pronoSet = new Set(pronoIds);
+        freebetAchats = allFB.filter(a => pronoSet.has(a.prono_id));
+        freebetAchats.forEach(a => {
+          const p = pronos.find(pr => pr.id === a.prono_id);
+          if (p) {
+            if (p.status === 'won') freebetWon++;
+            else if (p.status === 'lost') freebetLost++;
+          }
+        });
+      }
+    }
+  } catch(e) {}
+
+  const freebetHtml = freebetAchats.length > 0 ? `
+    <div style="background:var(--bg);border:1px solid #EF9F27;border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
+      <div style="padding:12px 12px 8px;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:0.88rem;font-weight:700;color:var(--text-dark)">Achats via freebet</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button onclick="toggleFreebetTipsterInfo()" style="width:18px;height:18px;border-radius:50%;border:1.5px solid #EF9F27;background:#FFF8EE;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#854F0B;cursor:pointer;flex-shrink:0">i</button>
+          <span style="background:#FFF8EE;color:#633806;font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:20px;border:0.5px solid #EF9F27">${freebetAchats.length} achat${freebetAchats.length > 1 ? 's' : ''}</span>
+        </div>
+      </div>
+      <div id="freebet-tipster-info" style="display:none;padding:0 12px 10px">
+        <div style="background:#FFF8EE;border:0.5px solid #EF9F27;border-radius:var(--radius-md);padding:10px 12px;font-size:0.78rem;color:#633806;line-height:1.6">
+          Le freebet est un crédit offert gratuitement aux parieurs par PayPerWin. Quand un parieur utilise ce crédit pour acheter votre prono, vous ne percevez pas de commission sur cet achat.
+        </div>
+      </div>
+      <div style="padding:8px 12px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:0.82rem;color:var(--text-muted)">Dont gagnés</span>
+        <span style="font-size:0.82rem;font-weight:700;color:#27500A">${freebetWon} prono${freebetWon > 1 ? 's' : ''}</span>
+      </div>
+      <div style="padding:8px 12px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:0.82rem;color:var(--text-muted)">Dont perdus</span>
+        <span style="font-size:0.82rem;font-weight:700;color:#791F1F">${freebetLost} prono${freebetLost > 1 ? 's' : ''}</span>
+      </div>
+    </div>` : '';
+
+  // Graphiques performance : achats cumulés + gains cumulés vs moyenne plateforme
+  // Trier les pronos par date croissante
+  const pronosSorted = [...pronos].sort((a, b) => new Date(a.created_at||a.match_date||0) - new Date(b.created_at||b.match_date||0));
+
+  // Achats cumulés prono par prono
+  let cumAchats = 0;
+  const achatsData = pronosSorted.map(p => { cumAchats += (parseInt(p.buyers)||0); return cumAchats; });
+
+  // Gains cumulés (90% des achats sur pronos gagnés)
+  let cumGains = 0;
+  const gainsData = pronosSorted.map(p => {
+    if (p.status === 'won') cumGains += Math.round((parseInt(p.buyers)||0) * parseFloat(p.price||0) * 0.9);
+    return cumGains;
+  });
+
+  const totalAchatsChart = achatsData.length > 0 ? achatsData[achatsData.length-1] : 0;
+  const totalGainsChart  = gainsData.length > 0  ? gainsData[gainsData.length-1]  : 0;
+
+  // Popups explicatifs
+  const popupDefs = {
+    solde:    { title: 'Solde disponible', text: 'Ce montant correspond à 90% des gains sur vos pronos gagnants, après commission PayPerWin de 10%. Il sera viré chaque lundi.' },
+    winrate:  { title: 'Win rate', text: 'Pourcentage de vos pronos terminés (gagnés ou perdus) qui ont été gagnants. Les pronos annulés ne sont pas comptabilisés.' },
+    pronos:   { title: 'Pronos créés', text: 'Nombre total de pronos publiés sur la plateforme. Le chiffre en dessous indique combien sont encore en attente de résultat.' },
+    acheteurs:{ title: 'Acheteurs', text: 'Nombre de membres distincts ayant acheté au moins un de vos pronos. Le total indique le cumul de tous vos achats.' },
+  };
+
+  function statCardHtml(key, label, val, sub, colorClass='') {
+    return `<div onclick="showTipsterStatPopup('${key}')" style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;cursor:pointer;position:relative">
+      <div style="position:absolute;top:6px;right:8px;font-size:10px;color:var(--text-muted);opacity:.5">?</div>
+      <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">${label}</div>
+      <div style="font-size:${mob?'1.2rem':'1.3rem'};font-weight:800;color:${colorClass==='green'?'var(--success)':colorClass==='blue'?'var(--primary)':'var(--text-dark)'}">${val}</div>
+      <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px">${sub}</div>
+    </div>`;
+  }
+
+  const statsHtml = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      ${statCardHtml('solde',   'Solde dispo',  formatEuros(MOCK_TIPSTER.balance), formatEuros(MOCK_TIPSTER.pending) + ' en attente', 'blue')}
+      ${statCardHtml('winrate', 'Win rate',     finished>0 ? winRate+'%' : '—',   'Sur pronos terminés', 'green')}
+    </div>
+    <div id="tipster-popup-row1" style="margin-top:4px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;margin-bottom:var(--space-md)">
+      ${statCardHtml('pronos',    'Pronos créés', pronos.length, pending + ' en cours')}
+      ${statCardHtml('acheteurs', 'Acheteurs',    uniqueBuyers,  totalAchats + ' achats au total')}
+    </div>
+    <div id="tipster-popup-row2" style="margin-top:-8px;margin-bottom:var(--space-md)"></div>`;
+
+  const chartUid = 'c' + Date.now();
+  const chartHtml = pronosSorted.length < 2 ? `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;margin-bottom:var(--space-md);text-align:center;font-size:0.85rem;color:var(--text-muted)">
+      Pas encore assez de données pour afficher les graphiques.
+    </div>` : `
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:var(--space-md)">
+      <!-- Graphique 1 : Achats cumulés -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div>
+            <div style="font-size:0.68rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Achats cumulés</div>
+            <div style="display:flex;gap:12px">
+              <span style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--text-muted)">
+                <span style="width:10px;height:2.5px;background:#378ADD;border-radius:2px;display:inline-block"></span>Vous
+              </span>
+              <span style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--text-muted)">
+                <span style="width:10px;height:0;border-top:2px dashed #888;display:inline-block"></span>Moyenne
+              </span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:1.1rem;font-weight:800;color:#185FA5">${totalAchatsChart}</div>
+            <div style="font-size:0.68rem;color:var(--text-muted)">achats</div>
+          </div>
+        </div>
+        <div style="position:relative;width:100%;height:85px"><canvas id="chartA-${chartUid}" role="img" aria-label="Achats cumulés vs moyenne plateforme">Achats cumulés du tipster.</canvas></div>
+      </div>
+      <!-- Graphique 2 : Gains cumulés -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div>
+            <div style="font-size:0.68rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">Gains cumulés</div>
+            <div style="display:flex;gap:12px">
+              <span style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--text-muted)">
+                <span style="width:10px;height:2.5px;background:#3B6D11;border-radius:2px;display:inline-block"></span>Vous
+              </span>
+              <span style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--text-muted)">
+                <span style="width:10px;height:0;border-top:2px dashed #888;display:inline-block"></span>Moyenne
+              </span>
+            </div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:1.1rem;font-weight:800;color:#3B6D11">+${totalGainsChart} €</div>
+            <div style="font-size:0.68rem;color:var(--text-muted)">gagnés</div>
+          </div>
+        </div>
+        <div style="position:relative;width:100%;height:85px"><canvas id="chartG-${chartUid}" role="img" aria-label="Gains cumulés vs moyenne plateforme">Gains cumulés du tipster.</canvas></div>
+      </div>
+    </div>`;
+
+  const statusBadge = { pending:'<span style="background:#E6F1FB;color:#0C447C;font-size:0.72rem;padding:2px 7px;border-radius:10px">⏳ Attente</span>', won:'<span style="background:#EAF3DE;color:#27500A;font-size:0.72rem;padding:2px 7px;border-radius:10px">✓ Gagné</span>', lost:'<span style="background:#FCEBEB;color:#791F1F;font-size:0.72rem;padding:2px 7px;border-radius:10px">✕ Perdu</span>', cancelled:'<span style="background:#FFF3E0;color:#E65100;font-size:0.72rem;padding:2px 7px;border-radius:10px">⊘ Annulé</span>' };
+
+  const derniersHtml = `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
+      ${derniers3.length > 0 ? derniers3.map(p => `
+        <div style="padding:10px 12px;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div style="min-width:0;flex:1">
+            <div style="font-size:0.85rem;font-weight:700;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${p.game}</div>
+            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">${p.sport||''} · ${formatDate(p.match_date||p.date)} · ${parseInt(p.buyers)||0} acheteur(s)</div>
+          </div>
+          <div style="flex-shrink:0">${statusBadge[p.status]||''}</div>
+        </div>`).join('')
+      : '<div style="padding:12px;font-size:0.85rem;color:var(--text-muted)">Aucun prono pour le moment.</div>'}
+      <button onclick="navigateTo('pronos')" style="width:100%;padding:9px;font-size:0.8rem;color:var(--primary);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer;font-family:var(--font-body)">Voir tous mes pronos →</button>
+    </div>`;
+
+  const changelogHtml = `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
+      ${Array.isArray(changelog) && changelog.length > 0
+        ? changelog.slice(0,3).map(c => `
+          <div class="dash-tip-news" onclick="this.classList.toggle('open')" style="padding:10px 12px;border-bottom:0.5px solid var(--border);cursor:pointer">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+              <div style="font-size:0.85rem;font-weight:600;color:var(--text-dark)">${c.titre}</div>
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+                <span style="font-size:0.7rem;color:var(--text-muted)">${formatDate(c.created_at)}</span>
+                <span class="dash-tip-arrow" style="font-size:0.85rem;color:var(--text-muted);transition:transform .2s">›</span>
+              </div>
+            </div>
+            <div class="dash-tip-desc" style="display:none;font-size:0.78rem;color:var(--text-muted);margin-top:6px;line-height:1.5">${c.description||''}</div>
+          </div>`).join('')
+        : '<div style="padding:12px;font-size:0.85rem;color:var(--text-muted)">Aucune nouveauté.</div>'}
+      <button onclick="navigateTo('feedback')" style="width:100%;padding:9px;font-size:0.8rem;color:var(--primary);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer;font-family:var(--font-body)">Voir toutes les nouveautés →</button>
+    </div>`;
+
+  // Templates preview dashboard acheteur — fidèles au vrai dashboard user
+  function buildPreviewDashboard(slot) {
+    const isFeatured = slot === 'featured';
+    const isRising   = slot === 'rising';
+
+    const stats4 = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+        <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:6px;padding:8px 10px">
+          <div style="font-size:7px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Solde disponible</div>
+          <div style="font-size:16px;font-weight:800;color:var(--primary)">12 €</div>
+          <div style="font-size:7px;color:var(--text-muted);margin-top:1px">Prêt à investir</div>
+        </div>
+        <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:6px;padding:8px 10px">
+          <div style="font-size:7px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Pronos achetés</div>
+          <div style="font-size:16px;font-weight:800;color:var(--text-dark)">11</div>
+          <div style="font-size:7px;color:var(--text-muted);margin-top:1px">4V · 0D · 6 annulés</div>
+        </div>
+        <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:6px;padding:8px 10px">
+          <div style="font-size:7px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Taux de réussite</div>
+          <div style="font-size:16px;font-weight:800;color:var(--text-dark)">100%</div>
+          <div style="font-size:7px;color:var(--text-muted);margin-top:1px">Sur pronos terminés</div>
+        </div>
+        <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:6px;padding:8px 10px">
+          <div style="font-size:7px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Remboursé</div>
+          <div style="font-size:16px;font-weight:800;color:var(--text-dark)">7 €</div>
+          <div style="font-size:7px;color:var(--text-muted);margin-top:1px">Perdus + annulés</div>
+        </div>
+      </div>`;
+
+    const featuredBloc = isFeatured ? `
+      <div style="font-size:7px;font-weight:700;color:#0C447C;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">👇 Votre emplacement</div>
+      <div style="background:var(--bg);border:1.5px solid #185FA5;border-radius:8px;overflow:hidden;margin-bottom:8px">
+        <div style="display:flex;gap:8px;padding:8px 8px 6px">
+          <div style="width:40px;height:40px;border-radius:50%;background:#B5D4F4;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0C447C;flex-shrink:0">V</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+              <span style="background:#FAEEDA;color:#633806;font-size:7px;font-weight:700;padding:1px 5px;border-radius:5px">Sponsorisé</span>
+              <span style="background:#FAEEDA;color:#633806;font-size:7px;font-weight:700;padding:1px 5px;border-radius:5px">⭐ Top Tipster</span>
+            </div>
+            <div style="font-size:11px;font-weight:800;color:var(--text-dark)">Votre pseudo</div>
+            <div style="font-size:8px;color:var(--text-muted);margin-top:1px">Votre description</div>
+            <div style="font-size:9px;font-weight:700;color:#0F6E56;margin-top:3px">🏆 76% <span style="font-size:8px;color:var(--text-muted);font-weight:400">win rate · 📊 48 pronos · cote 3,2</span></div>
+          </div>
+        </div>
+        <div style="border-top:0.5px solid var(--border);padding:5px;text-align:center;font-size:9px;font-weight:700;color:var(--primary)">Voir ses pronos →</div>
+      </div>` : `
+      <div style="font-size:7px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Tipster à la une</div>
+      <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">
+        <div style="display:flex;gap:8px;padding:8px 8px 6px">
+          <div style="width:40px;height:40px;border-radius:50%;background:#B5D4F4;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#0C447C;flex-shrink:0">J</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+              <span style="background:#FAEEDA;color:#633806;font-size:7px;font-weight:700;padding:1px 5px;border-radius:5px">Sponsorisé</span>
+              <span style="background:#FAEEDA;color:#633806;font-size:7px;font-weight:700;padding:1px 5px;border-radius:5px">⭐ Top Tipster</span>
+            </div>
+            <div style="font-size:11px;font-weight:800;color:var(--text-dark)">jerome-bet</div>
+            <div style="font-size:8px;color:var(--text-muted);margin-top:1px">Spécialiste Ligue 1 & CL</div>
+            <div style="font-size:9px;font-weight:700;color:#0F6E56;margin-top:3px">🏆 76% <span style="font-size:8px;color:var(--text-muted);font-weight:400">win rate · 📊 48 pronos · cote 3,2</span></div>
+          </div>
+        </div>
+        <div style="border-top:0.5px solid var(--border);padding:5px;text-align:center;font-size:9px;font-weight:700;color:var(--primary)">Voir ses pronos →</div>
+      </div>`;
+
+    const twitterBloc = `
+      <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:8px;display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:8px">
+        <div style="width:28px;height:28px;border-radius:50%;background:#000;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.737-8.835L1.254 2.25H8.08l4.259 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </div>
+        <div style="flex:1">
+          <div style="font-size:10px;font-weight:700;color:var(--text-dark)">Suivez-nous sur X</div>
+          <div style="font-size:8px;color:var(--text-muted);margin-top:1px">Actus, alertes pronos et offres exclusives</div>
+        </div>
+        <span style="background:#2563EB;color:white;border-radius:14px;padding:4px 10px;font-size:9px;font-weight:700;flex-shrink:0">Suivre</span>
+      </div>`;
+
+    const achatsBloc = `
+      <div style="font-size:7px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Mes derniers achats</div>
+      <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">
+        <div style="padding:7px 9px;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:6px">
+          <div><div style="font-size:10px;font-weight:700;color:var(--text-dark)">PSG vs Marseille</div><div style="font-size:8px;color:var(--text-muted)">jerome-bet · Foot · 05/04</div></div>
+          <span style="background:#EAF3DE;color:#27500A;font-size:8px;padding:2px 6px;border-radius:8px;flex-shrink:0">✓ Gagné</span>
+        </div>
+        <div style="padding:7px 9px;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:6px">
+          <div><div style="font-size:10px;font-weight:700;color:var(--text-dark)">NBA PERF JOUEUR</div><div style="font-size:8px;color:var(--text-muted)">adnbetting · Basket · 07/04</div></div>
+          <span style="background:#E6F1FB;color:#0C447C;font-size:8px;padding:2px 6px;border-radius:8px;flex-shrink:0">⏳ Attente</span>
+        </div>
+        <div style="padding:7px 9px;display:flex;justify-content:space-between;align-items:center;gap:6px">
+          <div><div style="font-size:10px;font-weight:700;color:var(--text-dark)">BIG SAFE TENNIS</div><div style="font-size:8px;color:var(--text-muted)">hippopronos · Tennis · 04/04</div></div>
+          <span style="background:#FCEBEB;color:#791F1F;font-size:8px;padding:2px 6px;border-radius:8px;flex-shrink:0">✕ Perdu</span>
+        </div>
+      </div>`;
+
+    const nouveautesBloc = `
+      <div style="font-size:7px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Nouveautés</div>
+      <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:8px">
+        <div style="padding:7px 9px;border-bottom:0.5px solid var(--border)">
+          <div style="font-size:10px;font-weight:700;color:var(--text-dark)">Images sur les pronostics</div>
+          <div style="font-size:8px;color:var(--text-muted);margin-top:1px">09/04/2026</div>
+        </div>
+        <div style="padding:7px 9px">
+          <div style="font-size:10px;font-weight:700;color:var(--text-dark)">Explorer les pronos — nouveau design</div>
+          <div style="font-size:8px;color:var(--text-muted);margin-top:1px">08/04/2026</div>
+        </div>
+      </div>`;
+
+    const statsPlateBloc = `
+      <div style="font-size:7px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Statistiques plateforme</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:8px">
+        <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:6px;padding:6px;text-align:center"><div style="font-size:14px;font-weight:800;color:var(--text-dark)">45</div><div style="font-size:7px;color:var(--text-muted);margin-top:1px">Tipsters</div></div>
+        <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:6px;padding:6px;text-align:center"><div style="font-size:14px;font-weight:800;color:var(--text-dark)">320</div><div style="font-size:7px;color:var(--text-muted);margin-top:1px">Pronos joués</div></div>
+        <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:6px;padding:6px;text-align:center"><div style="font-size:14px;font-weight:800;color:var(--text-dark)">68%</div><div style="font-size:7px;color:var(--text-muted);margin-top:1px">Taux global</div></div>
+      </div>`;
+
+    const risingBloc = isRising ? `
+      <div style="font-size:7px;font-weight:700;color:#085041;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">👇 Votre emplacement</div>
+      <div style="background:var(--bg);border:1.5px solid #639922;border-radius:8px;overflow:hidden;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px">
+          <div style="width:34px;height:34px;border-radius:50%;background:#C0DD97;border:2px solid #639922;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#3B6D11;flex-shrink:0">V</div>
+          <div style="flex:1;min-width:0">
+            <span style="background:#E1F5EE;color:#085041;font-size:7px;font-weight:700;padding:1px 5px;border-radius:5px">Tipster en progression</span>
+            <div style="font-size:11px;font-weight:800;color:var(--text-dark);margin-top:2px">Votre pseudo</div>
+            <div style="display:flex;gap:8px;margin-top:3px">
+              <span style="font-size:8px;color:var(--text-muted)"><strong style="color:var(--text-dark)">76%</strong> win rate</span>
+              <span style="font-size:8px;color:var(--text-muted)"><strong style="color:var(--text-dark)">48</strong> pronos</span>
+              <span style="font-size:8px;color:var(--text-muted)">cote <strong style="color:var(--text-dark)">3,2</strong></span>
+            </div>
+          </div>
+          <span style="border:1.5px solid #639922;color:#3B6D11;border-radius:10px;padding:4px 9px;font-size:9px;font-weight:700;flex-shrink:0">Voir →</span>
+        </div>
+      </div>` : '';
+
+    const sondageBloc = `
+      <div style="font-size:7px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Sondage</div>
+      <div style="background:var(--bg);border:0.5px solid var(--border);border-radius:8px;padding:8px 9px">
+        <div style="font-size:10px;font-weight:700;color:var(--text-dark);margin-bottom:6px">Quel sport vous intéresse le plus ?</div>
+        <div style="position:relative;border:0.5px solid var(--border);border-radius:6px;padding:5px 8px;margin-bottom:5px;overflow:hidden">
+          <div style="position:absolute;top:0;left:0;height:100%;width:52%;background:#E6F1FB;z-index:0;border-radius:6px"></div>
+          <div style="position:relative;z-index:1;display:flex;justify-content:space-between;font-size:9px"><span style="color:var(--text-dark)">Foot</span><span style="color:#185FA5;font-weight:700">52%</span></div>
+        </div>
+        <div style="position:relative;border:0.5px solid var(--border);border-radius:6px;padding:5px 8px;overflow:hidden">
+          <div style="position:absolute;top:0;left:0;height:100%;width:28%;background:#E6F1FB;z-index:0;border-radius:6px"></div>
+          <div style="position:relative;z-index:1;display:flex;justify-content:space-between;font-size:9px"><span style="color:var(--text-dark)">Tennis</span><span style="color:var(--text-muted)">28%</span></div>
+        </div>
+      </div>`;
+
+    // Pour featured : votre emplacement est EN HAUT (juste après stats), puis le reste
+    // Pour rising : votre emplacement est EN BAS (après statsPlate), comme sur le vrai dashboard
+    return `
+    <div style="background:var(--bg-soft);border-radius:12px;border:0.5px solid var(--border);overflow:hidden;font-family:var(--font-body)">
+      <div style="background:var(--bg);padding:8px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid var(--border)">
+        <span style="font-size:13px;font-weight:800;color:var(--text-dark)">Tableau de bord</span>
+        <span style="background:#E6F1FB;color:#0C447C;border-radius:14px;padding:3px 10px;font-size:10px;font-weight:600">🔥 12 €</span>
+      </div>
+      <div style="padding:10px;display:flex;flex-direction:column;gap:0">
+        ${stats4}
+        ${featuredBloc}
+        ${twitterBloc}
+        ${achatsBloc}
+        ${nouveautesBloc}
+        ${statsPlateBloc}
+        ${risingBloc}
+        ${sondageBloc}
+      </div>
+    </div>`;
+  }
+
+  // Charge les clics + historique pour un slot depuis Supabase
+  async function loadSponsorData(slot, tipsterId) {
+    const url = new URL(SUPA + '/rest/v1/sponsors_clicks_history');
+    url.searchParams.set('select', 'mois,clicks');
+    url.searchParams.set('tipster_id', 'eq.' + tipsterId);
+    url.searchParams.set('slot', 'eq.' + slot);
+    url.searchParams.set('order', 'mois.desc');
+    url.searchParams.set('apikey', ANON);
+    try {
+      const r = await fetch(url.toString(), { headers: { apikey: ANON } });
+      const rows = await r.json();
+      if (!Array.isArray(rows)) return { total: 0, history: [] };
+      const total = rows.reduce((s, r) => s + (parseInt(r.clicks) || 0), 0);
+      return { total, history: rows };
+    } catch(e) { return { total: 0, history: [] }; }
+  }
+
+  function sponsorBlocHtml(slot, label, badgeStyle, titre, data) {
+    const { total, history } = data;
+    const hasHistory = history.length > 0;
+    const previewContent = buildPreviewDashboard(slot);
+    const icoX = `<svg width="11" height="11" viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.737-8.835L1.254 2.25H8.08l4.259 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`;
+    const icoMail = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>`;
+
+    const historyHtml = hasHistory
+      ? history.map(row => {
+          const [y, m] = row.mois.split('-');
+          const moisLabel = new Date(parseInt(y), parseInt(m)-1, 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 12px;border-top:0.5px solid var(--border)">
+            <span style="font-size:0.78rem;color:var(--text-muted)">${moisLabel.charAt(0).toUpperCase()+moisLabel.slice(1)}</span>
+            <span style="font-size:0.82rem;font-weight:700;color:var(--text-dark)">${parseInt(row.clicks)||0} clics</span>
+          </div>`;
+        }).join('')
+      : `<div style="padding:10px 12px;font-size:0.78rem;color:var(--text-muted);border-top:0.5px solid var(--border)">
+          Aucun historique pour le moment. Contactez-nous sur X ou par mail pour être mis en avant.
+        </div>`;
+
+    const thisMois = history.length > 0 ? (parseInt(history[0].clicks)||0) : 0;
+    const badgeMois = hasHistory
+      ? `<span style="background:#FAEEDA;color:#633806;font-size:0.72rem;font-weight:600;padding:3px 10px;border-radius:20px">+${thisMois} ce mois</span>`
+      : `<span style="background:var(--bg-soft);color:var(--text-muted);font-size:0.72rem;font-weight:600;padding:3px 10px;border-radius:20px">Pas encore actif</span>`;
+
+    return `
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 12px 10px">
+          <div>
+            <div style="${badgeStyle};font-size:0.72rem;font-weight:700;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:5px">${label}</div>
+            <div style="font-size:0.88rem;font-weight:700;color:var(--text-dark)">${titre}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <a href="https://x.com/payperwin_co" target="_blank" style="background:#EF9F27;border-radius:20px;padding:5px 10px;display:flex;align-items:center;gap:4px;text-decoration:none">
+              ${icoX}<span style="font-size:0.72rem;font-weight:600;color:white">X</span>
+            </a>
+            <a href="mailto:contact@payperwin.co" style="background:#3B6D11;border-radius:20px;padding:5px 10px;display:flex;align-items:center;gap:4px;text-decoration:none">
+              ${icoMail}<span style="font-size:0.72rem;font-weight:600;color:white">Mail</span>
+            </a>
+          </div>
+        </div>
+        <div style="border-top:0.5px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:10px 12px">
+          <div>
+            <div style="font-size:1.3rem;font-weight:800;color:var(--text-dark)">${total}</div>
+            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:1px">clics générés au total</div>
+          </div>
+          ${badgeMois}
+        </div>
+        ${historyHtml}
+        <div onclick="toggleTipsterPreview('${slot}')" style="display:flex;align-items:center;justify-content:space-between;border-top:0.5px solid var(--border);padding:9px 12px;font-size:0.78rem;color:var(--text-muted);cursor:pointer">
+          <span>Voir comment vous seriez affiché</span>
+          <span id="arrow-tip-${slot}" style="font-size:0.85rem;transition:transform .2s">›</span>
+        </div>
+      </div>
+      <div id="preview-tip-${slot}" style="display:none;background:rgba(0,0,0,0.5);border-radius:var(--radius-lg);padding:14px;margin-bottom:8px">
+        <div style="font-size:0.68rem;font-weight:600;color:white;text-align:center;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em">Dashboard acheteur — vue complète</div>
+        <div>${previewContent}</div>
+        <a href="https://x.com/payperwin_co" target="_blank" style="display:flex;align-items:center;justify-content:center;gap:7px;background:#000;color:white;border-radius:20px;padding:9px 16px;font-size:0.82rem;font-weight:600;text-decoration:none;margin-top:10px">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.737-8.835L1.254 2.25H8.08l4.259 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          Contacter sur X
+        </a>
+        <button onclick="closeTipsterPreview('${slot}')" style="background:var(--bg-soft);border:0.5px solid var(--border);border-radius:20px;padding:6px 16px;font-size:0.78rem;color:var(--text-dark);cursor:pointer;font-family:var(--font-body);margin-top:8px;display:block;width:100%;text-align:center">Fermer ×</button>
+      </div>`;
+  }
+
+  // Bloc stats plateforme pour le dashboard tipster
+  const statsPlatePopupsTip = {
+    parieurs: { title: 'Parieurs', text: 'Nombre total de membres inscrits sur PayPerWin qui achètent des pronostics.' },
+    tipsters: { title: 'Tipsters', text: 'Nombre de tipsters actifs inscrits sur PayPerWin qui publient des pronostics.' },
+    pronos:   { title: 'Pronos joués', text: 'Nombre total de pronostics publiés sur la plateforme depuis le lancement.' },
+    winrate:  { title: 'Taux global', text: 'Pourcentage de pronostics terminés gagnants, sur l\'ensemble des tipsters.' },
+  };
+  const statsPlateHtmlTip = `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px">
+        ${[
+          { key:'parieurs', label:'Parieurs',    val: platNbParieurs },
+          { key:'tipsters', label:'Tipsters',    val: platNbTipsters },
+          { key:'pronos',   label:'Pronos joués',val: platNbPronos },
+          { key:'winrate',  label:'Taux global', val: platWinRate+'%' },
+        ].map(s => `
+          <div onclick="showStatsPlateTipsterPopup('${s.key}')" style="background:var(--bg-soft);border-radius:var(--radius-md);padding:8px 6px;text-align:center;cursor:pointer;position:relative">
+            <div style="position:absolute;top:4px;right:5px;font-size:9px;color:var(--text-muted);opacity:.5">?</div>
+            <div style="font-size:${mob?'0.95rem':'1rem'};font-weight:700;color:var(--text-dark)">${s.val}</div>
+            <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">${s.label}</div>
+          </div>`).join('')}
+      </div>
+      <div id="stats-plate-tipster-popup" style="padding:0"></div>
+    </div>`;
+
+  // Charger les données sponsor pour les 2 slots en parallèle
+  const user = await getCurrentUser();
+  const [dataFeatured, dataRising] = await Promise.all([
+    loadSponsorData('featured', user.id),
+    loadSponsorData('rising', user.id)
+  ]);
+
+  const sponsorHtml = `
+    <div style="margin-bottom:var(--space-md)">
+      ${sponsorBlocHtml('featured', '⭐ Tipster à la une', 'background:#FAEEDA;color:#633806', 'Emplacement premium', dataFeatured)}
+      ${sponsorBlocHtml('rising', '🚀 Tipster en progression', 'background:#E1F5EE;color:#085041', 'Emplacement secondaire', dataRising)}
+    </div>`;
+
+  // Rendu final
+  if (!document.getElementById('page-content')) return;
+
+  const styleTag = `<style>
+    .dash-tip-news.open .dash-tip-desc { display:block !important }
+    .dash-tip-news.open .dash-tip-arrow { display:inline-block;transform:rotate(90deg) }
+    .dash-tip-news:last-child { border-bottom:none !important }
+  </style>`;
+
+  if (mob) {
+    container.innerHTML = `${styleTag}
+      <div class="section-header" style="margin-bottom:8px"><div><h2>Tableau de bord</h2></div></div>
+      ${statsHtml}
+      ${chartHtml}
+      <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Mes derniers pronos</div>
+      ${derniersHtml}
+      <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Statistiques plateforme</div>
+      ${statsPlateHtmlTip}
+      <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nouveautés plateforme</div>
+      ${changelogHtml}
+      ${sponsorHtml}
+      ${freebetHtml}`;
+  } else {
+    container.innerHTML = `${styleTag}
+      <div class="section-header"><div><h2>Tableau de bord</h2></div></div>
+      ${statsHtml}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-lg)">
+        <div>
+          ${chartHtml}
+          <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Booster votre visibilité</div>
+          ${sponsorHtml.replace('<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">','<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">').replace('<div style="padding:12px 12px 10px;font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:0.5px solid var(--border);margin-bottom:10px">Booster votre visibilité</div>','')}
+        </div>
+        <div>
+          <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Mes derniers pronos</div>
+          ${derniersHtml}
+          <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Statistiques plateforme</div>
+          ${statsPlateHtmlTip}
+          <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nouveautés plateforme</div>
+          ${changelogHtml}
+          ${freebetHtml}
+        </div>
+      </div>`;
+  }
+
+  window.toggleFreebetTipsterInfo = function() {
+    const el = document.getElementById('freebet-tipster-info');
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  };
+
+  // Fonctions popup stat
+  window.showStatsPlateTipsterPopup = function(key) {
+    const area = document.getElementById('stats-plate-tipster-popup');
+    if (!area) return;
+    if (area.dataset.open === key) { area.style.padding='0'; area.innerHTML=''; area.dataset.open=''; return; }
+    area.dataset.open = key;
+    const p = statsPlatePopupsTip[key];
+    area.style.padding = '0 12px 10px';
+    area.innerHTML = `<div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 12px;border:1px solid var(--border);display:flex;justify-content:space-between;gap:8px">
+      <div>
+        <div style="font-size:0.85rem;font-weight:700;color:var(--text-dark);margin-bottom:3px">${p.title}</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);line-height:1.5">${p.text}</div>
+      </div>
+      <button onclick="const a=document.getElementById('stats-plate-tipster-popup');a.innerHTML='';a.style.padding='0';a.dataset.open='';" style="font-size:1rem;color:var(--text-muted);background:none;border:none;cursor:pointer;flex-shrink:0">×</button>
+    </div>`;
+  };
+
+  window.showTipsterStatPopup = function(key) {
+    const row1Keys = ['solde', 'winrate'];
+    const areaId = row1Keys.includes(key) ? 'tipster-popup-row1' : 'tipster-popup-row2';
+    const otherAreaId = row1Keys.includes(key) ? 'tipster-popup-row2' : 'tipster-popup-row1';
+    const area = document.getElementById(areaId);
+    const otherArea = document.getElementById(otherAreaId);
+    if (!area) return;
+    // Vider l'autre rangée
+    if (otherArea) { otherArea.innerHTML = ''; otherArea.dataset.open = ''; }
+    // Toggle
+    if (area.dataset.open === key) { area.innerHTML = ''; area.dataset.open = ''; return; }
+    area.dataset.open = key;
+    const p = popupDefs[key];
+    area.innerHTML = `<div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 12px;border:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;margin-bottom:4px">
+      <div>
+        <div style="font-size:0.85rem;font-weight:700;color:var(--text-dark);margin-bottom:3px">${p.title}</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);line-height:1.5">${p.text}</div>
+      </div>
+      <button onclick="['tipster-popup-row1','tipster-popup-row2'].forEach(id=>{const el=document.getElementById(id);if(el){el.innerHTML='';el.dataset.open='';}});" style="font-size:1rem;color:var(--text-muted);background:none;border:none;cursor:pointer;flex-shrink:0">×</button>
+    </div>`;
+  };
+
+  // Initialiser les graphiques Chart.js après rendu du DOM
+  if (pronosSorted.length >= 2) {
+    setTimeout(() => {
+      const ANON2 = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+      const SUPA2 = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+      const n = pronosSorted.length;
+      const labels = Array(n).fill('');
+      const chartOpts = (color, dashColor) => ({
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } }
+      });
+
+      // Moyenne plateforme : on charge les purchases de tous les tipsters
+      fetch(`${SUPA2}/rest/v1/purchases?select=prono_id,amount,created_at&order=created_at.asc&apikey=${ANON2}`, { headers: { apikey: ANON2 } })
+        .then(r => r.json())
+        .then(allP => {
+          // Charger pronos pour avoir les tipster_id
+          return fetch(`${SUPA2}/rest/v1/pronos?select=id,tipster_id,status,price,created_at&order=created_at.asc&apikey=${ANON2}`, { headers: { apikey: ANON2 } })
+            .then(r => r.json())
+            .then(allPronos => ({ allP, allPronos }));
+        })
+        .then(({ allP, allPronos }) => {
+          // Grouper par tipster
+          const tipsterIds = [...new Set(allPronos.map(p => p.tipster_id).filter(Boolean))];
+          const nbTipsters = Math.max(1, tipsterIds.length);
+          const purchMap = {};
+          (allP||[]).forEach(a => { if (!purchMap[a.prono_id]) purchMap[a.prono_id] = 0; purchMap[a.prono_id]++; });
+
+          // Pour chaque tipster, calculer achats cumulés et gains cumulés sur n pronos
+          const allAchats = tipsterIds.map(tid => {
+            const tPronos = allPronos.filter(p => p.tipster_id === tid).slice(0, n);
+            let cum = 0;
+            return tPronos.map(p => { cum += purchMap[p.id]||0; return cum; });
+          }).filter(a => a.length > 0);
+
+          const allGains = tipsterIds.map(tid => {
+            const tPronos = allPronos.filter(p => p.tipster_id === tid).slice(0, n);
+            let cum = 0;
+            return tPronos.map(p => {
+              if (p.status === 'won') cum += Math.round((purchMap[p.id]||0) * parseFloat(p.price||0) * 0.9);
+              return cum;
+            });
+          }).filter(a => a.length > 0);
+
+          // Moyenne par position
+          const avgAchats = Array(n).fill(0).map((_, i) => {
+            const vals = allAchats.map(a => a[i]||0);
+            return vals.length > 0 ? Math.round(vals.reduce((s,v)=>s+v,0)/vals.length) : 0;
+          });
+          const avgGains = Array(n).fill(0).map((_, i) => {
+            const vals = allGains.map(a => a[i]||0);
+            return vals.length > 0 ? Math.round(vals.reduce((s,v)=>s+v,0)/vals.length) : 0;
+          });
+
+          // Graphique achats
+          const cA = document.getElementById('chartA-' + chartUid);
+          if (cA) {
+            new Chart(cA, {
+              type: 'line',
+              data: { labels, datasets: [
+                { data: achatsData.slice(0, n), borderColor: '#378ADD', borderWidth: 2, pointRadius: 0, tension: 0.4 },
+                { data: avgAchats, borderColor: '#888780', borderWidth: 1.5, borderDash: [5,4], pointRadius: 0, tension: 0.4 }
+              ]},
+              options: chartOpts('#378ADD', '#888780')
+            });
+          }
+
+          // Graphique gains
+          const cG = document.getElementById('chartG-' + chartUid);
+          if (cG) {
+            new Chart(cG, {
+              type: 'line',
+              data: { labels, datasets: [
+                { data: gainsData.slice(0, n), borderColor: '#3B6D11', borderWidth: 2, pointRadius: 0, tension: 0.4 },
+                { data: avgGains, borderColor: '#888780', borderWidth: 1.5, borderDash: [5,4], pointRadius: 0, tension: 0.4 }
+              ]},
+              options: chartOpts('#3B6D11', '#888780')
+            });
+          }
+        })
+        .catch(() => {
+          // En cas d'erreur, afficher juste les données du tipster sans moyenne
+          const cA = document.getElementById('chartA-' + chartUid);
+          if (cA) new Chart(cA, { type:'line', data:{ labels, datasets:[{ data:achatsData, borderColor:'#378ADD', borderWidth:2, pointRadius:0, tension:0.4 }]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}} } });
+          const cG = document.getElementById('chartG-' + chartUid);
+          if (cG) new Chart(cG, { type:'line', data:{ labels, datasets:[{ data:gainsData, borderColor:'#3B6D11', borderWidth:2, pointRadius:0, tension:0.4 }]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false},tooltip:{enabled:false}}, scales:{x:{display:false},y:{display:false}} } });
+        });
+    }, 100);
+  }
+
+  window.toggleTipsterPreview = function(slot) {
+    const el = document.getElementById('preview-tip-' + slot);
+    const ar = document.getElementById('arrow-tip-' + slot);
+    const other = slot === 'featured' ? 'rising' : 'featured';
+    const otherEl = document.getElementById('preview-tip-' + other);
+    const otherAr = document.getElementById('arrow-tip-' + other);
+    if (el.style.display !== 'none') { el.style.display = 'none'; ar.style.transform = ''; }
+    else {
+      if (otherEl) { otherEl.style.display = 'none'; otherAr.style.transform = ''; }
+      el.style.display = 'block'; ar.style.transform = 'rotate(90deg)';
+    }
+  };
+
+  window.closeTipsterPreview = function(slot) {
+    const el = document.getElementById('preview-tip-' + slot);
+    if (el) el.style.display = 'none';
+    const ar = document.getElementById('arrow-tip-' + slot);
+    if (ar) ar.style.transform = '';
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE — TABLEAU DE BORD TIPSTER
+// ══════════════════════════════════════════════════════════════
+function isMobile() { return window.innerWidth < 900; }

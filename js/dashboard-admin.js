@@ -181,6 +181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       email:   u.email || '—',
       balance: parseFloat(u.balance) || 0,
       pending: parseFloat(u.pending) || 0,
+      freebet: parseFloat(u.freebet_balance) || 0,
       spent:   0,
       joined:  u.created_at ? new Date(u.created_at).toLocaleDateString('fr-FR') : '—',
       achats:  purchaseCountMap[u.id] || 0,
@@ -215,6 +216,9 @@ function navigateTo(page) {
     explorer:  'Explorer les tipsters',
     feedback:  'Feedback & Changelog',
     images:    'Validation des images',
+    sondage:   'Sondages',
+    dashsettings: 'Paramètres du dashboard',
+    sponsors: 'Gestion des sponsors',
   };
   document.getElementById('topbar-title').textContent = titles[page] || 'Admin';
   const content = document.getElementById('page-content');
@@ -228,6 +232,9 @@ function navigateTo(page) {
   if (page === 'explorer')  renderExplorerTipsters(content, 'https://payperwin.co/');
   if (page === 'feedback')  renderPageFeedbackAdmin(content);
   if (page === 'images')    renderPageImages(content);
+  if (page === 'sondage')   renderPageSondage(content);
+  if (page === 'dashsettings') renderPageDashSettings(content);
+  if (page === 'sponsors')     renderPageSponsors(content);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -444,13 +451,17 @@ async function validateProno(id, status) {
 
     if (purchases && purchases.length > 0) {
       if (status === 'won') {
-        const totalRevenue = purchases.reduce((sum, a) => sum + parseFloat(a.amount || 0), 0);
-        const tipsterShare = totalRevenue * 0.9;
-        const { data: tipsterProfile } = await sb.from('profiles').select('balance').eq('id', p.tipster_id).single();
-        const currentBalance = parseFloat(tipsterProfile?.balance || 0);
-        await sb.from('profiles').update({ balance: currentBalance + tipsterShare }).eq('id', p.tipster_id);
-        // Décrémenter le pending de chaque acheteur
-        for (const achat of purchases) {
+        // Commission tipster : exclure les achats freebet
+        const normalPurchases = purchases.filter(a => !a.is_freebet);
+        const totalRevenue = normalPurchases.reduce((sum, a) => sum + parseFloat(a.amount || 0), 0);
+        if (totalRevenue > 0) {
+          const tipsterShare = totalRevenue * 0.9;
+          const { data: tipsterProfile } = await sb.from('profiles').select('balance').eq('id', p.tipster_id).single();
+          const currentBalance = parseFloat(tipsterProfile?.balance || 0);
+          await sb.from('profiles').update({ balance: currentBalance + tipsterShare }).eq('id', p.tipster_id);
+        }
+        // Décrémenter le pending de chaque acheteur non-freebet
+        for (const achat of normalPurchases) {
           const { data: userProfile } = await sb.from('profiles').select('pending').eq('id', achat.user_id).single();
           const currentPending = parseFloat(userProfile?.pending || 0);
           const newPending = Math.max(0, currentPending - parseFloat(achat.amount || 0));
@@ -459,15 +470,22 @@ async function validateProno(id, status) {
         await sb.from('purchases').update({ status: 'won' }).eq('prono_id', p.id);
       } else {
         for (const achat of purchases) {
-          const { data: userProfile } = await sb.from('profiles').select('balance, pending').eq('id', achat.user_id).single();
-          const currentBalance = parseFloat(userProfile?.balance || 0);
-          const currentPending = parseFloat(userProfile?.pending || 0);
           const amount = parseFloat(achat.amount || 0);
-          const newPending = Math.max(0, currentPending - amount);
-          await sb.from('profiles').update({
-            balance: currentBalance + amount,
-            pending: newPending
-          }).eq('id', achat.user_id);
+          if (achat.is_freebet) {
+            // Achat freebet : rembourser en freebet_balance si annulé, rien si perdu
+            if (status === 'cancelled') {
+              const { data: userProfile } = await sb.from('profiles').select('freebet_balance').eq('id', achat.user_id).single();
+              const currentFreebet = parseFloat(userProfile?.freebet_balance || 0);
+              await sb.from('profiles').update({ freebet_balance: Math.round((currentFreebet + amount) * 100) / 100 }).eq('id', achat.user_id);
+            }
+          } else {
+            // Achat normal : rembourser en balance
+            const { data: userProfile } = await sb.from('profiles').select('balance, pending').eq('id', achat.user_id).single();
+            const currentBalance = parseFloat(userProfile?.balance || 0);
+            const currentPending = parseFloat(userProfile?.pending || 0);
+            const newPending = Math.max(0, currentPending - amount);
+            await sb.from('profiles').update({ balance: currentBalance + amount, pending: newPending }).eq('id', achat.user_id);
+          }
         }
         await sb.from('purchases').update({ status }).eq('prono_id', p.id);
       }
@@ -802,7 +820,12 @@ function renderUserRows() {
             <div class="prono-title">${u.name}</div>
             <div class="prono-meta">${u.email}</div>
           </div>
-          <div style="display:flex;gap:6px;align-items:center">${voirBtn}${roleBtn(u)}</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button onclick="openFreebetModal('${u.id}','${u.name}',${u.freebet})" style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;border:0.5px solid ${u.freebet > 0 ? '#EF9F27' : 'var(--border)'};background:${u.freebet > 0 ? '#FFF8EE' : 'var(--bg-soft)'};cursor:pointer">
+              <span style="font-size:0.72rem;font-weight:600;color:${u.freebet > 0 ? '#633806' : 'var(--text-muted)'}">Fbet ${u.freebet > 0 ? formatEuros(u.freebet) : '0 €'}</span>
+            </button>
+            ${voirBtn}
+          </div>
         </div>
         <div style="display:flex;gap:var(--space-lg);font-size:0.82rem;color:var(--text-muted);flex-wrap:wrap">
           <span>Achats : <strong style="color:var(--text-dark)">${u.achats}</strong></span>
@@ -821,7 +844,12 @@ function renderUserRows() {
         <div style="font-weight:700;color:var(--blue)">${formatEuros(u.balance)}</div>
         <div style="font-weight:600;color:var(--warning)">${u.pending > 0 ? formatEuros(u.pending) : '—'}</div>
         <div style="font-size:0.8rem;color:var(--text-muted)">${u.joined}</div>
-        <div style="display:flex;gap:6px;align-items:center">${voirBtn}${roleBtn(u)}</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button onclick="openFreebetModal('${u.id}','${u.name}',${u.freebet})" style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;border:0.5px solid ${u.freebet > 0 ? '#EF9F27' : 'var(--border)'};background:${u.freebet > 0 ? '#FFF8EE' : 'var(--bg-soft)'};cursor:pointer">
+            <span style="font-size:0.72rem;font-weight:600;color:${u.freebet > 0 ? '#633806' : 'var(--text-muted)'}">Fbet ${u.freebet > 0 ? formatEuros(u.freebet) : '0 €'}</span>
+          </button>
+          ${voirBtn}
+        </div>
       </div>`;
   }).join('');
 }
@@ -1017,7 +1045,7 @@ function showToast(message, type = 'info') {
   const t = document.createElement('div');
   t.className = 'toast';
   t.innerHTML = `<span>${c[2]}</span> ${message}`;
-  Object.assign(t.style, { position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)', background:c[0], border:`1px solid ${c[1]}`, borderRadius:'var(--radius-md)', padding:'12px 24px', fontSize:'0.87rem', fontFamily:'var(--font-body)', color:'var(--text-dark)', zIndex:'9999', animation:'fadeUp 0.3s ease both', boxShadow:'var(--shadow-md)', whiteSpace:'nowrap' });
+  Object.assign(t.style, { position:'fixed', bottom:'24px', left:'16px', right:'16px', textAlign:'center', background:c[0], border:`1px solid ${c[1]}`, borderRadius:'var(--radius-md)', padding:'12px 16px', fontSize:'0.87rem', fontFamily:'var(--font-body)', color:'var(--text-dark)', zIndex:'9999', animation:'fadeUp 0.3s ease both', boxShadow:'var(--shadow-md)', wordBreak:'break-word' });
   document.body.appendChild(t);
   setTimeout(() => t?.remove(), 3500);
 }
@@ -1568,8 +1596,15 @@ async function openFicheTipster(id){
     const wr=(won+lost)>0?Math.round(won/(won+lost)*100):0;
     const badge={won:'<span class="badge badge-won">✓ Gagné</span>',lost:'<span class="badge badge-lost">✕ Perdu</span>',cancelled:'<span class="badge badge-cancelled">⊘ Annulé</span>',pending:'<span class="badge badge-pending">⏳ En attente</span>'};
     modal.innerHTML=`
-      <h2 style="margin-bottom:4px">${p.first_name} ${p.last_name}</h2>
-      <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">Membre depuis ${formatDate(p.created_at?.split('T')[0])}</div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+        <h2>${p.first_name} ${p.last_name}</h2>
+        ${p.role === 'moderator'
+          ? `<div style="display:flex;align-items:center;gap:6px"><span style="font-size:0.72rem;padding:3px 10px;border-radius:20px;background:var(--warning-pale,#fff8e1);color:var(--warning);font-weight:600">⚖️ Modérateur</span><button onclick="setModerator('${id}','user');document.getElementById('fiche-modal-overlay').style.display='none'" style="font-size:0.72rem;padding:3px 8px;border:1px solid var(--border);border-radius:20px;background:none;color:var(--text-muted);cursor:pointer">Retirer</button></div>`
+          : `<button onclick="setModerator('${id}','moderator');document.getElementById('fiche-modal-overlay').style.display='none'" style="font-size:0.72rem;padding:3px 10px;border:1px solid var(--border);border-radius:20px;background:none;color:var(--text-muted);cursor:pointer">+ Modo</button>`
+        }
+      </div>
+      <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-md)">Membre depuis ${formatDate(p.created_at?.split('T')[0])}</div>
+      ${parseFloat(p.freebet_balance||0) > 0 ? `<div style="display:flex;align-items:center;justify-content:space-between;background:#FFF8EE;border:0.5px solid #EF9F27;border-radius:var(--radius-md);padding:8px 12px;margin-bottom:var(--space-lg)"><span style="font-size:0.82rem;color:#633806">💛 Solde freebet</span><strong style="color:#412402">${formatEuros(parseFloat(p.freebet_balance||0))}</strong></div>` : '<div style="margin-bottom:var(--space-lg)"></div>'}
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-card__label">Pronos</div><div class="stat-card__value">${(pronos||[]).length}</div></div>
         <div class="stat-card"><div class="stat-card__label">Win Rate</div><div class="stat-card__value" style="color:var(--success)">${wr}%</div></div>
@@ -1596,6 +1631,70 @@ async function openFicheTipster(id){
   }catch(e){modal.innerHTML=`<div style="color:var(--error)">Erreur de chargement.</div>`;}
 }
 
+// ══════════════════════════════════════════════════════════════
+//  FREEBET
+// ══════════════════════════════════════════════════════════════
+function openFreebetModal(userId, userName, currentFreebet) {
+  const existing = document.getElementById('freebet-modal-overlay');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'freebet-modal-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = `
+    <div style="background:var(--bg);border-radius:var(--radius-lg);padding:var(--space-xl);max-width:380px;width:90%;border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:var(--space-md)">
+        <div style="width:34px;height:34px;border-radius:50%;background:#B5D4F4;display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;color:#0C447C;flex-shrink:0">${userName[0].toUpperCase()}</div>
+        <div>
+          <div style="font-size:0.95rem;font-weight:700;color:var(--text-dark)">${userName}</div>
+          <div style="font-size:0.78rem;color:var(--text-muted)">Solde freebet actuel : <strong style="color:#633806">${formatEuros(currentFreebet)}</strong></div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Montant à ajouter</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:var(--space-sm)">
+          ${[2,5,10,20].map(v => `<button type="button" onclick="document.getElementById('freebet-amount').value=${v};document.querySelectorAll('.freebet-quick-btn').forEach(b=>b.style.background='var(--bg-soft)');this.style.background='#FFF8EE';this.style.borderColor='#EF9F27'" class="freebet-quick-btn" style="padding:7px 4px;border:0.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-soft);font-size:0.82rem;font-weight:600;color:var(--text-dark);cursor:pointer">${v} €</button>`).join('')}
+        </div>
+        <input class="input" type="number" id="freebet-amount" min="0.5" step="0.5" placeholder="Autre montant (€)" />
+      </div>
+      <div style="display:flex;gap:var(--space-sm);margin-top:var(--space-lg)">
+        <button class="btn btn-outline" style="flex:1" onclick="document.getElementById('freebet-modal-overlay').remove()">Annuler</button>
+        <button class="btn btn-primary" style="flex:2;background:#EF9F27;border-color:#EF9F27;color:#412402" onclick="saveFreebetModal('${userId}',${currentFreebet})">Créditer le Fbet</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  setTimeout(() => document.getElementById('freebet-amount')?.focus(), 100);
+}
+
+async function saveFreebetModal(userId, currentFreebet) {
+  const amountEl = document.getElementById('freebet-amount');
+  const amount = parseFloat(amountEl?.value);
+  if (!amount || amount <= 0) { showToast('Veuillez saisir un montant valide.', 'error'); return; }
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  const newFreebet = Math.round((currentFreebet + amount) * 100) / 100;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const token = session?.access_token || ANON;
+    const r = await fetch(`${SUPA}/rest/v1/profiles?id=eq.${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ freebet_balance: newFreebet })
+    });
+    if (r.ok || r.status === 204) {
+      const u = adminState.users.find(u => u.id === userId);
+      if (u) u.freebet = newFreebet;
+      document.getElementById('freebet-modal-overlay')?.remove();
+      showToast('Freebet crédité : ' + formatEuros(newFreebet) + ' ✓', 'success');
+      renderUserRows();
+    } else {
+      showToast('Erreur lors du crédit freebet.', 'error');
+    }
+  } catch(e) {
+    showToast('Erreur : ' + e.message, 'error');
+  }
+}
+
 async function openFicheUser(id){
   const ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
   const SUPA='https://haezbgglpghjrgdpmcrj.supabase.co';
@@ -1605,7 +1704,7 @@ async function openFicheUser(id){
   modal.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-muted)">⏳ Chargement...</div>';
   try{
     // Profil (avec total_deposits)
-    const rP=await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,total_deposits,created_at&id=eq.${id}&apikey=${ANON}`,{headers:{apikey:ANON,'Authorization':'Bearer '+ANON}});
+    const rP=await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,balance,pending,total_deposits,created_at,role,freebet_balance&id=eq.${id}&apikey=${ANON}`,{headers:{apikey:ANON,'Authorization':'Bearer '+ANON}});
     const profiles=await rP.json(); const p=profiles[0]||{};
 
     // Achats
@@ -1650,7 +1749,12 @@ async function openFicheUser(id){
       :'<div style="font-size:0.85rem;color:var(--text-muted);margin-top:var(--space-sm)">Aucun dépôt enregistré.</div>';
 
     modal.innerHTML=`
-      <h2 style="margin-bottom:4px">${p.first_name} ${p.last_name}</h2>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+        <h2 style="margin:0">${p.first_name} ${p.last_name}</h2>
+        ${p.role==='moderator'
+          ? `<div style="display:flex;align-items:center;gap:6px"><span style="font-size:0.75rem;padding:3px 10px;border-radius:20px;background:var(--warning-pale,#fff8e1);color:var(--warning);font-weight:600">⚖️ Modo</span><button onclick="setModerator('${p.id}','user');document.getElementById('fiche-modal-overlay').style.display='none'" style="font-size:0.72rem;padding:3px 8px;border:1px solid var(--border);border-radius:20px;background:none;color:var(--text-muted);cursor:pointer">Retirer</button></div>`
+          : `<button onclick="setModerator('${p.id}','moderator');document.getElementById('fiche-modal-overlay').style.display='none'" style="font-size:0.75rem;padding:3px 10px;border:1px solid var(--border);border-radius:20px;background:none;color:var(--text-muted);cursor:pointer">+ Modo</button>`}
+      </div>
       <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:var(--space-lg)">Membre depuis ${formatDate(p.created_at?.split('T')[0])}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-sm);margin-bottom:var(--space-lg)">
 
@@ -1983,3 +2087,403 @@ async function validateImage(pronoId, status) {
   }
 }
 
+// ══════════════════════════════════════════════════════════════
+//  PAGE — SONDAGES (ADMIN)
+// ══════════════════════════════════════════════════════════════
+async function renderPageSondage(container) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  container.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>';
+
+  async function loadAndRender() {
+    const rP = await fetch(`${SUPA}/rest/v1/polls?select=id,question,actif,created_at&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const polls = await rP.json();
+
+    // Charger options et votes pour chaque sondage
+    const pollsWithData = await Promise.all((polls||[]).map(async poll => {
+      const [rO, rV] = await Promise.all([
+        fetch(`${SUPA}/rest/v1/poll_options?poll_id=eq.${poll.id}&select=id,label,votes&order=votes.desc&apikey=${ANON}`, { headers: { apikey: ANON } }),
+        fetch(`${SUPA}/rest/v1/poll_votes?poll_id=eq.${poll.id}&select=id&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      ]);
+      const options = await rO.json();
+      const votes   = await rV.json();
+      return { ...poll, options: options||[], totalVotes: (votes||[]).length };
+    }));
+
+    const mob = isMobile();
+
+    function pollCard(poll) {
+      const total = poll.totalVotes;
+      const optionsHtml = (poll.options||[]).map(o => {
+        const pct = total > 0 ? Math.round((o.votes||0) / total * 100) : 0;
+        return `<div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--text-dark);margin-bottom:4px">
+            <span>${o.label}</span>
+            <span style="font-weight:600;color:var(--primary)">${pct}% (${o.votes||0} votes)</span>
+          </div>
+          <div style="background:var(--bg-soft);border-radius:10px;height:6px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:var(--primary);border-radius:10px"></div>
+          </div>
+        </div>`;
+      }).join('');
+
+      return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-md);margin-bottom:var(--space-md)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:var(--space-sm)">
+          <div>
+            <div style="font-size:0.95rem;font-weight:700;color:var(--text-dark)">${poll.question}</div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">${total} réponse(s) · Créé le ${formatDate(poll.created_at)}</div>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;align-items:center">
+            <span style="background:${poll.actif?'var(--success-pale)':'var(--bg-soft)'};color:${poll.actif?'var(--success)':'var(--text-muted)'};font-size:0.72rem;font-weight:600;padding:3px 8px;border-radius:10px">${poll.actif?'✓ Actif':'Inactif'}</span>
+            <button onclick="togglePoll('${poll.id}',${poll.actif})" class="btn btn-outline btn--sm">${poll.actif?'Désactiver':'Activer'}</button>
+            <button onclick="deletePoll('${poll.id}')" class="btn-icon danger" title="Supprimer">🗑</button>
+          </div>
+        </div>
+        ${optionsHtml}
+      </div>`;
+    }
+
+    container.innerHTML = `
+      <div class="section-header">
+        <div><h2>Sondages</h2><p>${(polls||[]).length} sondage(s) au total</p></div>
+        <button class="btn btn-primary" onclick="openNewPollModal()">+ Nouveau sondage</button>
+      </div>
+
+      <div id="poll-modal-container"></div>
+
+      ${(polls||[]).length === 0
+        ? '<div class="empty-state"><div class="empty-state__icon">📊</div><h3>Aucun sondage</h3><p>Créez votre premier sondage !</p></div>'
+        : (pollsWithData||[]).map(p => pollCard(p)).join('')
+      }
+    `;
+  }
+
+  await loadAndRender();
+
+  window.openNewPollModal = function() {
+    const mc = document.getElementById('poll-modal-container');
+    if (!mc) return;
+    mc.innerHTML = `
+      <div style="background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-md);margin-bottom:var(--space-md)">
+        <h3 style="margin-bottom:var(--space-md)">Nouveau sondage</h3>
+        <div class="form-group">
+          <label>Question</label>
+          <input class="input" id="poll-question" type="text" placeholder="Ex: Quel sport préférez-vous ?" />
+        </div>
+        <div class="form-group">
+          <label>Options (une par ligne, minimum 2)</label>
+          <textarea class="input input-textarea" id="poll-options-text" rows="4" placeholder="Foot&#10;Tennis&#10;Basket&#10;Rugby"></textarea>
+        </div>
+        <div style="display:flex;gap:var(--space-sm);justify-content:flex-end;margin-top:var(--space-md)">
+          <button class="btn btn-outline" onclick="document.getElementById('poll-modal-container').innerHTML=''">Annuler</button>
+          <button class="btn btn-primary" onclick="submitNewPoll()">Créer le sondage</button>
+        </div>
+      </div>`;
+    document.getElementById('poll-question').focus();
+  };
+
+  window.submitNewPoll = async function() {
+    const q = document.getElementById('poll-question')?.value.trim();
+    const opts = (document.getElementById('poll-options-text')?.value || '').split('\n').map(o => o.trim()).filter(Boolean);
+    if (!q) { showToast('Veuillez saisir une question.', 'error'); return; }
+    if (opts.length < 2) { showToast('Minimum 2 options.', 'error'); return; }
+    try {
+      const rPoll = await fetch(`${SUPA}/rest/v1/polls`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + ANON, 'Prefer': 'return=representation' },
+        body: JSON.stringify({ question: q, actif: false })
+      });
+      const pollData = await rPoll.json();
+      const pollId = Array.isArray(pollData) ? pollData[0]?.id : pollData?.id;
+      if (!pollId) throw new Error('Erreur création sondage');
+      for (const label of opts) {
+        await fetch(`${SUPA}/rest/v1/poll_options`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + ANON, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ poll_id: pollId, label, votes: 0 })
+        });
+      }
+      showToast('Sondage créé ! Activez-le pour le rendre visible.', 'success');
+      await loadAndRender();
+    } catch(e) { showToast('Erreur : ' + e.message, 'error'); }
+  };
+
+  window.togglePoll = async function(pollId, currentActif) {
+    // Désactiver tous les autres d'abord si on active
+    if (!currentActif) {
+      await fetch(`${SUPA}/rest/v1/polls?actif=eq.true`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + ANON },
+        body: JSON.stringify({ actif: false })
+      });
+    }
+    await fetch(`${SUPA}/rest/v1/polls?id=eq.${pollId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + ANON },
+      body: JSON.stringify({ actif: !currentActif })
+    });
+    showToast(!currentActif ? 'Sondage activé ✓' : 'Sondage désactivé', 'info');
+    await loadAndRender();
+  };
+
+  window.deletePoll = async function(pollId) {
+    if (!confirm('Supprimer ce sondage et tous ses votes ?')) return;
+    await fetch(`${SUPA}/rest/v1/polls?id=eq.${pollId}`, {
+      method: 'DELETE',
+      headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON }
+    });
+    showToast('Sondage supprimé.', 'info');
+    await loadAndRender();
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE — PARAMÈTRES DASHBOARD (ADMIN)
+// ══════════════════════════════════════════════════════════════
+async function renderPageDashSettings(container) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  container.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>';
+
+  // Ordre fixe correspondant à l'affichage du dashboard user
+  const ORDER = ['bloc_featured','bloc_twitter','bloc_meilleur_tipster','bloc_objectif','bloc_alerte','bloc_stats_plate','bloc_sponsor_rising','bloc_sondage'];
+
+  async function loadAndRender() {
+    const r = await fetch(`${SUPA}/rest/v1/dashboard_settings?select=id,key,label,actif&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const raw = await r.json();
+    // Trier selon l'ordre fixe
+    const settings = ORDER.map(k => (raw||[]).find(s => s.key === k)).filter(Boolean);
+    // Ajouter les clés non listées à la fin
+    (raw||[]).forEach(s => { if (!ORDER.includes(s.key)) settings.push(s); });
+
+    container.innerHTML = `
+      <div class="section-header">
+        <div><h2>Paramètres du dashboard</h2><p>Choisissez les blocs visibles par les utilisateurs</p></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:560px">
+        ${settings.map(s => `
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div style="min-width:0;flex:1">
+              <div style="font-size:0.9rem;font-weight:600;color:var(--text-dark)">${s.label || s.key}</div>
+            </div>
+            <div onclick="toggleDashSetting('${s.id}', ${s.actif})" style="width:52px;height:28px;border-radius:14px;background:${s.actif?'#22c55e':'#d1d5db'};position:relative;cursor:pointer;transition:background .25s;flex-shrink:0">
+              <div style="position:absolute;top:3px;left:${s.actif?'27px':'3px'};width:22px;height:22px;border-radius:50%;background:white;transition:left .25s;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+              <span style="position:absolute;top:50%;transform:translateY(-50%);${s.actif?'left:7px':'right:7px'};font-size:0.55rem;font-weight:700;color:white;letter-spacing:.03em">${s.actif?'ON':'OFF'}</span>
+            </div>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  await loadAndRender();
+
+  window.toggleDashSetting = async function(settingId, currentActif) {
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      const token = session?.access_token || ANON;
+      const r = await fetch(`${SUPA}/rest/v1/dashboard_settings?id=eq.${settingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + token, 'Prefer': 'return=representation' },
+        body: JSON.stringify({ actif: !currentActif })
+      });
+      const result = await r.json();
+      console.log('PATCH result:', r.status, result);
+      if (r.ok) {
+        showToast(!currentActif ? 'Bloc activé ✓' : 'Bloc masqué', 'info');
+        await loadAndRender();
+      } else {
+        showToast('Erreur : ' + JSON.stringify(result), 'error');
+      }
+    } catch(e) {
+      showToast('Erreur : ' + e.message, 'error');
+      console.error(e);
+    }
+  };
+}
+
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE — GESTION DES SPONSORS (ADMIN)
+// ══════════════════════════════════════════════════════════════
+async function renderPageSponsors(container) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  container.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>';
+
+  async function loadAndRender() {
+    const [rTip, rSp] = await Promise.all([
+      fetch(`${SUPA}/rest/v1/profiles?role=eq.tipster&select=id,pseudo,first_name,last_name,avatar_url&order=pseudo.asc&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/sponsors?select=id,slot,tipster_id,description,image_url,actif,clicks&apikey=${ANON}`, { headers: { apikey: ANON } }),
+    ]);
+    const tipsters = await rTip.json();
+    const sponsors = await rSp.json();
+
+    const featured = (sponsors||[]).find(s => s.slot === 'featured');
+    const rising   = (sponsors||[]).find(s => s.slot === 'rising');
+
+    function tipsterOptions(selectedId) {
+      return '<option value="">-- Aucun --</option>' +
+        (tipsters||[]).map(t => {
+          const name = t.pseudo || (t.first_name + ' ' + t.last_name);
+          return `<option value="${t.id}" ${t.id === selectedId ? 'selected' : ''}>${name}</option>`;
+        }).join('');
+    }
+
+    function sponsorCard(slot, label, sponsor) {
+      const tip = (tipsters||[]).find(t => t.id === sponsor?.tipster_id);
+      const tipName = tip ? (tip.pseudo || tip.first_name) : '—';
+      const isActif = sponsor?.actif || false;
+      return `
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-md);margin-bottom:var(--space-md)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-md)">
+            <h3 style="font-size:1rem;font-weight:700;color:var(--text-dark)">${label}</h3>
+            ${sponsor
+              ? `<span style="background:${isActif?'var(--success-pale)':'var(--bg-soft)'};color:${isActif?'var(--success)':'var(--text-muted)'};font-size:0.75rem;font-weight:600;padding:3px 10px;border-radius:10px">${isActif?'✓ Actif':'Inactif'}</span>`
+              : '<span style="font-size:0.78rem;color:var(--text-muted)">Aucun tipster configuré</span>'}
+          </div>
+          ${sponsor ? `<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:var(--space-md)">Tipster actuel : <strong style="color:var(--text-dark)">${tipName}</strong> · ${sponsor.clicks||0} clic(s)</div>` : ''}
+          <div class="form-group" style="margin-bottom:10px">
+            <label style="font-size:0.78rem;color:var(--text-muted);display:block;margin-bottom:4px">Tipster</label>
+            <select class="input" id="select-${slot}" style="width:100%">
+              ${tipsterOptions(sponsor?.tipster_id)}
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:10px">
+            <label style="font-size:0.78rem;color:var(--text-muted);display:block;margin-bottom:4px">Description courte</label>
+            <textarea class="input" id="desc-${slot}" rows="2" placeholder="Ex: Spécialiste Ligue 1 & Champions League" style="width:100%;resize:vertical">${sponsor?.description||''}</textarea>
+          </div>
+          <div style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;margin-top:var(--space-sm)">
+            ${sponsor
+              ? `<button class="btn btn-outline" onclick="activerSponsor('${sponsor.id}',${isActif})" style="font-size:0.78rem;padding:5px 12px">${isActif?'Désactiver':'Activer'}</button>
+                 <button class="btn btn-outline" style="color:var(--error);border-color:var(--error);font-size:0.78rem;padding:5px 12px" onclick="terminerSponsor('${sponsor.id}','${slot}')">Terminé</button>`
+              : ''}
+            <button class="btn btn-primary" onclick="saveSponsor('${slot}','${sponsor?.id||''}')" style="font-size:0.78rem;padding:5px 12px">${sponsor ? 'Mettre à jour' : 'Configurer'}</button>
+          </div>
+        </div>`;
+    }
+
+    // Charger historique
+    const rH = await fetch(`${SUPA}/rest/v1/sponsors_history?select=slot,tipster_id,description,clicks,actif_from&order=actif_from.desc&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const history = await rH.json();
+    // Enrichir avec noms tipsters
+    const allTipIds = [...new Set((history||[]).map(h => h.tipster_id).filter(Boolean))];
+    const tipMap = {};
+    if (allTipIds.length > 0) {
+      const rTN = await fetch(`${SUPA}/rest/v1/profiles?id=in.(${allTipIds.join(',')})&select=id,pseudo,first_name&apikey=${ANON}`, { headers: { apikey: ANON } });
+      const tns = await rTN.json();
+      (tns||[]).forEach(t => tipMap[t.id] = t.pseudo || t.first_name || '—');
+    }
+    const historyHtml = (history||[]).length === 0 ? '<p style="color:var(--text-muted);font-size:0.85rem">Aucun historique.</p>' :
+      (history||[]).map(h => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:0.5px solid var(--border)">
+          <div>
+            <span style="font-size:0.75rem;background:${h.slot==='featured'?'#FAEEDA':'#E1F5EE'};color:${h.slot==='featured'?'#633806':'#085041'};padding:2px 7px;border-radius:10px;font-weight:600">${h.slot==='featured'?'À la une':'En progression'}</span>
+            <div style="font-size:0.88rem;font-weight:600;color:var(--text-dark);margin-top:4px">${tipMap[h.tipster_id]||'—'}</div>
+            ${h.description ? `<div style="font-size:0.75rem;color:var(--text-muted)">${h.description}</div>` : ''}
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:0.82rem;font-weight:600;color:var(--primary)">${h.clicks||0} clic(s)</div>
+            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">${formatDate(h.actif_from)}</div>
+          </div>
+        </div>`).join('');
+
+    container.innerHTML = `
+      <div class="section-header">
+        <div><h2>Gestion des sponsors</h2><p>Configurez les tipsters mis en avant sur le dashboard</p></div>
+      </div>
+      ${sponsorCard('featured', '⭐ Tipster à la une', featured)}
+      ${sponsorCard('rising', '🚀 Tipster en progression', rising)}
+      <div style="margin-top:var(--space-lg)">
+        <h3 style="font-size:0.95rem;font-weight:700;color:var(--text-dark);margin-bottom:var(--space-md)">Historique</h3>
+        ${historyHtml}
+      </div>
+    `;
+  }
+
+  await loadAndRender();
+
+  window.saveSponsor = async function(slot, existingId) {
+    const tipsterId = document.getElementById('select-' + slot)?.value;
+    const description = document.getElementById('desc-' + slot)?.value || '';
+    if (!tipsterId) { showToast('Veuillez sélectionner un tipster.', 'error'); return; }
+    const sess = await sb.auth.getSession();
+    const token = sess.data?.session?.access_token || ANON;
+    if (existingId) {
+      // Récupérer l'ancien tipster + clics pour historique
+      const rOld = await fetch(`${SUPA}/rest/v1/sponsors?id=eq.${existingId}&select=tipster_id,clicks,description&apikey=${ANON}`, { headers: { apikey: ANON } });
+      const oldData = await rOld.json();
+      const old = Array.isArray(oldData) && oldData.length > 0 ? oldData[0] : null;
+      // Sauvegarder dans l'historique si changement de tipster
+      if (old && old.tipster_id && old.tipster_id !== tipsterId) {
+        await fetch(`${SUPA}/rest/v1/sponsors_history`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + token, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ slot, tipster_id: old.tipster_id, description: old.description, clicks: old.clicks || 0 })
+        });
+      }
+      // Mettre à jour avec reset clics si nouveau tipster
+      const resetClicks = old && old.tipster_id !== tipsterId;
+      await fetch(`${SUPA}/rest/v1/sponsors?id=eq.${existingId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ tipster_id: tipsterId, description, slot, ...(resetClicks ? { clicks: 0 } : {}) })
+      });
+    } else {
+      await fetch(`${SUPA}/rest/v1/sponsors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + token, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ tipster_id: tipsterId, description, slot, actif: true, clicks: 0 })
+      });
+    }
+    showToast('Sponsor enregistré ✓', 'success');
+    await loadAndRender();
+  };
+
+  window.activerSponsor = async function(sponsorId, currentActif) {
+    const sess = await sb.auth.getSession();
+    const token = sess.data?.session?.access_token || ANON;
+    await fetch(`${SUPA}/rest/v1/sponsors?id=eq.${sponsorId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ actif: !currentActif })
+    });
+    showToast(!currentActif ? 'Sponsor activé ✓' : 'Sponsor désactivé', 'info');
+    await loadAndRender();
+  };
+
+  window.terminerSponsor = async function(sponsorId, slot) {
+    if (!confirm("Archiver ce sponsor dans l'historique et vider le slot ?")) return;
+    const sess = await sb.auth.getSession();
+    const token = sess.data?.session?.access_token || ANON;
+    // Récupérer les infos actuelles
+    const rOld = await fetch(`${SUPA}/rest/v1/sponsors?id=eq.${sponsorId}&select=tipster_id,clicks,description&apikey=${ANON}`, { headers: { apikey: ANON } });
+    const oldData = await rOld.json();
+    const old = Array.isArray(oldData) && oldData.length > 0 ? oldData[0] : null;
+    // Sauvegarder dans l'historique
+    if (old) {
+      await fetch(`${SUPA}/rest/v1/sponsors_history`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + token, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ slot, tipster_id: old.tipster_id, description: old.description, clicks: old.clicks || 0 })
+      });
+    }
+    // Supprimer le sponsor actuel
+    await fetch(`${SUPA}/rest/v1/sponsors?id=eq.${sponsorId}`, {
+      method: 'DELETE',
+      headers: { apikey: ANON, 'Authorization': 'Bearer ' + token }
+    });
+    showToast("Tipster archivé dans l'historique ✓", 'success');
+    await loadAndRender();
+  };
+
+  window.deleteSponsor = async function(sponsorId) {
+    if (!confirm('Supprimer ce sponsor ?')) return;
+    const sess = await sb.auth.getSession();
+    const token = sess.data?.session?.access_token || ANON;
+    await fetch(`${SUPA}/rest/v1/sponsors?id=eq.${sponsorId}`, {
+      method: 'DELETE',
+      headers: { apikey: ANON, 'Authorization': 'Bearer ' + token }
+    });
+    showToast('Sponsor supprimé.', 'info');
+    await loadAndRender();
+  };
+}

@@ -1,4 +1,5 @@
 // ── Sidebar mobile ───────────────────────────────────────────
+function isMobile() { return window.innerWidth < 900; }
 function toggleSidebar() {
   const sidebar = document.querySelector('.sidebar');
   const overlay = document.getElementById('sidebar-overlay');
@@ -42,20 +43,22 @@ const MOCK_TRANSACTIONS = [
 ];
 
 // ── État ──────────────────────────────────────────────────────
-const userState = { activePage:'achats', achatsFilter:'all', realAchats:[], availablePronos:[] };
+const userState = { activePage:'achats', achatsFilter:'all', realAchats:[], availablePronos:[], userId: null };
 
 // ── Init ──────────────────────────────────────────────────────
 // ── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   const user = await requireAuth(['user', 'admin']);
   if (!user) return;
+  userState.userId = user.id;
 
   // Remplacer les données de démo par le vrai profil
   MOCK_USER.firstName = user.profile.first_name;
   MOCK_USER.lastName  = user.profile.last_name;
   MOCK_USER.email     = user.email;
-  MOCK_USER.balance   = parseFloat(user.profile.balance) || 0;
-  MOCK_USER.pending   = parseFloat(user.profile.pending) || 0;
+  MOCK_USER.balance  = parseFloat(user.profile.balance) || 0;
+  MOCK_USER.pending  = parseFloat(user.profile.pending) || 0;
+  MOCK_USER.freebet  = parseFloat(user.profile.freebet_balance) || 0;
 
   // Mettre à jour la sidebar avec le vrai nom
   const fullName = MOCK_USER.firstName + ' ' + MOCK_USER.lastName;
@@ -96,12 +99,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const tipsterIds = [...new Set(Object.values(pronosMap).map(p => p.tipster_id).filter(Boolean))];
         if (tipsterIds.length > 0) {
           const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-          const rp = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id,first_name,last_name,pseudo&apikey=' + ANON);
+          const rp = await fetch('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id,first_name,last_name,pseudo,avatar_url,description&apikey=' + ANON);
           const profiles = await rp.json();
           if (Array.isArray(profiles)) {
             const profilesMap = {};
-            profiles.forEach(p => profilesMap[p.id] = p.pseudo || (p.first_name + ' ' + p.last_name));
-            Object.values(pronosMap).forEach(p => p.tipsterName = profilesMap[p.tipster_id] || '—');
+            profiles.forEach(p => { profilesMap[p.id] = { name: p.pseudo || (p.first_name + ' ' + p.last_name), avatar: p.avatar_url || '', pseudo: p.pseudo || '', description: p.description || '' }; });
+            Object.values(pronosMap).forEach(p => {
+              const prof = profilesMap[p.tipster_id] || {};
+              p.tipsterName   = prof.name   || '—';
+              p.tipsterAvatar = prof.avatar || '';
+              p.tipsterPseudo = prof.pseudo || '';
+              p.tipsterDesc   = prof.description || '';
+            });
           }
         }
       }
@@ -110,18 +119,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     userState.realAchats = achats.map(a => {
       const p = pronosMap[a.prono_id] || {};
       return {
-        id:           a.id,
-        game:         p.game || "—",
-        sport:        p.sport || '—',
-        date:         p.match_date || '—',
-        tipster:      (pronosMap[a.prono_id] || {}).tipsterName || '—',
-        price:        parseFloat(a.amount) || 0,
-        status:       a.status || 'pending',
-        content:      p.content || '',
-        cote:         p.cote || null,
-        image_url:    p.image_url || null,
-        image_status: p.image_status || 'none',
-        pronoId:      a.prono_id,
+        id:             a.id,
+        game:           p.game || "—",
+        sport:          p.sport || '—',
+        date:           p.match_date || '—',
+        tipster:        p.tipsterName   || '—',
+        tipsterId:      p.tipster_id    || '',
+        tipsterAvatar:  p.tipsterAvatar || '',
+        tipsterPseudo:  p.tipsterPseudo || '',
+        tipsterDesc:    p.tipsterDesc   || '',
+        price:          parseFloat(a.amount) || 0,
+        status:         a.status || 'pending',
+        content:        p.content || '',
+        cote:           p.cote || null,
+        image_url:      p.image_url || null,
+        image_status:   p.image_status || 'none',
+        pronoId:        a.prono_id,
+        isFreebet:      a.is_freebet || false,
       };
     });
   } else {
@@ -187,7 +201,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     navigateTo('solde');
     setTimeout(() => showToast('Paiement annule.', 'info'), 300);
   } else {
-    navigateTo('achats');
+    navigateTo('dashboard');
   }
 });
 
@@ -202,10 +216,11 @@ function navigateTo(page) {
   document.querySelectorAll('.sidebar__link').forEach(l =>
     l.classList.toggle('active', l.dataset.page === page)
   );
-  const titles = { achats:'Mes achats', solde:'Mon solde & historique', parametres:'Paramètres', explorer:'Explorer les pronos', 'explorer-tipsters':'Explorer les tipsters', feedback:'Feedback & Nouveautés' };
+  const titles = { dashboard:'Tableau de bord', achats:'Mes achats', solde:'Mon solde & historique', parametres:'Paramètres', explorer:'Explorer les pronos', 'explorer-tipsters':'Explorer les tipsters', feedback:'Feedback & Nouveautés' };
   document.getElementById('topbar-title').textContent = titles[page] || '';
   const el = document.getElementById('page-content');
   el.innerHTML = '';
+  if (page === 'dashboard')         renderPageDashboard(el);
   if (page === 'achats')            renderPageAchats(el);
   if (page === 'solde')             renderPageSolde(el);
   if (page === 'parametres')        renderPageParametres(el);
@@ -293,7 +308,7 @@ function renderAchatsList() {
         <div class="achat-card__header">
           <div>
             <div class="achat-card__match">${a.game}</div>
-            <div class="achat-card__meta">${a.sport} · ${formatDate(a.date)} · par <strong>${a.tipster}</strong></div>
+            <div class="achat-card__meta">${a.sport} · ${formatDate(a.date)} · par <strong>${a.tipster}</strong>${a.isFreebet ? ' · <span style="color:#854F0B;font-weight:600">Freebet</span>' : ''}</div>
           </div>
           <div class="achat-card__right">
             <div class="achat-card__price">${formatEuros(a.price)}</div>
@@ -606,47 +621,138 @@ function renderPageExplorer(container) {
 }
 
 async function buyProno(pronoId, price, matchName) {
-  if (MOCK_USER.balance < price) {
+  const hasFreebet = MOCK_USER.freebet > 0;
+  const hasBalance = MOCK_USER.balance >= price;
+  const hasFreebetEnough = MOCK_USER.freebet >= price;
+
+  if (!hasBalance && !hasFreebetEnough) {
     showToast('Solde insuffisant. Rechargez votre compte !', 'error');
     return;
   }
-  if (!confirm('Acheter le prono "' + matchName + '" pour ' + price + ' € ?')) return;
 
+  // Si l'user a du freebet suffisant, on lui propose le choix via une modal
+  if (hasFreebet && hasFreebetEnough) {
+    showBuyModal(pronoId, price, matchName, hasBalance);
+    return;
+  }
+
+  // Sinon achat direct avec le solde normal
+  await executeBuyProno(pronoId, price, matchName, false);
+}
+
+function showBuyModal(pronoId, price, matchName, hasBalance) {
+  const existing = document.getElementById('buy-modal-overlay');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'buy-modal-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px';
+
+  overlay.innerHTML = `
+    <div style="background:#ffffff;border-radius:12px;width:100%;max-width:380px;overflow:hidden;border:1px solid #e2e8f0">
+      <div style="padding:16px 16px 12px;border-bottom:0.5px solid #e2e8f0">
+        <div style="font-size:1rem;font-weight:700;color:#1a202c">Acheter ce pronostic</div>
+        <div style="font-size:0.82rem;color:#718096;margin-top:4px">${matchName} — ${formatEuros(price)}</div>
+      </div>
+      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:0.82rem;color:#718096">Choisissez votre mode de paiement :</div>
+        ${hasBalance ? `
+        <label id="opt-solde" onclick="selectPayMode('solde')" style="display:flex;align-items:center;gap:10px;padding:11px 12px;border:1.5px solid #2563eb;border-radius:8px;cursor:pointer;background:#eff6ff">
+          <div id="radio-solde" style="width:16px;height:16px;border-radius:50%;border:2px solid #2563eb;background:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <div style="width:6px;height:6px;border-radius:50%;background:white"></div>
+          </div>
+          <div>
+            <div style="font-size:0.82rem;font-weight:700;color:#1d4ed8">Solde (${formatEuros(MOCK_USER.balance)})</div>
+            <div style="font-size:0.72rem;color:#718096;margin-top:1px">Si perdu : remboursé automatiquement</div>
+          </div>
+        </label>` : ''}
+        <label id="opt-freebet" onclick="selectPayMode('freebet')" style="display:flex;align-items:center;gap:10px;padding:11px 12px;border:1.5px solid ${hasBalance ? '#e2e8f0' : '#EF9F27'};border-radius:8px;cursor:pointer;background:${hasBalance ? '#ffffff' : '#FFF8EE'}">
+          <div id="radio-freebet" style="width:16px;height:16px;border-radius:50%;border:2px solid #EF9F27;background:${hasBalance ? 'white' : '#EF9F27'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            ${!hasBalance ? '<div style="width:6px;height:6px;border-radius:50%;background:white"></div>' : ''}
+          </div>
+          <div>
+            <div style="font-size:0.82rem;font-weight:700;color:#633806">Freebet (${formatEuros(MOCK_USER.freebet)})</div>
+            <div style="font-size:0.72rem;color:#854F0B;margin-top:1px">Si perdu : non remboursé</div>
+          </div>
+        </label>
+        <button id="btn-confirmer-achat" style="width:100%;background:#2563eb;color:white;border:none;border-radius:8px;padding:11px;font-size:0.88rem;font-weight:700;cursor:pointer;margin-top:2px">Acheter — ${formatEuros(price)}</button>
+        <button onclick="document.getElementById('buy-modal-overlay').remove()" style="width:100%;background:none;border:none;color:#718096;font-size:0.82rem;cursor:pointer;padding:4px">Annuler</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  // Sélection initiale après insertion dans le DOM
+  window._buyPayMode = hasBalance ? 'solde' : 'freebet';
+  window._buyPronoId = pronoId;
+  window._buyPrice = price;
+  window._buyMatchName = matchName;
+  document.getElementById('btn-confirmer-achat').addEventListener('click', async () => {
+    const useFreebet = window._buyPayMode === 'freebet';
+    document.getElementById('buy-modal-overlay')?.remove();
+    await executeBuyProno(window._buyPronoId, window._buyPrice, window._buyMatchName, useFreebet);
+  });
+}
+
+window.selectPayMode = function(mode) {
+  window._buyPayMode = mode;
+  const soldeOpt = document.getElementById('opt-solde');
+  const fbOpt    = document.getElementById('opt-freebet');
+  const radioS   = document.getElementById('radio-solde');
+  const radioFB  = document.getElementById('radio-freebet');
+  if (soldeOpt) {
+    soldeOpt.style.border = mode === 'solde' ? '1.5px solid #2563eb' : '1.5px solid #e2e8f0';
+    soldeOpt.style.background = mode === 'solde' ? '#eff6ff' : '#ffffff';
+    radioS.style.background = mode === 'solde' ? '#2563eb' : 'white';
+    radioS.innerHTML = mode === 'solde' ? '<div style="width:6px;height:6px;border-radius:50%;background:white"></div>' : '';
+  }
+  fbOpt.style.border = mode === 'freebet' ? '1.5px solid #EF9F27' : '1.5px solid #e2e8f0';
+  fbOpt.style.background = mode === 'freebet' ? '#FFF8EE' : '#ffffff';
+  radioFB.style.background = mode === 'freebet' ? '#EF9F27' : 'white';
+  radioFB.innerHTML = mode === 'freebet' ? '<div style="width:6px;height:6px;border-radius:50%;background:white"></div>' : '';
+};
+
+window.confirmBuyModal = async function(pronoId, price, matchName) {
+  const useFreebet = window._buyPayMode === 'freebet';
+  document.getElementById('buy-modal-overlay')?.remove();
+  await executeBuyProno(pronoId, price, matchName, useFreebet);
+};
+
+async function executeBuyProno(pronoId, price, matchName, useFreebet) {
   try {
     const user = await getCurrentUser();
+    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+    const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
 
     // Vérifier qu'il n'a pas déjà acheté
-    const { data: existing } = await sb
-      .from('purchases')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('prono_id', pronoId)
-      .maybeSingle();
-
+    const { data: existing } = await sb.from('purchases').select('id').eq('user_id', user.id).eq('prono_id', pronoId).maybeSingle();
     if (existing) { showToast('Vous avez déjà acheté ce prono.', 'info'); return; }
 
-    // Débiter le solde et incrémenter pending
-    const newBalance = MOCK_USER.balance - price;
-    const newPending = (MOCK_USER.pending || 0) + price;
-    const { error: balErr } = await sb
-      .from('profiles')
-      .update({ balance: newBalance, pending: newPending })
-      .eq('id', user.id);
+    // Préparer la mise à jour du profil
+    let profileUpdate = {};
+    if (useFreebet) {
+      const newFreebet = Math.round((MOCK_USER.freebet - price) * 100) / 100;
+      profileUpdate = { freebet_balance: newFreebet };
+    } else {
+      const newBalance = MOCK_USER.balance - price;
+      const newPending = (MOCK_USER.pending || 0) + price;
+      profileUpdate = { balance: newBalance, pending: newPending };
+    }
 
+    // Mettre à jour le profil
+    const { error: balErr } = await sb.from('profiles').update(profileUpdate).eq('id', user.id);
     if (balErr) throw balErr;
 
-    // Créer l'achat
-    const { error: purchErr } = await sb
-      .from('purchases')
-      .insert({ user_id: user.id, prono_id: pronoId, amount: price, status: 'pending' });
-
+    // Créer l'achat avec le flag is_freebet
+    const { error: purchErr } = await sb.from('purchases').insert({
+      user_id: user.id,
+      prono_id: pronoId,
+      amount: price,
+      status: 'pending',
+      is_freebet: useFreebet
+    });
     if (purchErr) throw purchErr;
 
-    // Incrémenter le nb d'acheteurs sur le prono
+    // Incrémenter buyers sur le prono
     try {
-      const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
-      const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
-      // Lire le buyers actuel puis incrémenter
       const rB = await fetch(SUPA + '/rest/v1/pronos?select=buyers&id=eq.' + pronoId + '&apikey=' + ANON);
       const bData = await rB.json();
       const currentBuyers = (Array.isArray(bData) && bData.length > 0) ? (parseInt(bData[0].buyers) || 0) : 0;
@@ -658,18 +764,17 @@ async function buyProno(pronoId, price, matchName) {
     } catch(e) { console.error('Erreur increment buyers:', e); }
 
     // Mettre à jour l'état local
-    MOCK_USER.balance = newBalance;
-    MOCK_USER.pending = newPending;
-    const topbarBalance = document.getElementById('topbar-balance');
-    if (topbarBalance) topbarBalance.textContent = '🔥 ' + formatEuros(newBalance);
+    if (useFreebet) {
+      MOCK_USER.freebet = Math.round((MOCK_USER.freebet - price) * 100) / 100;
+    } else {
+      MOCK_USER.balance = MOCK_USER.balance - price;
+      MOCK_USER.pending = (MOCK_USER.pending || 0) + price;
+      const topbarBalance = document.getElementById('topbar-balance');
+      if (topbarBalance) topbarBalance.textContent = '🔥 ' + formatEuros(MOCK_USER.balance);
+    }
 
     // Recharger les achats
-    const { data: achats } = await sb
-      .from('purchases')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-
+    const { data: achats } = await sb.from('purchases').select('*').eq('user_id', user.id).order('created_at', { ascending: false });
     if (achats && achats.length > 0) {
       const pronoIds = achats.map(a => a.prono_id);
       const { data: pronosData } = await sb.from('pronos').select('id, game, sport, match_date, content').in('id', pronoIds);
@@ -677,11 +782,11 @@ async function buyProno(pronoId, price, matchName) {
       (pronosData || []).forEach(p => pronosMap[p.id] = p);
       userState.realAchats = achats.map(a => {
         const p = pronosMap[a.prono_id] || {};
-        return { id: a.id, game: p.game||"—", sport: p.sport||'—', date: p.match_date||'—', tipster:'—', price: parseFloat(a.amount)||0, status: a.status||'pending', prediction: p.content||'', content_odds: ''||'', image_url: p.image_url||null, image_status: p.image_status||'none', pronoId: a.prono_id };
+        return { id: a.id, game: p.game||'—', sport: p.sport||'—', date: p.match_date||'—', tipster:'—', price: parseFloat(a.amount)||0, status: a.status||'pending', prediction: p.content||'', content_odds: '', image_url: p.image_url||null, image_status: p.image_status||'none', pronoId: a.prono_id, isFreebet: a.is_freebet||false };
       });
     } else { userState.realAchats = []; }
 
-    showToast('Prono acheté ! Bonne chance 🎯', 'success');
+    showToast(useFreebet ? 'Prono acheté avec votre freebet ! 🎯' : 'Prono acheté ! Bonne chance 🎯', 'success');
     navigateTo('explorer');
 
   } catch (err) {
@@ -1188,5 +1293,596 @@ function openImagePopup(url) {
       <button onclick="event.stopPropagation();document.getElementById('image-popup-overlay').remove()" style="position:absolute;top:-12px;right:-12px;width:32px;height:32px;border-radius:50%;background:white;border:none;font-size:1rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.3)">✕</button>
     </div>`;
   document.body.appendChild(overlay);
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE — TABLEAU DE BORD
+// ══════════════════════════════════════════════════════════════
+async function renderPageDashboard(container) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+
+  container.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>';
+
+  // Calcul stats perso
+  const achats = userState.realAchats;
+  const won  = achats.filter(a => a.status === 'won').length;
+  const lost = achats.filter(a => a.status === 'lost').length;
+  const canc = achats.filter(a => a.status === 'cancelled').length;
+  const pend = achats.filter(a => a.status === 'pending').length;
+  const finished = won + lost;
+  const winRate  = finished > 0 ? Math.round(won / finished * 100) : 0;
+  const remboursed = achats.filter(a => a.status === 'lost' || a.status === 'cancelled')
+                           .reduce((s,a) => s + a.price, 0);
+
+  // Alerte pronos nouveaux depuis dernière visite
+  const lastVisit = localStorage.getItem('ppw-last-visit') || new Date(0).toISOString();
+  const newPronos = userState.availablePronos.filter(p => p.created_at && p.created_at > lastVisit);
+  localStorage.setItem('ppw-last-visit', new Date().toISOString());
+
+  // Objectif semaine
+  const weekStart = new Date(); weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  const weekSpent = achats.filter(a => a.date && new Date(a.date) >= weekStart).reduce((s,a) => s + a.price, 0);
+  const weekGoal  = 20;
+  const weekPct   = Math.min(100, Math.round(weekSpent / weekGoal * 100));
+
+  // Calcul du meilleur tipster (celui avec le plus de victoires)
+  let meilleurTipster = null;
+  {
+    const achatsTermines = achats.filter(a => a.status === 'won' || a.status === 'lost');
+    if (achatsTermines.length > 0) {
+      const byTipster = {};
+      achatsTermines.forEach(a => {
+        if (!a.tipsterId) return;
+        if (!byTipster[a.tipsterId]) byTipster[a.tipsterId] = { id: a.tipsterId, name: a.tipster, avatar: a.tipsterAvatar, pseudo: a.tipsterPseudo, desc: a.tipsterDesc, wins: 0, total: 0, cotes: [] };
+        if (a.status === 'won') byTipster[a.tipsterId].wins++;
+        byTipster[a.tipsterId].total++;
+        if (a.cote) byTipster[a.tipsterId].cotes.push(parseFloat(a.cote));
+      });
+      // Tous les achats (pas seulement terminés) pour le total pronos achetés
+      achats.forEach(a => {
+        if (byTipster[a.tipsterId]) byTipster[a.tipsterId].totalAchats = (byTipster[a.tipsterId].totalAchats || 0) + 1;
+      });
+      const sorted = Object.values(byTipster).sort((a, b) => b.wins - a.wins || b.total - a.total);
+      if (sorted.length > 0 && sorted[0].wins > 0) meilleurTipster = sorted[0];
+    }
+  }
+
+  // Charger en parallèle : sponsors, changelog, sondage actif, stats plateforme
+  let sponsors = [], changelog = [], poll = null, pollOptions = [], userVote = null;
+  let nbTipsters = 0, nbPronos = 0, globalWinRate = 0, nbParieurs = 0;
+  let settings = {};
+  try {
+    const safeJson = async (r) => { try { return await r.json(); } catch(e) { return []; } };
+    const [rSp, rCl, rPoll, rTip, rPr, rSettings, rUsers] = await Promise.allSettled([
+      fetch(`${SUPA}/rest/v1/sponsors?actif=eq.true&select=id,slot,image_url,description,clicks,tipster_id&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/changelog?select=id,titre,description,created_at&order=created_at.desc&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/polls?actif=eq.true&select=id,question&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/profiles?role=eq.tipster&select=id&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/pronos?select=status&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/dashboard_settings?select=key,actif&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/profiles?role=eq.user&select=id&apikey=${ANON}`, { headers: { apikey: ANON } }),
+    ]);
+    sponsors    = rSp.status === 'fulfilled' ? await safeJson(rSp.value) : [];
+    changelog   = rCl.status === 'fulfilled' ? await safeJson(rCl.value) : [];
+    const polls = rPoll.status === 'fulfilled' ? await safeJson(rPoll.value) : [];
+    nbTipsters  = rTip.status === 'fulfilled' ? ((await safeJson(rTip.value))?.length || 0) : 0;
+    const allPr = rPr.status === 'fulfilled' ? await safeJson(rPr.value) : [];
+    const settingsArr = rSettings.status === 'fulfilled' ? await safeJson(rSettings.value) : [];
+    nbParieurs = rUsers.status === 'fulfilled' ? ((await safeJson(rUsers.value))?.length || 0) : 0;
+    console.log('dashboard_settings reçus:', settingsArr);
+    settings = {};
+    (settingsArr||[]).forEach(s => { settings[s.key] = (s.actif === true); });
+    console.log('settings parsés:', settings);
+    if (Array.isArray(allPr)) {
+      nbPronos = allPr.length;
+      const fin = allPr.filter(p => p.status === 'won' || p.status === 'lost').length;
+      const w   = allPr.filter(p => p.status === 'won').length;
+      globalWinRate = fin > 0 ? Math.round(w / fin * 100) : 0;
+    }
+    if (Array.isArray(polls) && polls.length > 0) {
+      poll = polls[0];
+      const [rOpts, rVote] = await Promise.all([
+        fetch(`${SUPA}/rest/v1/poll_options?poll_id=eq.${poll.id}&select=id,label,votes&order=votes.desc&apikey=${ANON}`, { headers: { apikey: ANON } }),
+        fetch(`${SUPA}/rest/v1/poll_votes?poll_id=eq.${poll.id}&user_id=eq.${userState.userId}&select=option_id&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      ]);
+      pollOptions = await rOpts.json();
+      const votes = await rVote.json();
+      userVote = Array.isArray(votes) && votes.length > 0 ? votes[0].option_id : null;
+    }
+    // Charger pseudo/avatar des tipsters sponsors
+    const tipsterIds = (sponsors||[]).map(s => s.tipster_id).filter(Boolean);
+    if (tipsterIds.length > 0) {
+      const rTP = await fetch(`${SUPA}/rest/v1/profiles?id=in.(${tipsterIds.join(',')})&select=id,pseudo,first_name,avatar_url,balance&apikey=${ANON}`, { headers: { apikey: ANON } });
+      const tProfiles = await rTP.json();
+      const tMap = {};
+      // Charger stats pronos pour chaque tipster sponsor
+      const tipsterStatsMap = {};
+      for (const t of (tProfiles||[])) {
+        try {
+          const rPr = await fetch(`${SUPA}/rest/v1/pronos?tipster_id=eq.${t.id}&select=status,cote&apikey=${ANON}`, { headers: { apikey: ANON } });
+          const pr = await rPr.json();
+          if (Array.isArray(pr)) {
+            const fin = pr.filter(p => p.status==='won'||p.status==='lost');
+            const won = pr.filter(p => p.status==='won');
+            const cotes = pr.filter(p => p.cote).map(p => parseFloat(p.cote));
+            tipsterStatsMap[t.id] = {
+              winRate: fin.length > 0 ? Math.round(won.length/fin.length*100) : null,
+              nbPronos: pr.length,
+              avgCote: cotes.length > 0 ? (cotes.reduce((a,b)=>a+b,0)/cotes.length) : null
+            };
+          }
+        } catch(e) {}
+        tMap[t.id] = t;
+      }
+      sponsors = (sponsors||[]).map(s => ({ ...s, tipsterProfile: { ...(tMap[s.tipster_id]||{}), ...(tipsterStatsMap[s.tipster_id]||{}) } }));
+    }
+  } catch(e) { console.error('Dashboard load error:', e); }
+
+  const featured = (sponsors||[]).find(s => s.slot === 'featured');
+  const rising   = (sponsors||[]).find(s => s.slot === 'rising');
+  // Settings blocs — false si explicitement désactivé, true si non défini (défaut)
+  const showFeatured   = settings['bloc_featured']       !== undefined ? settings['bloc_featured']       : true;
+  const showObjectif   = settings['bloc_objectif']      !== undefined ? settings['bloc_objectif']      : true;
+  const showAlerte     = settings['bloc_alerte']         !== undefined ? settings['bloc_alerte']         : true;
+  const showStats      = settings['bloc_stats_plate']    !== undefined ? settings['bloc_stats_plate']    : true;
+  const showSondage    = settings['bloc_sondage']        !== undefined ? settings['bloc_sondage']        : true;
+  const showTwitter    = settings['bloc_twitter']        !== undefined ? settings['bloc_twitter']        : true;
+  const showRising          = settings['bloc_sponsor_rising']    !== undefined ? settings['bloc_sponsor_rising']    : true;
+  const showMeilleurTipster = settings['bloc_meilleur_tipster'] !== undefined ? settings['bloc_meilleur_tipster'] : true;
+  console.log('show vars:', {showObjectif, showAlerte, showStats, showSondage, showTwitter, showRising});
+  const derniers = achats.slice(0, 3);
+  const mob = isMobile();
+
+  // HTML bloc meilleur tipster — construit ici car nécessite mob
+  let meilleurTipsterHtml = '';
+  if (meilleurTipster) {
+    const t = meilleurTipster;
+    const mtWinRate = t.total > 0 ? Math.round(t.wins / t.total * 100) : 0;
+    const mtAvgCote = t.cotes.length > 0 ? (t.cotes.reduce((s,c)=>s+c,0)/t.cotes.length).toFixed(2).replace('.',',') : '—';
+    const mtAvatar = t.avatar
+      ? '<img src="' + t.avatar + '" style="width:46px;height:46px;border-radius:50%;object-fit:cover;flex-shrink:0" />'
+      : '<div style="width:46px;height:46px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;flex-shrink:0">' + (t.name||'?')[0].toUpperCase() + '</div>';
+    const mtHref = t.pseudo ? 'https://payperwin.co/' + t.pseudo : '../pages/tipster-public.html?id=' + t.id;
+    const mtDesc = t.desc ? '<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + t.desc + '</div>' : '';
+    const mtFontSize = mob ? '1rem' : '1.05rem';
+    meilleurTipsterHtml = '<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">'
+      + '<div style="display:flex;align-items:center;gap:12px;padding:14px 14px 12px">'
+      + mtAvatar
+      + '<div style="flex:1;min-width:0"><div style="font-size:0.95rem;font-weight:700;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + t.name + '</div>' + mtDesc + '</div>'
+      + '<a href="' + mtHref + '" target="_blank" style="background:#EAF3DE;color:#27500A;font-size:0.75rem;font-weight:600;padding:4px 10px;border-radius:20px;flex-shrink:0;text-decoration:none;white-space:nowrap">Voir \u2192</a>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border-top:0.5px solid var(--border)">'
+      + '<div onclick="showMeilleurTipsterPopup(\'tip-victoires\')" style="padding:10px 6px;text-align:center;cursor:pointer;position:relative;border-right:0.5px solid var(--border)"><div style="position:absolute;top:4px;right:4px;font-size:8px;color:var(--text-muted);opacity:.45">?</div><div style="font-size:' + mtFontSize + ';font-weight:700;color:#27500A">' + t.wins + '</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">Victoires</div></div>'
+      + '<div onclick="showMeilleurTipsterPopup(\'tip-pronos\')" style="padding:10px 6px;text-align:center;cursor:pointer;position:relative;border-right:0.5px solid var(--border)"><div style="position:absolute;top:4px;right:4px;font-size:8px;color:var(--text-muted);opacity:.45">?</div><div style="font-size:' + mtFontSize + ';font-weight:700;color:var(--text-dark)">' + (t.totalAchats || t.total) + '</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">Pronos achetés</div></div>'
+      + '<div onclick="showMeilleurTipsterPopup(\'tip-winrate\')" style="padding:10px 6px;text-align:center;cursor:pointer;position:relative;border-right:0.5px solid var(--border)"><div style="position:absolute;top:4px;right:4px;font-size:8px;color:var(--text-muted);opacity:.45">?</div><div style="font-size:' + mtFontSize + ';font-weight:700;color:var(--text-dark)">' + mtWinRate + '%</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">Win rate</div></div>'
+      + '<div onclick="showMeilleurTipsterPopup(\'tip-cote\')" style="padding:10px 6px;text-align:center;cursor:pointer;position:relative"><div style="position:absolute;top:4px;right:4px;font-size:8px;color:var(--text-muted);opacity:.45">?</div><div style="font-size:' + mtFontSize + ';font-weight:700;color:var(--text-dark)">' + mtAvgCote + '</div><div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">Cote moy.</div></div>'
+      + '</div>'
+      + '<div id="popup-meilleur-tipster" style="padding:0"></div>'
+      + '</div>';
+  }
+
+  // Helpers
+  const statusBadgeD = { pending:'<span style="background:#E6F1FB;color:#0C447C;font-size:0.75rem;padding:2px 8px;border-radius:10px">⏳ En attente</span>', won:'<span style="background:#EAF3DE;color:#27500A;font-size:0.75rem;padding:2px 8px;border-radius:10px">✓ Gagné</span>', lost:'<span style="background:#FCEBEB;color:#791F1F;font-size:0.75rem;padding:2px 8px;border-radius:10px">✕ Perdu</span>', cancelled:'<span style="background:#FFF3E0;color:#E65100;font-size:0.75rem;padding:2px 8px;border-radius:10px">⊘ Annulé</span>' };
+
+  function sponsorFeaturedHtml(s) {
+    if (!s) return '';
+    const t = s.tipsterProfile || {};
+    const pseudo = t.pseudo || t.first_name || '—';
+    const avatar = t.avatar_url || '';
+    const href = t.pseudo ? `https://payperwin.co/${t.pseudo}` : '#';
+    const winRate = t.winRate != null ? t.winRate + '%' : '—';
+    const nbPronos = t.nbPronos != null ? t.nbPronos : '—';
+    const avgCote = t.avgCote != null ? parseFloat(t.avgCote).toFixed(2).replace('.',',') : '—';
+    const rank = `<div style="background:#FAEEDA;color:#633806;font-size:0.75rem;font-weight:700;padding:3px 10px;border-radius:10px">⭐ Top Tipster</div>`;
+    return `<div style="padding:0">
+      <div style="display:flex;gap:12px;padding:12px 12px 10px">
+        <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')" style="text-decoration:none;flex-shrink:0">
+          <div style="width:${mob?'58px':'68px'};height:${mob?'58px':'68px'};border-radius:50%;background:var(--blue-pale);overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:1.4rem;border:2px solid #E6F1FB">
+            ${avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover" />` : '⭐'}
+          </div>
+        </a>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px">
+            <span style="background:#FAEEDA;color:#633806;font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:10px">Sponsorisé</span>
+            ${rank}
+          </div>
+          <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')" style="text-decoration:none">
+            <div style="font-size:0.95rem;font-weight:800;color:var(--text-dark)">${pseudo}</div>
+          </a>
+          ${s.description ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;line-height:1.3">${s.description}</div>` : ''}
+          <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
+            <span style="font-size:0.95rem;font-weight:800;color:#0F6E56">🏆 ${winRate}</span>
+            <span style="font-size:0.72rem;color:var(--text-muted)">· 📊 ${nbPronos} pronos · cote ${avgCote}</span>
+          </div>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border)">
+        <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')"
+          style="display:block;text-align:center;padding:10px;font-size:0.85rem;font-weight:700;color:var(--primary);text-decoration:none">
+          Voir ses pronos →
+        </a>
+      </div>
+    </div>`;
+  }
+
+  function sponsorRisingHtml(s) {
+    if (!s) return '';
+    const t = s.tipsterProfile || {};
+    const pseudo = t.pseudo || t.first_name || '—';
+    const avatar = s.image_url || t.avatar_url || '';
+    const href = t.pseudo ? `https://payperwin.co/${t.pseudo}` : '#';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px">
+      <div style="width:46px;height:46px;border-radius:50%;background:#C0DD97;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;border:2px solid #639922;overflow:hidden">
+        ${avatar ? `<img src="${avatar}" style="width:100%;height:100%;object-fit:cover" />` : '🚀'}
+      </div>
+      <div style="flex:1;min-width:0">
+        <span style="background:#E1F5EE;color:#085041;font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:10px">Tipster en progression</span>
+        <div style="font-size:0.9rem;font-weight:700;color:var(--text-dark);margin-top:3px">${pseudo}</div>
+        ${s.description ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:2px">${s.description}</div>` : ''}
+      </div>
+      <a href="${href}" target="_blank" onclick="trackSponsorClick('${s.id}')"
+        style="background:none;border:1.5px solid #639922;color:#3B6D11;border-radius:16px;padding:5px 12px;font-size:0.78rem;font-weight:600;text-decoration:none;white-space:nowrap;flex-shrink:0">
+        Voir →
+      </a>
+    </div>`;
+  }
+
+  function pollHtml() {
+    if (!poll || !pollOptions.length) return '';
+    const totalVotes = pollOptions.reduce((s,o) => s + (o.votes||0), 0);
+    const options = pollOptions.map(o => {
+      const pct = totalVotes > 0 ? Math.round((o.votes||0) / totalVotes * 100) : 0;
+      const isSelected = o.id === userVote;
+      return `<div onclick="votePoll('${poll.id}','${o.id}',${isSelected})"
+        style="margin:0 12px 8px;border:0.5px solid ${isSelected?'var(--primary)':'var(--border)'};border-radius:var(--radius-md);padding:9px 12px;font-size:0.85rem;cursor:pointer;position:relative;overflow:hidden;${isSelected?'background:var(--blue-xpale,#eef3ff)':''}">
+        <div style="position:absolute;top:0;left:0;height:100%;width:${pct}%;background:var(--blue-pale);z-index:0;border-radius:var(--radius-md)"></div>
+        <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center">
+          <span style="color:var(--text-dark)">${o.label}</span>
+          <span style="font-size:0.78rem;font-weight:600;color:var(--primary)">${pct}%</span>
+        </div>
+      </div>`;
+    }).join('');
+    return `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
+      <div style="padding:12px 12px 8px;font-size:0.88rem;font-weight:700;color:var(--text-dark)">${poll.question}</div>
+      <div id="poll-block">
+        ${options}
+        <div style="padding:6px 12px 10px;font-size:0.75rem;color:var(--text-muted)">${totalVotes} réponse(s) · ${userVote ? 'Cliquez pour changer votre vote' : 'Votez !'}</div>
+      </div>
+    </div>`;
+  }
+
+  function changelogHtml() {
+    if (!Array.isArray(changelog) || !changelog.length) return '<p style="color:var(--text-muted);font-size:0.85rem;padding:12px">Aucune nouveauté.</p>';
+    return changelog.slice(0, 3).map(c => `
+      <div class="dash-news-item" onclick="this.classList.toggle('open')" style="padding:10px 12px;border-bottom:0.5px solid var(--border);cursor:pointer">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <div style="font-size:0.85rem;font-weight:600;color:var(--text-dark)">${c.titre}</div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            <span style="font-size:0.7rem;color:var(--text-muted)">${formatDate(c.created_at)}</span>
+            <span class="dash-news-arrow" style="font-size:0.85rem;color:var(--text-muted);transition:transform .2s">›</span>
+          </div>
+        </div>
+        <div class="dash-news-desc" style="display:none;font-size:0.8rem;color:var(--text-muted);margin-top:6px;line-height:1.5">${c.description || ''}</div>
+      </div>`).join('');
+  }
+
+  // Bloc stat card
+  const hasFreebet = MOCK_USER.freebet > 0;
+
+  const statsHtml = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px">
+        <div style="font-size:0.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Solde disponible</div>
+        <div style="font-size:${mob?'1.3rem':'1.4rem'};font-weight:800;color:var(--primary)">${formatEuros(MOCK_USER.balance)}</div>
+        <div style="font-size:0.68rem;color:var(--text-muted);margin-top:2px">Rechargeable</div>
+      </div>
+      <div id="freebet-card" onclick="${hasFreebet ? 'toggleFreebetPopup()' : ''}" style="background:${hasFreebet?'#FFF8EE':'var(--bg)'};border:1px solid ${hasFreebet?'#EF9F27':'var(--border)'};border-radius:var(--radius-md);padding:10px 12px;${hasFreebet?'cursor:pointer;':''}position:relative">
+        <div onclick="event.stopPropagation();toggleFreebetPopup()" style="position:absolute;top:5px;right:7px;width:16px;height:16px;border-radius:50%;border:1.5px solid ${hasFreebet?'#EF9F27':'var(--border)'};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:${hasFreebet?'#854F0B':'var(--text-muted)'};cursor:pointer">i</div>
+        <div style="font-size:0.68rem;color:${hasFreebet?'#633806':'var(--text-muted)'};text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px">Freebet</div>
+        <div style="font-size:${mob?'1.3rem':'1.4rem'};font-weight:800;color:${hasFreebet?'#633806':'var(--text-muted)'}">${formatEuros(MOCK_USER.freebet)}</div>
+        <div style="font-size:0.68rem;color:${hasFreebet?'#854F0B':'var(--text-muted)'};margin-top:2px">${hasFreebet?'Offert par PayPerWin':'Aucun freebet disponible'}</div>
+      </div>
+    </div>
+    <div id="freebet-popup" style="display:none;background:#FFF8EE;border:1px solid #EF9F27;border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+        <div style="font-size:0.78rem;color:#633806;line-height:1.5">${hasFreebet ? 'Le freebet est un crédit offert par PayPerWin. Il fonctionne de la même manière que votre solde, sauf si le prono est perdu : vous n\'êtes pas remboursé.' : 'PayPerWin offre régulièrement des freebets à ses membres. Suivez-nous sur X et restez à l\'affût des prochaines offres !'}</div>
+        <button onclick="toggleFreebetPopup()" style="font-size:1rem;color:#854F0B;background:none;border:none;cursor:pointer;flex-shrink:0;padding:0">×</button>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:var(--space-md)">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 10px">
+        <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px">Pronos</div>
+        <div style="font-size:1.1rem;font-weight:800;color:var(--text-dark)">${achats.length}</div>
+        <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">achetés</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 10px">
+        <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px">Taux</div>
+        <div style="font-size:1.1rem;font-weight:800;color:var(--text-dark)">${finished>0?winRate+'%':'—'}</div>
+        <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">win rate</div>
+      </div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 10px">
+        <div style="font-size:0.65rem;color:var(--text-muted);text-transform:uppercase;margin-bottom:3px">Remboursé</div>
+        <div style="font-size:1.1rem;font-weight:800;color:var(--text-dark)">${formatEuros(remboursed)}</div>
+        <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px">perdus + annulés</div>
+      </div>
+    </div>`;
+
+  const alerteHtml = newPronos.length > 0 ? `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:var(--space-md)">
+      <div>
+        <div style="font-size:0.88rem;font-weight:700;color:var(--text-dark)">${newPronos.length} nouveau${newPronos.length>1?'x':''} prono${newPronos.length>1?'s':''} disponible${newPronos.length>1?'s':''}</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">depuis votre dernière visite</div>
+      </div>
+      <button onclick="navigateTo('explorer')" style="background:var(--primary);color:white;border:none;border-radius:20px;padding:6px 16px;font-size:0.8rem;font-weight:600;cursor:pointer;white-space:nowrap">Explorer →</button>
+    </div>` : '';
+
+  const objectifHtml = `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:var(--space-md)">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:0.88rem;font-weight:700;color:var(--text-dark)">Objectif de la semaine</div>
+        <div style="font-size:0.78rem;color:var(--text-muted)">${formatEuros(weekSpent)} / ${formatEuros(weekGoal)}</div>
+      </div>
+      <div style="background:var(--bg-soft);border-radius:10px;height:8px;overflow:hidden">
+        <div style="width:${weekPct}%;height:100%;background:var(--primary);border-radius:10px;transition:width .5s"></div>
+      </div>
+      <div style="font-size:0.75rem;color:var(--text-muted);margin-top:6px">${weekPct >= 100 ? '🎉 Objectif atteint !' : formatEuros(weekGoal - weekSpent) + ' restants pour atteindre votre objectif'}</div>
+    </div>`;
+
+  const derniersHtml = derniers.length > 0
+    ? derniers.map(a => `
+      <div style="padding:10px 12px;border-bottom:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div style="min-width:0;flex:1">
+          <div style="font-size:0.85rem;font-weight:600;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.game}</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${a.tipster} · ${a.sport} · ${formatDate(a.date)}</div>
+        </div>
+        <div style="flex-shrink:0">${statusBadgeD[a.status] || ''}</div>
+      </div>`).join('')
+    : '<div style="padding:12px;font-size:0.85rem;color:var(--text-muted)">Aucun achat pour le moment.</div>';
+
+  const xHtml = `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
+      <div style="padding:12px 14px;display:flex;align-items:center;gap:10px">
+        <div style="width:38px;height:38px;border-radius:50%;background:#000;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.737-8.835L1.254 2.25H8.08l4.259 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:0.88rem;font-weight:700;color:var(--text-dark)">Suivez-nous sur X</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">Actus, alertes pronos et offres exclusives</div>
+        </div>
+        <a href="https://x.com/payperwin_co" target="_blank" style="background:#2563EB;color:#ffffff;border-radius:20px;padding:6px 14px;font-size:0.78rem;font-weight:600;text-decoration:none;white-space:nowrap;flex-shrink:0">Suivre</a>
+      </div>
+      <div style="padding:8px 14px 12px;border-top:0.5px solid var(--border);display:flex;align-items:flex-start;gap:8px">
+        <span style="font-size:14px;flex-shrink:0">🎁</span>
+        <div style="font-size:0.75rem;color:var(--text-muted);line-height:1.5">Suivez-nous sur X et envoyez-nous une capture d'écran par DM — nous vous offrons <strong style="color:#633806">2 € de freebet</strong> !</div>
+      </div>
+    </div>`;
+
+  const statsPlatePopups = {
+    tipsters:   { title: 'Tipsters', text: 'Nombre de tipsters actifs inscrits sur PayPerWin qui publient des pronostics.' },
+    pronos:     { title: 'Pronos joués', text: 'Nombre total de pronostics publiés sur la plateforme depuis le lancement.' },
+    winrate:    { title: 'Taux global', text: 'Pourcentage de pronostics terminés qui ont été gagnants, sur l\'ensemble des tipsters.' },
+    parieurs:   { title: 'Parieurs', text: 'Nombre total de membres inscrits sur PayPerWin qui achètent des pronostics.' },
+  };
+  const statsPlateHtml = `
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:12px">
+        ${[
+          { key:'parieurs', label:'Parieurs',    val: nbParieurs },
+          { key:'tipsters', label:'Tipsters',    val: nbTipsters },
+          { key:'pronos',   label:'Pronos joués',val: nbPronos },
+          { key:'winrate',  label:'Taux global', val: globalWinRate+'%' },
+        ].map(s => `
+          <div onclick="showStatsPlatePopup('${s.key}')" style="background:var(--bg-soft);border-radius:var(--radius-md);padding:8px 6px;text-align:center;cursor:pointer;position:relative">
+            <div style="position:absolute;top:4px;right:5px;font-size:9px;color:var(--text-muted);opacity:.5">?</div>
+            <div style="font-size:${mob?'0.95rem':'1rem'};font-weight:700;color:var(--text-dark)">${s.val}</div>
+            <div style="font-size:0.65rem;color:var(--text-muted);margin-top:2px;line-height:1.2">${s.label}</div>
+          </div>`).join('')}
+      </div>
+      <div id="stats-plate-popup" style="padding:0"></div>
+    </div>`;
+
+  // Fonction popup stats plateforme (globale pour onclick inline)
+  window.toggleFreebetPopup = function() {
+    const p = document.getElementById('freebet-popup');
+    if (p) p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  };
+
+  window.showMeilleurTipsterPopup = function(key) {
+    const area = document.getElementById('popup-meilleur-tipster');
+    if (!area) return;
+    const defs = window._meilleurTipsterPopupDefs || {};
+    if (area.dataset.open === key) { area.style.padding='0'; area.innerHTML=''; area.dataset.open=''; return; }
+    area.dataset.open = key;
+    const p = defs[key];
+    if (!p) return;
+    area.style.padding = '0 12px 10px';
+    area.innerHTML = `<div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:10px 12px;border:1px solid var(--border);display:flex;justify-content:space-between;gap:8px">
+      <div>
+        <div style="font-size:0.85rem;font-weight:700;color:var(--text-dark);margin-bottom:3px">${p.title}</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);line-height:1.5">${p.text}</div>
+      </div>
+      <button onclick="const a=document.getElementById('popup-meilleur-tipster');a.innerHTML='';a.style.padding='0';a.dataset.open='';" style="font-size:1rem;color:var(--text-muted);background:none;border:none;cursor:pointer;flex-shrink:0">×</button>
+    </div>`;
+  };
+
+  window.showStatsPlatePopup = function(key) {
+    const area = document.getElementById('stats-plate-popup');
+    if (!area) return;
+    if (area.dataset.open === key) { area.style.padding='0'; area.innerHTML = ''; area.dataset.open = ''; return; }
+    area.dataset.open = key;
+    const p = statsPlatePopups[key];
+    area.style.padding = '0 12px 10px';
+    area.innerHTML = `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;display:flex;justify-content:space-between;gap:8px">
+      <div>
+        <div style="font-size:0.85rem;font-weight:700;color:var(--text-dark);margin-bottom:3px">${p.title}</div>
+        <div style="font-size:0.78rem;color:var(--text-muted);line-height:1.5">${p.text}</div>
+      </div>
+      <button onclick="const a=document.getElementById('stats-plate-popup');a.innerHTML='';a.style.padding='0';a.dataset.open='';" style="font-size:1rem;color:var(--text-muted);background:none;border:none;cursor:pointer;flex-shrink:0">×</button>
+    </div>`;
+  };
+
+  // Vérifier que le container est toujours dans le DOM avant de rendre
+  if (!document.getElementById('page-content')) return;
+  if (mob) {
+    container.innerHTML = `
+      <style>
+        .dash-news-item.open .dash-news-desc { display:block !important }
+        .dash-news-item.open .dash-news-arrow { display:inline-block;transform:rotate(90deg) }
+        .dash-news-item:last-child { border-bottom:none !important }
+      </style>
+      <div class="section-header"><div><h2>Tableau de bord</h2></div></div>
+      ${statsHtml}
+      ${showFeatured && featured ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster à la une</div><div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorFeaturedHtml(featured)}</div>` : ''}
+      ${showTwitter ? xHtml : ''}
+      <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Mes derniers achats</div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
+        ${derniersHtml}
+        <button onclick="navigateTo('achats')" style="width:100%;padding:9px;font-size:0.8rem;color:var(--primary);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer">Voir tous mes achats →</button>
+      </div>
+      ${showMeilleurTipster && meilleurTipster ? '<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Votre meilleur tipster</div>' + meilleurTipsterHtml : ''}
+      ${showAlerte ? alerteHtml : ''}
+      ${showObjectif ? objectifHtml : ''}
+      <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nouveautés</div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
+        ${changelogHtml()}
+        <button onclick="navigateTo('feedback')" style="width:100%;padding:9px;font-size:0.8rem;color:var(--primary);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer">Voir toutes les nouveautés →</button>
+      </div>
+      ${showStats ? statsPlateHtml : ''}
+      ${showRising && rising ? `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorRisingHtml(rising)}</div>` : ''}
+      ${showSondage ? pollHtml() : ''}
+    `;
+  } else {
+    container.innerHTML = `
+      <style>
+        .dash-news-item.open .dash-news-desc { display:block !important }
+        .dash-news-item.open .dash-news-arrow { display:inline-block;transform:rotate(90deg) }
+        .dash-news-item:last-child { border-bottom:none !important }
+      </style>
+      <div class="section-header"><div><h2>Tableau de bord</h2></div></div>
+      ${statsHtml}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-lg)">
+        <div>
+          ${showFeatured && featured ? `<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Tipster à la une</div><div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorFeaturedHtml(featured)}</div>` : ''}
+          ${showTwitter ? xHtml : ''}
+          <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Mes derniers achats</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
+            ${derniersHtml}
+            <button onclick="navigateTo('achats')" style="width:100%;padding:9px;font-size:0.8rem;color:var(--primary);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer">Voir tous mes achats →</button>
+          </div>
+          ${showMeilleurTipster && meilleurTipster ? '<div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Votre meilleur tipster</div>' + meilleurTipsterHtml : ''}
+          ${showSondage ? pollHtml() : ''}
+        </div>
+        <div>
+          ${showAlerte ? alerteHtml : ''}
+          ${showObjectif ? objectifHtml : ''}
+          <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nouveautés</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
+            ${changelogHtml()}
+            <button onclick="navigateTo('feedback')" style="width:100%;padding:9px;font-size:0.8rem;color:var(--primary);background:none;border:none;border-top:0.5px solid var(--border);cursor:pointer">Voir toutes les nouveautés →</button>
+          </div>
+          ${showStats ? statsPlateHtml : ''}
+          ${showRising && rising ? `<div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">${sponsorRisingHtml(rising)}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }
+}
+
+async function trackSponsorClick(sponsorId) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  try {
+    const r = await fetch(`${SUPA}/rest/v1/sponsors?id=eq.${sponsorId}`, { headers: { apikey: ANON } });
+    const data = await r.json();
+    const current = Array.isArray(data) && data.length > 0 ? (data[0].clicks || 0) : 0;
+    await fetch(`${SUPA}/rest/v1/sponsors?id=eq.${sponsorId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + ANON },
+      body: JSON.stringify({ clicks: current + 1 })
+    });
+  } catch(e) { console.error('track sponsor:', e); }
+}
+
+async function votePoll(pollId, optionId, isCurrentVote) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  try {
+    const uid = userState.userId;
+    if (!uid) return;
+    if (isCurrentVote) {
+      // Annuler le vote
+      await fetch(`${SUPA}/rest/v1/poll_votes?poll_id=eq.${pollId}&user_id=eq.${uid}`, {
+        method: 'DELETE', headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON }
+      });
+      // Décrémenter
+      const ro = await fetch(`${SUPA}/rest/v1/poll_options?id=eq.${optionId}&select=votes&apikey=${ANON}`, { headers: { apikey: ANON } });
+      const od = await ro.json();
+      const v = Math.max(0, (od[0]?.votes || 1) - 1);
+      await fetch(`${SUPA}/rest/v1/poll_options?id=eq.${optionId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + ANON },
+        body: JSON.stringify({ votes: v })
+      });
+    } else {
+      // Supprimer ancien vote si existant
+      const rv = await fetch(`${SUPA}/rest/v1/poll_votes?poll_id=eq.${pollId}&user_id=eq.${uid}&select=option_id&apikey=${ANON}`, { headers: { apikey: ANON } });
+      const oldVotes = await rv.json();
+      if (Array.isArray(oldVotes) && oldVotes.length > 0) {
+        const oldOpt = oldVotes[0].option_id;
+        await fetch(`${SUPA}/rest/v1/poll_votes?poll_id=eq.${pollId}&user_id=eq.${uid}`, {
+          method: 'DELETE', headers: { apikey: ANON, 'Authorization': 'Bearer ' + ANON }
+        });
+        const ro2 = await fetch(`${SUPA}/rest/v1/poll_options?id=eq.${oldOpt}&select=votes&apikey=${ANON}`, { headers: { apikey: ANON } });
+        const od2 = await ro2.json();
+        await fetch(`${SUPA}/rest/v1/poll_options?id=eq.${oldOpt}`, {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + ANON },
+          body: JSON.stringify({ votes: Math.max(0, (od2[0]?.votes || 1) - 1) })
+        });
+      }
+      // Nouveau vote
+      await fetch(`${SUPA}/rest/v1/poll_votes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + ANON, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ poll_id: pollId, user_id: uid, option_id: optionId })
+      });
+      const ro3 = await fetch(`${SUPA}/rest/v1/poll_options?id=eq.${optionId}&select=votes&apikey=${ANON}`, { headers: { apikey: ANON } });
+      const od3 = await ro3.json();
+      await fetch(`${SUPA}/rest/v1/poll_options?id=eq.${optionId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json', apikey: ANON, 'Authorization': 'Bearer ' + ANON },
+        body: JSON.stringify({ votes: (od3[0]?.votes || 0) + 1 })
+      });
+    }
+    // Recharger uniquement le bloc sondage
+    await refreshPollBlock(pollId);
+  } catch(e) { showToast('Erreur lors du vote', 'error'); console.error(e); }
+}
+
+async function refreshPollBlock(pollId) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  try {
+    const [rOpts, rVote] = await Promise.all([
+      fetch(`${SUPA}/rest/v1/poll_options?poll_id=eq.${pollId}&select=id,label,votes&order=votes.desc&apikey=${ANON}`, { headers: { apikey: ANON } }),
+      fetch(`${SUPA}/rest/v1/poll_votes?poll_id=eq.${pollId}&user_id=eq.${userState.userId}&select=option_id&apikey=${ANON}`, { headers: { apikey: ANON } }),
+    ]);
+    const opts = await rOpts.json();
+    const votes = await rVote.json();
+    const uVote = Array.isArray(votes) && votes.length > 0 ? votes[0].option_id : null;
+    const total = (opts||[]).reduce((s,o) => s + (o.votes||0), 0);
+    const pollBlock = document.getElementById('poll-block');
+    if (!pollBlock) return;
+    pollBlock.innerHTML = (opts||[]).map(o => {
+      const pct = total > 0 ? Math.round((o.votes||0) / total * 100) : 0;
+      const isSel = o.id === uVote;
+      return `<div onclick="votePoll('${pollId}','${o.id}',${isSel})"
+        style="margin:0 12px 8px;border:0.5px solid ${isSel?'var(--primary)':'var(--border)'};border-radius:var(--radius-md);padding:9px 12px;font-size:0.85rem;cursor:pointer;position:relative;overflow:hidden;${isSel?'background:var(--blue-xpale,#eef3ff)':''}">
+        <div style="position:absolute;top:0;left:0;height:100%;width:${pct}%;background:var(--blue-pale);z-index:0;border-radius:var(--radius-md)"></div>
+        <div style="position:relative;z-index:1;display:flex;justify-content:space-between;align-items:center">
+          <span style="color:var(--text-dark)">${o.label}</span>
+          <span style="font-size:0.78rem;font-weight:600;color:var(--primary)">${pct}%</span>
+        </div>
+      </div>`;
+    }).join('') + `<div style="padding:6px 12px 10px;font-size:0.75rem;color:var(--text-muted)">${total} réponse(s) · ${uVote ? 'Cliquez pour changer votre vote' : 'Votez !'}</div>`;
+  } catch(e) { console.error('refreshPollBlock:', e); }
 }
 
