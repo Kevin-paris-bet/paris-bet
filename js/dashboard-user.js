@@ -307,7 +307,7 @@ function renderAchatsList() {
         <div class="achat-card__header">
           <div>
             <div class="achat-card__match">${a.game}</div>
-            <div class="achat-card__meta">${a.sport} · ${formatDate(a.date)} · par <strong>${a.tipster}</strong></div>
+            <div class="achat-card__meta">${a.sport} · ${formatDate(a.date)} · par <strong>${a.tipster}</strong>${a.isFreebet ? ' · <span style="color:#854F0B;font-weight:600">Freebet</span>' : ''}</div>
           </div>
           <div class="achat-card__right">
             <div class="achat-card__price">${formatEuros(a.price)}</div>
