@@ -1586,7 +1586,7 @@ async function renderPageDashboard(container) {
     </div>
     <div id="freebet-popup" style="display:none;background:#FFF8EE;border:1px solid #EF9F27;border-radius:var(--radius-md);padding:10px 12px;margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-        <div style="font-size:0.78rem;color:#633806;line-height:1.5">${hasFreebet ? 'Le freebet est un crédit offert par PayPerWin. Si le prono est perdu, vous n\'êtes pas remboursé. Si annulé, votre freebet est restitué.' : 'PayPerWin offre régulièrement des freebets à ses membres. Suivez-nous sur X et restez à l\'affût des prochaines offres !'}</div>
+        <div style="font-size:0.78rem;color:#633806;line-height:1.5">${hasFreebet ? 'Le freebet est un crédit offert par PayPerWin. Il fonctionne de la même manière que votre solde, sauf si le prono est perdu : vous n\'êtes pas remboursé.' : 'PayPerWin offre régulièrement des freebets à ses membres. Suivez-nous sur X et restez à l\'affût des prochaines offres !'}</div>
         <button onclick="toggleFreebetPopup()" style="font-size:1rem;color:#854F0B;background:none;border:none;cursor:pointer;flex-shrink:0;padding:0">×</button>
       </div>
     </div>
