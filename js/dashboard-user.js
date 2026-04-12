@@ -647,24 +647,24 @@ function showBuyModal(pronoId, price, matchName, hasBalance) {
   overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px';
 
   overlay.innerHTML = `
-    <div style="background:var(--bg);border-radius:var(--radius-lg);width:100%;max-width:380px;overflow:hidden;border:1px solid var(--border)">
-      <div style="padding:16px 16px 12px;border-bottom:0.5px solid var(--border)">
-        <div style="font-size:1rem;font-weight:700;color:var(--text-dark)">Acheter ce pronostic</div>
-        <div style="font-size:0.82rem;color:var(--text-muted);margin-top:4px">${matchName} — ${formatEuros(price)}</div>
+    <div style="background:#ffffff;border-radius:12px;width:100%;max-width:380px;overflow:hidden;border:1px solid #e2e8f0">
+      <div style="padding:16px 16px 12px;border-bottom:0.5px solid #e2e8f0">
+        <div style="font-size:1rem;font-weight:700;color:#1a202c">Acheter ce pronostic</div>
+        <div style="font-size:0.82rem;color:#718096;margin-top:4px">${matchName} — ${formatEuros(price)}</div>
       </div>
       <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
-        <div style="font-size:0.82rem;color:var(--text-muted)">Choisissez votre mode de paiement :</div>
+        <div style="font-size:0.82rem;color:#718096">Choisissez votre mode de paiement :</div>
         ${hasBalance ? `
-        <label id="opt-solde" onclick="selectPayMode('solde')" style="display:flex;align-items:center;gap:10px;padding:11px 12px;border:1.5px solid var(--primary);border-radius:var(--radius-md);cursor:pointer;background:var(--blue-xpale,#eef3ff)">
-          <div id="radio-solde" style="width:16px;height:16px;border-radius:50%;border:2px solid var(--primary);background:var(--primary);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <label id="opt-solde" onclick="selectPayMode('solde')" style="display:flex;align-items:center;gap:10px;padding:11px 12px;border:1.5px solid #2563eb;border-radius:8px;cursor:pointer;background:#eff6ff">
+          <div id="radio-solde" style="width:16px;height:16px;border-radius:50%;border:2px solid #2563eb;background:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <div style="width:6px;height:6px;border-radius:50%;background:white"></div>
           </div>
           <div>
-            <div style="font-size:0.82rem;font-weight:700;color:var(--primary)">Solde (${formatEuros(MOCK_USER.balance)})</div>
-            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:1px">Si perdu : remboursé automatiquement</div>
+            <div style="font-size:0.82rem;font-weight:700;color:#1d4ed8">Solde (${formatEuros(MOCK_USER.balance)})</div>
+            <div style="font-size:0.72rem;color:#718096;margin-top:1px">Si perdu : remboursé automatiquement</div>
           </div>
         </label>` : ''}
-        <label id="opt-freebet" onclick="selectPayMode('freebet')" style="display:flex;align-items:center;gap:10px;padding:11px 12px;border:1.5px solid ${hasBalance ? 'var(--border)' : '#EF9F27'};border-radius:var(--radius-md);cursor:pointer;background:${hasBalance ? 'var(--bg)' : '#FFF8EE'}">
+        <label id="opt-freebet" onclick="selectPayMode('freebet')" style="display:flex;align-items:center;gap:10px;padding:11px 12px;border:1.5px solid ${hasBalance ? '#e2e8f0' : '#EF9F27'};border-radius:8px;cursor:pointer;background:${hasBalance ? '#ffffff' : '#FFF8EE'}">
           <div id="radio-freebet" style="width:16px;height:16px;border-radius:50%;border:2px solid #EF9F27;background:${hasBalance ? 'white' : '#EF9F27'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
             ${!hasBalance ? '<div style="width:6px;height:6px;border-radius:50%;background:white"></div>' : ''}
           </div>
@@ -673,8 +673,8 @@ function showBuyModal(pronoId, price, matchName, hasBalance) {
             <div style="font-size:0.72rem;color:#854F0B;margin-top:1px">Si perdu : non remboursé</div>
           </div>
         </label>
-        <button id="btn-confirmer-achat" style="width:100%;background:var(--primary);color:white;border:none;border-radius:var(--radius-md);padding:11px;font-size:0.88rem;font-weight:700;cursor:pointer;margin-top:2px">Acheter — ${formatEuros(price)}</button>
-        <button onclick="document.getElementById('buy-modal-overlay').remove()" style="width:100%;background:none;border:none;color:var(--text-muted);font-size:0.82rem;cursor:pointer;padding:4px">Annuler</button>
+        <button id="btn-confirmer-achat" style="width:100%;background:#2563eb;color:white;border:none;border-radius:8px;padding:11px;font-size:0.88rem;font-weight:700;cursor:pointer;margin-top:2px">Acheter — ${formatEuros(price)}</button>
+        <button onclick="document.getElementById('buy-modal-overlay').remove()" style="width:100%;background:none;border:none;color:#718096;font-size:0.82rem;cursor:pointer;padding:4px">Annuler</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -698,13 +698,13 @@ window.selectPayMode = function(mode) {
   const radioS   = document.getElementById('radio-solde');
   const radioFB  = document.getElementById('radio-freebet');
   if (soldeOpt) {
-    soldeOpt.style.border = mode === 'solde' ? '1.5px solid var(--primary)' : '1.5px solid var(--border)';
-    soldeOpt.style.background = mode === 'solde' ? 'var(--blue-xpale,#eef3ff)' : 'var(--bg)';
-    radioS.style.background = mode === 'solde' ? 'var(--primary)' : 'white';
+    soldeOpt.style.border = mode === 'solde' ? '1.5px solid #2563eb' : '1.5px solid #e2e8f0';
+    soldeOpt.style.background = mode === 'solde' ? '#eff6ff' : '#ffffff';
+    radioS.style.background = mode === 'solde' ? '#2563eb' : 'white';
     radioS.innerHTML = mode === 'solde' ? '<div style="width:6px;height:6px;border-radius:50%;background:white"></div>' : '';
   }
-  fbOpt.style.border = mode === 'freebet' ? '1.5px solid #EF9F27' : '1.5px solid var(--border)';
-  fbOpt.style.background = mode === 'freebet' ? '#FFF8EE' : 'var(--bg)';
+  fbOpt.style.border = mode === 'freebet' ? '1.5px solid #EF9F27' : '1.5px solid #e2e8f0';
+  fbOpt.style.background = mode === 'freebet' ? '#FFF8EE' : '#ffffff';
   radioFB.style.background = mode === 'freebet' ? '#EF9F27' : 'white';
   radioFB.innerHTML = mode === 'freebet' ? '<div style="width:6px;height:6px;border-radius:50%;background:white"></div>' : '';
 };
