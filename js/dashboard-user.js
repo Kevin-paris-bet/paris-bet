@@ -195,6 +195,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const amount = urlParams.get('amount');
     window.history.replaceState({}, '', '/pages/dashboard-user.html');
     navigateTo('solde');
+    // Meta Pixel — dépôt réussi
+    if (typeof fbq === 'function') fbq('track', 'AddPaymentInfo', { value: parseFloat(amount) || 0, currency: 'EUR' });
     setTimeout(() => showToast('Paiement reussi ! ' + amount + 'eur ajoutes a votre solde.', 'success'), 300);
   } else if (urlParams.get('payment') === 'cancelled') {
     window.history.replaceState({}, '', '/pages/dashboard-user.html');

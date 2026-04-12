@@ -192,6 +192,12 @@ async function handleRegister() {
     });
     if (error) throw new Error(error.message);
 
+    // Meta Pixel — événement inscription
+    if (typeof fbq === 'function') {
+      if (isTipster) fbq('trackCustom', 'InscriptionTipster');
+      else fbq('trackCustom', 'InscriptionUser');
+    }
+
     // Connecter automatiquement après inscription
     const { error: loginError } = await sb.auth.signInWithPassword({ email, password: pw });
 
