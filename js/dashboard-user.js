@@ -673,14 +673,22 @@ function showBuyModal(pronoId, price, matchName, hasBalance) {
             <div style="font-size:0.72rem;color:#854F0B;margin-top:1px">Si perdu : non remboursé</div>
           </div>
         </label>
-        <button onclick="confirmBuyModal('${pronoId}',${price},'${matchName.replace(/'/g, "\'")}')" style="width:100%;background:var(--primary);color:white;border:none;border-radius:var(--radius-md);padding:11px;font-size:0.88rem;font-weight:700;cursor:pointer;margin-top:2px">Acheter — ${formatEuros(price)}</button>
+        <button id="btn-confirmer-achat" style="width:100%;background:var(--primary);color:white;border:none;border-radius:var(--radius-md);padding:11px;font-size:0.88rem;font-weight:700;cursor:pointer;margin-top:2px">Acheter — ${formatEuros(price)}</button>
         <button onclick="document.getElementById('buy-modal-overlay').remove()" style="width:100%;background:none;border:none;color:var(--text-muted);font-size:0.82rem;cursor:pointer;padding:4px">Annuler</button>
       </div>
     </div>`;
   document.body.appendChild(overlay);
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
-  // Sélection initiale
-  window._buyPayMode = !document.getElementById ? 'freebet' : (document.getElementById('opt-solde') ? 'solde' : 'freebet');
+  // Sélection initiale après insertion dans le DOM
+  window._buyPayMode = hasBalance ? 'solde' : 'freebet';
+  window._buyPronoId = pronoId;
+  window._buyPrice = price;
+  window._buyMatchName = matchName;
+  document.getElementById('btn-confirmer-achat').addEventListener('click', async () => {
+    const useFreebet = window._buyPayMode === 'freebet';
+    document.getElementById('buy-modal-overlay')?.remove();
+    await executeBuyProno(window._buyPronoId, window._buyPrice, window._buyMatchName, useFreebet);
+  });
 }
 
 window.selectPayMode = function(mode) {
