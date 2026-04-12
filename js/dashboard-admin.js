@@ -1034,7 +1034,7 @@ function showToast(message, type = 'info') {
   const t = document.createElement('div');
   t.className = 'toast';
   t.innerHTML = `<span>${c[2]}</span> ${message}`;
-  Object.assign(t.style, { position:'fixed', bottom:'24px', left:'50%', transform:'translateX(-50%)', background:c[0], border:`1px solid ${c[1]}`, borderRadius:'var(--radius-md)', padding:'12px 24px', fontSize:'0.87rem', fontFamily:'var(--font-body)', color:'var(--text-dark)', zIndex:'9999', animation:'fadeUp 0.3s ease both', boxShadow:'var(--shadow-md)', whiteSpace:'nowrap' });
+  Object.assign(t.style, { position:'fixed', bottom:'24px', left:'16px', right:'16px', textAlign:'center', background:c[0], border:`1px solid ${c[1]}`, borderRadius:'var(--radius-md)', padding:'12px 16px', fontSize:'0.87rem', fontFamily:'var(--font-body)', color:'var(--text-dark)', zIndex:'9999', animation:'fadeUp 0.3s ease both', boxShadow:'var(--shadow-md)', wordBreak:'break-word' });
   document.body.appendChild(t);
   setTimeout(() => t?.remove(), 3500);
 }
