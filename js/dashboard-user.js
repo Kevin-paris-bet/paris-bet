@@ -135,6 +135,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         image_url:      p.image_url || null,
         image_status:   p.image_status || 'none',
         pronoId:        a.prono_id,
+        isFreebet:      a.is_freebet || false,
       };
     });
   } else {
