@@ -1636,11 +1636,14 @@ async function renderPageDashboardTipster(container) {
     <div style="background:var(--bg);border:1px solid #EF9F27;border-radius:var(--radius-lg);overflow:hidden;margin-bottom:var(--space-md)">
       <div style="padding:12px 12px 8px;display:flex;justify-content:space-between;align-items:center">
         <div style="font-size:0.88rem;font-weight:700;color:var(--text-dark)">Achats via freebet</div>
-        <span style="background:#FFF8EE;color:#633806;font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:20px;border:0.5px solid #EF9F27">${freebetAchats.length} achat${freebetAchats.length > 1 ? 's' : ''}</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button onclick="toggleFreebetTipsterInfo()" style="width:18px;height:18px;border-radius:50%;border:1.5px solid #EF9F27;background:#FFF8EE;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#854F0B;cursor:pointer;flex-shrink:0">i</button>
+          <span style="background:#FFF8EE;color:#633806;font-size:0.72rem;font-weight:600;padding:2px 8px;border-radius:20px;border:0.5px solid #EF9F27">${freebetAchats.length} achat${freebetAchats.length > 1 ? 's' : ''}</span>
+        </div>
       </div>
-      <div style="padding:0 12px 12px">
-        <div style="background:#FFF8EE;border:0.5px solid #EF9F27;border-radius:var(--radius-md);padding:10px 12px;font-size:0.78rem;color:#633806;line-height:1.5">
-          ${freebetAchats.length} prono${freebetAchats.length > 1 ? 's ont été achetés' : ' a été acheté'} avec un freebet. Conformément aux CGV, <strong style="color:#412402">vous ne percevez aucune commission</strong> sur ces achats.
+      <div id="freebet-tipster-info" style="display:none;padding:0 12px 10px">
+        <div style="background:#FFF8EE;border:0.5px solid #EF9F27;border-radius:var(--radius-md);padding:10px 12px;font-size:0.78rem;color:#633806;line-height:1.6">
+          Le freebet est un crédit offert gratuitement aux parieurs par PayPerWin. Quand un parieur utilise ce crédit pour acheter votre prono, vous ne percevez pas de commission sur cet achat.
         </div>
       </div>
       <div style="padding:8px 12px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center">
@@ -2113,6 +2116,11 @@ async function renderPageDashboardTipster(container) {
         </div>
       </div>`;
   }
+
+  window.toggleFreebetTipsterInfo = function() {
+    const el = document.getElementById('freebet-tipster-info');
+    if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  };
 
   // Fonctions popup stat
   window.showStatsPlateTipsterPopup = function(key) {
