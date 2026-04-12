@@ -1640,7 +1640,7 @@ async function renderPageDashboardTipster(container) {
       </div>
       <div style="padding:0 12px 12px">
         <div style="background:#FFF8EE;border:0.5px solid #EF9F27;border-radius:var(--radius-md);padding:10px 12px;font-size:0.78rem;color:#633806;line-height:1.5">
-          Ces ${freebetAchats.length} prono${freebetAchats.length > 1 ? 's ont été achetés' : ' a été acheté'} avec un freebet. Conformément aux CGV, <strong style="color:#412402">vous ne percevez aucune commission</strong> sur ces achats.
+          ${freebetAchats.length} prono${freebetAchats.length > 1 ? 's ont été achetés' : ' a été acheté'} avec un freebet. Conformément aux CGV, <strong style="color:#412402">vous ne percevez aucune commission</strong> sur ces achats.
         </div>
       </div>
       <div style="padding:8px 12px;border-top:0.5px solid var(--border);display:flex;justify-content:space-between;align-items:center">
@@ -2090,8 +2090,8 @@ async function renderPageDashboardTipster(container) {
       ${statsPlateHtmlTip}
       <div style="font-size:0.72rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Nouveautés plateforme</div>
       ${changelogHtml}
-      ${freebetHtml}
-      ${sponsorHtml}`;
+      ${sponsorHtml}
+      ${freebetHtml}`;
   } else {
     container.innerHTML = `${styleTag}
       <div class="section-header"><div><h2>Tableau de bord</h2></div></div>
