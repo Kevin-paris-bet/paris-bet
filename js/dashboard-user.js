@@ -58,7 +58,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   MOCK_USER.email     = user.email;
   MOCK_USER.balance  = parseFloat(user.profile.balance) || 0;
   MOCK_USER.pending  = parseFloat(user.profile.pending) || 0;
-  MOCK_USER.freebet  = parseFloat(user.profile.freebet_balance) || 0;
+  MOCK_USER.freebet             = parseFloat(user.profile.freebet_balance) || 0;
+  MOCK_USER.whatsapp            = user.profile.whatsapp || '';
+  MOCK_USER.whatsappSent        = user.profile.whatsapp_freebet_given || false;
 
   // Mettre à jour la sidebar avec le vrai nom
   const fullName = MOCK_USER.firstName + ' ' + MOCK_USER.lastName;
@@ -498,6 +500,59 @@ function renderPageParametres(container) {
         <button class="btn btn-primary" onclick="savePassword()">Mettre à jour</button>
       </div>
 
+      ${!u.whatsappSent ? `
+      <div class="rib-card" style="border:1px solid #25D366">
+        <div class="rib-card__header" style="align-items:flex-start">
+          <div style="font-size:1.4rem">💬</div>
+          <div style="flex:1">
+            <h3 style="color:#128C7E">2€ offerts sur votre freebet</h3>
+            <p>Partagez votre numéro WhatsApp pour être contacté</p>
+          </div>
+          <button onclick="const t=document.getElementById('wa-tip');t.style.display=t.style.display==='none'?'block':'none'"
+            style="width:20px;height:20px;border-radius:50%;border:1px solid var(--border);background:transparent;cursor:pointer;font-size:11px;font-weight:700;color:var(--text-muted);flex-shrink:0;display:flex;align-items:center;justify-content:center">
+            i
+          </button>
+        </div>
+        <div id="wa-tip" style="display:none;margin:0 var(--space-md) var(--space-sm);padding:10px 12px;background:var(--bg-soft);border-radius:var(--radius-sm);font-size:0.82rem;color:var(--text-muted);line-height:1.5">
+          Le fondateur de PayPerWin vous contactera directement sur WhatsApp pour vérifier votre numéro. Le freebet de 2€ sera crédité manuellement après confirmation. Offre valable une seule fois.
+        </div>
+        <div class="form-group">
+          <label>Votre numéro WhatsApp</label>
+          <div style="display:flex;gap:8px">
+            <select id="p-wa-indicatif" class="input" style="width:110px;flex-shrink:0">
+              <option value="+33">🇫🇷 +33</option>
+              <option value="+32">🇧🇪 +32</option>
+              <option value="+41">🇨🇭 +41</option>
+              <option value="+352">🇱🇺 +352</option>
+              <option value="+1">🇺🇸 +1</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+212">🇲🇦 +212</option>
+              <option value="+213">🇩🇿 +213</option>
+              <option value="+216">🇹🇳 +216</option>
+            </select>
+            <input class="input" type="tel" id="p-wa-num" placeholder="6 12 34 56 78" value="${u.whatsapp}" style="flex:1"/>
+          </div>
+        </div>
+        <div style="background:#E1F5EE;border-radius:var(--radius-sm);padding:10px 12px;font-size:0.82rem;color:#085041;margin-bottom:var(--space-md);line-height:1.5">
+          🎁 Après vérification de votre numéro, <strong>2€ freebet</strong> seront crédités sur votre compte. Utilisables sur tous les pronos.
+        </div>
+        <button class="btn" style="background:#25D366;color:white;border-color:#25D366;width:100%" onclick="saveWhatsapp()">
+          💬 Envoyer mon numéro
+        </button>
+      </div>` : `
+      <div class="rib-card" style="border:1px solid #25D366">
+        <div class="rib-card__header">
+          <div style="font-size:1.4rem">⏳</div>
+          <div>
+            <h3 style="color:#128C7E">Numéro envoyé — en attente</h3>
+            <p>${u.whatsapp}</p>
+          </div>
+        </div>
+        <div style="font-size:0.84rem;color:var(--text-muted);line-height:1.6;padding:0 var(--space-md) var(--space-md)">
+          Le fondateur va vous contacter sur WhatsApp pour confirmer votre numéro. Vous recevrez vos 2€ freebet dès validation.
+        </div>
+      </div>`}
+
       <div class="rib-card" style="border-color:var(--error)">
         <div class="rib-card__header">
           <div style="font-size:1.4rem">⚠️</div>
@@ -524,6 +579,31 @@ function savePassword() {
   if (!o || !n) { showToast('Remplissez les deux champs.', 'error'); return; }
   if (n.length < 8) { showToast('Minimum 8 caractères.', 'error'); return; }
   showToast('Mot de passe mis à jour ✓', 'success');
+}
+
+async function saveWhatsapp() {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  const indicatif = document.getElementById('p-wa-indicatif')?.value || '+33';
+  const num = document.getElementById('p-wa-num')?.value.trim().replace(/\s/g, '');
+  if (!num || num.length < 6) { showToast('Numéro invalide.', 'error'); return; }
+  const fullNum = indicatif + num;
+  const userId = userState.userId;
+  if (!userId) { showToast('Erreur utilisateur.', 'error'); return; }
+  try {
+    const r = await fetch(`${SUPA}/rest/v1/profiles?id=eq.${userId}&apikey=${ANON}`, {
+      method: 'PATCH',
+      headers: { apikey: ANON, Authorization: 'Bearer ' + ANON, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ whatsapp: fullNum, whatsapp_freebet_given: true })
+    });
+    if (!r.ok) throw new Error('Erreur');
+    MOCK_USER.whatsapp = fullNum;
+    MOCK_USER.whatsappSent = true;
+    showToast('Numéro envoyé ! Vous serez contacté sous peu. 💬', 'success');
+    setTimeout(() => renderPageParametres(document.getElementById('page-content')), 800);
+  } catch(e) {
+    showToast('Une erreur est survenue.', 'error');
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
