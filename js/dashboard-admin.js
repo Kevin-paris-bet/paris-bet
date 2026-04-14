@@ -252,17 +252,30 @@ async function loadGrowthBlocs(period) {
   let dateFrom, dateTo, groupBy, labels;
 
   if (period === '7j') {
-    dateFrom = new Date(now); dateFrom.setDate(now.getDate() - 6); dateFrom.setHours(0,0,0,0);
-    dateTo = new Date(now); dateTo.setHours(23,59,59,999);
-    groupBy = 'day';
-    // Trouver le lundi de la semaine en cours
-    const dayOfWeek = now.getDay(); // 0=dim, 1=lun, ...6=sam
+    // Semaine lundi→dimanche en heure locale Paris (UTC+2)
+    const tzOffset = 2 * 60; // Paris UTC+2
+    const localNow = new Date(now.getTime() + tzOffset * 60000);
+    const dayOfWeek = localNow.getUTCDay(); // 0=dim, 1=lun...6=sam
     const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const monday = new Date(now); monday.setDate(now.getDate() + diffToMonday); monday.setHours(0,0,0,0);
+    const monday = new Date(localNow); monday.setUTCDate(localNow.getUTCDate() + diffToMonday); monday.setUTCHours(0,0,0,0);
+    const sunday = new Date(monday); sunday.setUTCDate(monday.getUTCDate() + 6); sunday.setUTCHours(23,59,59,999);
+    // Convertir en UTC réel pour les requêtes Supabase
+    dateFrom = new Date(monday.getTime() - tzOffset * 60000);
+    dateTo   = new Date(sunday.getTime() - tzOffset * 60000);
+    groupBy = 'day';
     labels = [];
     for (let i = 0; i < 7; i++) {
-      const d = new Date(monday); d.setDate(monday.getDate() + i);
-      labels.push({ key: d.toISOString().slice(0,10), label: d.toLocaleDateString('fr-FR',{weekday:'short'}).slice(0,1).toUpperCase() });
+      const d = new Date(monday); d.setUTCDate(monday.getUTCDate() + i);
+      const key = d.toISOString().slice(0,10); // date UTC = date locale Paris pour minuit local
+      labels.push({ key, label: ['L','M','M','J','V','S','D'][(i + (dayOfWeek === 0 ? 6 : dayOfWeek - 1)) % 7] || ['L','M','M','J','V','S','D'][i] });
+    }
+    // Labels fixes lundi→dimanche
+    labels = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setUTCDate(monday.getUTCDate() + i);
+      const key = d.toISOString().slice(0,10);
+      const jours = ['L','M','M','J','V','S','D'];
+      labels.push({ key, label: jours[i] });
     }
   } else if (period === '30j') {
     dateFrom = new Date(now); dateFrom.setDate(now.getDate() - 29); dateFrom.setHours(0,0,0,0);
@@ -300,7 +313,10 @@ async function loadGrowthBlocs(period) {
     const depArr   = Array.isArray(deposits) ? deposits : [];
 
     // Aujourd'hui
-    const todayStr = now.toISOString().slice(0,10);
+    // todayStr en heure locale Paris
+    const tzOff = 2 * 60;
+    const localToday = new Date(now.getTime() + tzOff * 60000);
+    const todayStr = localToday.toISOString().slice(0,10);
     const tipsterToday = tipsters.filter(p => p.created_at && p.created_at.slice(0,10) === todayStr).length;
     const userToday    = users.filter(p => p.created_at && p.created_at.slice(0,10) === todayStr).length;
     const depToday     = depArr.filter(d => d.created_at && d.created_at.slice(0,10) === todayStr).reduce((s,d) => s + parseFloat(d.amount||0), 0);
