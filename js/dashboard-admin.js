@@ -1238,11 +1238,13 @@ async function renderPageFreebet(container) {
   container.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>';
 
   try {
-    const r = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,pseudo,whatsapp,whatsapp_freebet_given,created_at&whatsapp=not.is.null&order=created_at.desc&apikey=${ANON}`, {
+    // Récupérer tous les profiles puis filtrer côté JS (not.is.null peu fiable avec anon key)
+    const r = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,pseudo,whatsapp,whatsapp_freebet_given,created_at&order=created_at.desc&apikey=${ANON}`, {
       headers: { apikey: ANON, Authorization: 'Bearer ' + ANON }
     });
-    const users = await r.json();
-    if (!Array.isArray(users)) throw new Error('Erreur chargement');
+    const allProfiles = await r.json();
+    if (!Array.isArray(allProfiles)) throw new Error('Erreur chargement');
+    const users = allProfiles.filter(u => u.whatsapp && u.whatsapp.trim() !== '');
 
     const total    = users.length;
     const credited = users.filter(u => u.whatsapp_freebet_given).length;
@@ -1254,7 +1256,7 @@ async function renderPageFreebet(container) {
         <div><h2>Freebet WhatsApp</h2><p>Users ayant partagé leur numéro</p></div>
       </div>
 
-      <div class="stats-grid" style="margin-bottom:var(--space-xl)">
+      <div class="stats-grid" style="margin-bottom:var(--space-xl);grid-template-columns:repeat(${isMobile()?'2':'3'},1fr)">
         <div class="stat-card"><div class="stat-card__label">📱 Numéros reçus</div><div class="stat-card__value">${total}</div><div class="stat-card__sub">total inscrits</div></div>
         <div class="stat-card" style="border-left:3px solid var(--success)"><div class="stat-card__label">✅ Crédités</div><div class="stat-card__value" style="color:var(--success)">${credited}</div><div class="stat-card__sub">${formatEuros(credited * 2)} distribués</div></div>
         <div class="stat-card" style="border-left:3px solid var(--warning)"><div class="stat-card__label">⏳ À créditer</div><div class="stat-card__value" style="color:var(--warning)">${pending}</div><div class="stat-card__sub">à contacter</div></div>
