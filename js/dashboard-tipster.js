@@ -765,7 +765,7 @@ function renderPageCompte(container) {
               </label>
               <div style="font-size:10px;color:var(--text-muted)">JPG, PNG · max 5MB</div>
             </div>
-            <button style="background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer" onclick="saveAvatar()">Enregistrer la photo</button>
+            <button id="btn-save-avatar" style="background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer" onclick="saveAvatar()">Enregistrer la photo</button>
           </div>
           <div>
             <div style="${lbl}">Pseudo</div>
@@ -987,12 +987,13 @@ async function saveAvatar() {
   const input = document.getElementById('avatar-input');
   if (!input?.files?.[0]) { showToast('Veuillez choisir une photo.', 'error'); return; }
 
-  const btn = document.querySelector('[onclick="saveAvatar()"]');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Upload en cours...'; }
+  const btn = document.getElementById('btn-save-avatar');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Upload...'; }
 
   try {
+    const { data: { user } } = await sb.auth.getUser();
+    const userId = user?.id;
     const { data: { session } } = await sb.auth.getSession();
-    const userId = session?.user?.id;
     const JWT = session?.access_token;
     if (!userId || !JWT) throw new Error('Non connecté');
 
