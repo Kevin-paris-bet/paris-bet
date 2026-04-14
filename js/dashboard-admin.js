@@ -254,9 +254,13 @@ async function loadGrowthBlocs(period) {
     dateFrom = new Date(now); dateFrom.setDate(now.getDate() - 6); dateFrom.setHours(0,0,0,0);
     dateTo = new Date(now); dateTo.setHours(23,59,59,999);
     groupBy = 'day';
+    // Trouver le lundi de la semaine en cours
+    const dayOfWeek = now.getDay(); // 0=dim, 1=lun, ...6=sam
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(now); monday.setDate(now.getDate() + diffToMonday); monday.setHours(0,0,0,0);
     labels = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now); d.setDate(now.getDate() - i);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday); d.setDate(monday.getDate() + i);
       labels.push({ key: d.toISOString().slice(0,10), label: d.toLocaleDateString('fr-FR',{weekday:'short'}).slice(0,1).toUpperCase() });
     }
   } else if (period === '30j') {
@@ -388,7 +392,7 @@ function renderGrowthBlocs(d) {
         </div>
         <div style="padding:14px">
           <div style="font-size:26px;font-weight:800;color:var(--blue)">${totalDep.toFixed(2)}€</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:3px;margin-bottom:2px">${periodLabel}</div>
+
           ${miniBar(depGroups, 'var(--blue)', 'var(--blue)')}
           <div style="border-top:1px solid var(--border);margin:8px 0 10px"></div>
           ${detailRows(depGroups, 'var(--blue)', true)}
@@ -403,7 +407,7 @@ function renderGrowthBlocs(d) {
         </div>
         <div style="padding:14px">
           <div style="font-size:26px;font-weight:800;color:#534AB7">${totalTip}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:3px;margin-bottom:2px">${periodLabel}</div>
+
           ${miniBar(tipGroups, '#AFA9EC', '#534AB7')}
           <div style="border-top:1px solid var(--border);margin:8px 0 10px"></div>
           ${detailRows(tipGroups, '#AFA9EC', false)}
@@ -418,7 +422,7 @@ function renderGrowthBlocs(d) {
         </div>
         <div style="padding:14px">
           <div style="font-size:26px;font-weight:800;color:var(--success)">${totalUser}</div>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:3px;margin-bottom:2px">${periodLabel}</div>
+
           ${miniBar(userGroups, 'var(--success)', 'var(--success)')}
           <div style="border-top:1px solid var(--border);margin:8px 0 10px"></div>
           ${detailRows(userGroups, 'var(--success)', false)}
@@ -431,11 +435,16 @@ function renderGrowthBlocs(d) {
 function renderGrowthPeriodBar() {
   const now = new Date();
   const months = [];
-  for (let i = 5; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const key = d.toISOString().slice(0,7);
-    const label = d.toLocaleDateString('fr-FR',{month:'short',year:'2-digit'});
-    months.push({ key, label });
+  const launchYear = 2026; const launchMonth = 4; // Avril 2026
+  for (let y = launchYear; y <= now.getFullYear(); y++) {
+    const mStart = (y === launchYear) ? launchMonth - 1 : 0;
+    const mEnd   = (y === now.getFullYear()) ? now.getMonth() : 11;
+    for (let m = mStart; m <= mEnd; m++) {
+      const d = new Date(y, m, 1);
+      const key = d.toISOString().slice(0,7);
+      const label = d.toLocaleDateString('fr-FR',{month:'short',year:'2-digit'});
+      months.push({ key, label });
+    }
   }
   return `<div style="display:flex;align-items:center;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none" id="growth-period-bar">
     ${['7j','30j'].concat(months.map(m=>m.key)).map((p,i) => {
