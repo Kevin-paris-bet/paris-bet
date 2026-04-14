@@ -621,6 +621,12 @@ async function saveWhatsapp() {
     if (!r.ok) throw new Error('Erreur');
     MOCK_USER.whatsapp = fullNum;
     MOCK_USER.whatsappSent = true;
+    // Sync WhatsApp dans Brevo
+    fetch('/api/sync-brevo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: MOCK_USER.email, prenom: MOCK_USER.firstName, listId: 3, sms: fullNum })
+    }).catch(() => {});
     showToast('Numéro envoyé ! Vous serez contacté sous peu. 💬', 'success');
     setTimeout(() => renderPageParametres(document.getElementById('page-content')), 800);
   } catch(e) {

@@ -927,6 +927,12 @@ async function saveTipsterWhatsapp() {
     });
     if (!r.ok) throw new Error();
     MOCK_TIPSTER.whatsapp = fullNum;
+    // Sync WhatsApp dans Brevo
+    fetch('/api/sync-brevo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: MOCK_TIPSTER.email, prenom: MOCK_TIPSTER.firstName || MOCK_TIPSTER.pseudo, listId: 4, sms: fullNum })
+    }).catch(() => {});
     showToast('Numéro WhatsApp enregistré ✓', 'success');
   } catch(e) {
     showToast('Une erreur est survenue.', 'error');
