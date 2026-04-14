@@ -798,17 +798,7 @@ function renderPageCompte(container) {
           <div>
             <div style="${lbl}">Votre numéro WhatsApp</div>
             <div style="display:flex;gap:6px">
-              <select id="t-wa-indicatif" class="input" style="width:100px;flex-shrink:0;font-size:12px">
-                <option value="+33" ${T.whatsapp.startsWith('+33')?'selected':''}>🇫🇷 +33</option>
-                <option value="+32" ${T.whatsapp.startsWith('+32')?'selected':''}>🇧🇪 +32</option>
-                <option value="+41" ${T.whatsapp.startsWith('+41')?'selected':''}>🇨🇭 +41</option>
-                <option value="+352" ${T.whatsapp.startsWith('+352')?'selected':''}>🇱🇺 +352</option>
-                <option value="+1" ${T.whatsapp.startsWith('+1')?'selected':''}>🇺🇸 +1</option>
-                <option value="+44" ${T.whatsapp.startsWith('+44')?'selected':''}>🇬🇧 +44</option>
-                <option value="+212" ${T.whatsapp.startsWith('+212')?'selected':''}>🇲🇦 +212</option>
-                <option value="+213" ${T.whatsapp.startsWith('+213')?'selected':''}>🇩🇿 +213</option>
-                <option value="+216" ${T.whatsapp.startsWith('+216')?'selected':''}>🇹🇳 +216</option>
-              </select>
+              <input id="t-wa-indicatif" class="input" type="text" value="${T.whatsapp ? T.whatsapp.match(/^(\+\d+)/)?.[1] || '+33' : '+33'}" placeholder="+33" style="width:70px;flex-shrink:0;font-size:13px;text-align:center"/>
               <input class="input" type="tel" id="t-wa-num" placeholder="6 12 34 56 78"
                 value="${T.whatsapp.replace(/^\+\d+/, '')}" style="flex:1;font-size:13px"/>
             </div>
