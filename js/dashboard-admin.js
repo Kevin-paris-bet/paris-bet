@@ -1490,13 +1490,11 @@ async function loadFinances() {
       ['fin-vol-total','fin-vol-won','fin-vol-lost','fin-commission','fin-net-tipsters'].forEach(id => { const el = document.getElementById(id); if(el) el.textContent = '0 €'; });
       return;
     }
-    const pronoIds = pronos.map(p => p.id);
-    const urlPurch = new URL(SUPA + '/rest/v1/purchases');
-    urlPurch.searchParams.set('select', 'prono_id,amount,status');
-    urlPurch.searchParams.set('prono_id', 'in.(' + pronoIds.join(',') + ')');
-    urlPurch.searchParams.set('apikey', ANON);
-    const rPurch = await fetch(urlPurch.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
-    const purchases = await rPurch.json();
+    const pronoIds = new Set(pronos.map(p => p.id));
+    // Récupérer tous les purchases sans filtre URL (évite 414/400 si trop d'IDs)
+    const rPurch = await fetch(SUPA + '/rest/v1/purchases?select=prono_id,amount,status&apikey=' + ANON, { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
+    const allPurchases = await rPurch.json();
+    const purchases = Array.isArray(allPurchases) ? allPurchases.filter(p => pronoIds.has(p.prono_id)) : [];
 
     const tipsterIds = [...new Set(pronos.map(p => p.tipster_id).filter(Boolean))];
     const urlProf = new URL(SUPA + '/rest/v1/profiles');
