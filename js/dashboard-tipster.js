@@ -730,218 +730,165 @@ async function renderPageStats(container) {
 //  PAGE — MON COMPTE
 // ══════════════════════════════════════════════════════════════
 function renderPageCompte(container) {
+  const T = MOCK_TIPSTER;
+  const card  = 'background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;margin-bottom:10px';
+  const head  = 'display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)';
+  const icon  = 'width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0';
+  const title = 'font-size:13px;font-weight:600;color:var(--text-dark)';
+  const body  = 'padding:14px;display:flex;flex-direction:column;gap:10px';
+  const lbl   = 'font-size:11px;font-weight:600;color:var(--text-muted);margin-bottom:3px';
+  const btnP  = 'background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);padding:7px 16px;font-size:12px;font-weight:600;cursor:pointer;align-self:flex-start';
+  const initials = (T.pseudo || T.firstName || '?')[0].toUpperCase();
+
   container.innerHTML = `
-    <div style="max-width:560px;display:flex;flex-direction:column;gap:var(--space-lg)">
+    <div style="max-width:500px;display:flex;flex-direction:column">
 
-      <!-- Photo de profil -->
-      <div class="rib-card">
-        <div class="rib-card__header">
-          <div style="font-size:1.6rem">📸</div>
-          <div>
-            <h3>Photo de profil</h3>
-            <p>Visible sur votre page publique</p>
+      <!-- BLOC 1 : Profil public -->
+      <div style="${card}">
+        <div style="${head}">
+          <div style="${icon};background:var(--blue-pale)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
           </div>
+          <span style="${title}">Profil public</span>
         </div>
-        <div style="display:flex;align-items:center;gap:var(--space-lg);margin-bottom:var(--space-lg)">
-          <div id="avatar-preview" style="width:80px;height:80px;border-radius:50%;overflow:hidden;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:700;color:white;flex-shrink:0">
-            ${MOCK_TIPSTER.avatarUrl
-              ? `<img src="${MOCK_TIPSTER.avatarUrl}" style="width:100%;height:100%;object-fit:cover" />`
-              : `${(MOCK_TIPSTER.pseudo || MOCK_TIPSTER.firstName)[0].toUpperCase()}`
-            }
-          </div>
-          <div style="flex:1">
-            <label class="btn btn-outline" style="cursor:pointer;display:inline-block">
-              📁 Choisir une photo
-              <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="previewAvatar(this)" />
-            </label>
-            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:6px">JPG, PNG · Max 5MB · Compressée automatiquement</div>
-          </div>
-        </div>
-        <button class="btn btn-primary" style="width:100%" onclick="saveAvatar()">
-          Enregistrer la photo
-        </button>
-      </div>
-
-      <!-- Modifier la description -->
-      <div class="rib-card">
-        <div class="rib-card__header">
-          <div style="font-size:1.6rem">📝</div>
-          <div>
-            <h3>Description</h3>
-            <p>Présentez-vous à vos acheteurs</p>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Votre description <span style="color:var(--text-muted);font-weight:400">(max 300 caractères)</span></label>
-          <textarea class="input input-textarea" id="new-description" maxlength="300"
-            placeholder="Ex: Spécialiste Ligue 1 depuis 5 ans, 68% de win rate sur 200+ pronos..."
-            style="min-height:100px">${MOCK_TIPSTER.description || ''}</textarea>
-        </div>
-        <button class="btn btn-primary" style="width:100%" onclick="saveDescription()">
-          Enregistrer la description
-        </button>
-      </div>
-
-      <!-- Nom & Prénom -->
-      <div class="rib-card">
-        <div class="rib-card__header">
-          <div style="font-size:1.6rem">👤</div>
-          <div>
-            <h3>Nom & Prénom</h3>
-            <p>Vos informations personnelles (non publiques)</p>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>Prénom</label>
-            <div class="input-wrap">
-              <span class="input-icon">👤</span>
-              <input class="input" type="text" id="new-firstname" placeholder="Prénom" value="${MOCK_TIPSTER.firstName || ''}" />
+        <div style="${body}">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div id="avatar-preview" style="width:54px;height:54px;border-radius:50%;overflow:hidden;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:700;color:white;flex-shrink:0">
+              ${T.avatarUrl ? `<img src="${T.avatarUrl}" style="width:100%;height:100%;object-fit:cover"/>` : initials}
+            </div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <div style="font-size:12px;font-weight:600;color:var(--text-dark);font-family:monospace">@${T.pseudo || '—'}</div>
+              <label style="cursor:pointer;display:inline-flex;align-items:center;gap:5px;background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--radius-sm);padding:4px 10px;font-size:11px;color:var(--text-muted)">
+                📁 Changer la photo
+                <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="previewAvatar(this)" />
+              </label>
+              <div style="font-size:10px;color:var(--text-muted)">JPG, PNG · max 5MB</div>
             </div>
           </div>
-          <div class="form-group">
-            <label>Nom</label>
-            <div class="input-wrap">
-              <span class="input-icon">👤</span>
-              <input class="input" type="text" id="new-lastname" placeholder="Nom" value="${MOCK_TIPSTER.lastName || ''}" />
+          <div>
+            <div style="${lbl}">Pseudo</div>
+            <input class="input" type="text" id="new-pseudo" value="${T.pseudo || ''}" placeholder="ex: jerome-bet" oninput="checkPseudoAvailable()" autocomplete="off" style="font-size:13px"/>
+            <div id="pseudo-check-tip" style="font-size:11px;margin-top:3px"></div>
+            <div style="font-size:10px;color:var(--text-muted);margin-top:2px">3-20 caractères · lettres, chiffres, tirets</div>
+          </div>
+          <div>
+            <div style="${lbl}">Description <span style="font-weight:400">(max 300 car.)</span></div>
+            <textarea class="input input-textarea" id="new-description" maxlength="300"
+              placeholder="Ex: Spécialiste Ligue 1 depuis 5 ans, 68% de win rate…"
+              style="min-height:80px;font-size:13px">${T.description || ''}</textarea>
+          </div>
+          <button style="${btnP}" onclick="saveAvatar();savePseudo();saveDescription()">Enregistrer</button>
+        </div>
+      </div>
+
+      <!-- BLOC 2 : Infos personnelles -->
+      <div style="${card}">
+        <div style="${head}">
+          <div style="${icon};background:var(--bg-soft)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 7L2 7"/></svg>
+          </div>
+          <span style="${title}">Informations personnelles</span>
+        </div>
+        <div style="${body}">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div>
+              <div style="${lbl}">Prénom</div>
+              <input class="input" type="text" id="new-firstname" value="${T.firstName || ''}" placeholder="Prénom" style="font-size:13px"/>
+            </div>
+            <div>
+              <div style="${lbl}">Nom</div>
+              <input class="input" type="text" id="new-lastname" value="${T.lastName || ''}" placeholder="Nom" style="font-size:13px"/>
             </div>
           </div>
+          <div>
+            <div style="${lbl}">Email actuel</div>
+            <div style="font-size:13px;color:var(--text-muted);padding:6px 0">${T.email || '—'}</div>
+            <div style="${lbl};margin-top:4px">Nouvel email</div>
+            <input class="input" type="email" id="new-email" placeholder="nouveau@email.com" style="font-size:13px"/>
+          </div>
+          <button style="${btnP}" onclick="saveNomPrenom();saveEmail()">Enregistrer</button>
         </div>
-        <button class="btn btn-primary" style="width:100%" onclick="saveNomPrenom()">
-          Enregistrer
-        </button>
       </div>
 
-      <!-- Modifier le pseudo -->
-      <div class="rib-card">
-        <div class="rib-card__header">
-          <div style="font-size:1.6rem">🏷️</div>
+      <!-- BLOC 3 : RIB -->
+      <div style="${card}">
+        <div style="${head}">
+          <div style="${icon};background:#EAF3DE">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" stroke-width="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          </div>
+          <span style="${title}">Informations bancaires</span>
+        </div>
+        <div style="${body}">
+          ${T.ribSaved ? `<div style="display:flex;align-items:center;gap:6px;padding:7px 10px;background:var(--success-pale);border-radius:var(--radius-sm);font-size:11px;color:var(--success);font-weight:600">
+            ✓ RIB enregistré — virements chaque lundi
+          </div>` : ''}
           <div>
-            <h3>Pseudo</h3>
-            <p>Pseudo actuel : <strong>${MOCK_TIPSTER.pseudo || '—'}</strong></p>
+            <div style="${lbl}">Titulaire du compte</div>
+            <input class="input" type="text" id="rib-name" placeholder="Prénom NOM" value="${T.ribName || ''}" style="font-size:13px"/>
           </div>
-        </div>
-        <div class="form-group">
-          <label>Nouveau pseudo</label>
-          <div class="input-wrap">
-            <span class="input-icon">🏷️</span>
-            <input class="input" type="text" id="new-pseudo" placeholder="ex: jerome-bet" oninput="checkPseudoAvailable()" autocomplete="off" />
+          <div>
+            <div style="${lbl}">IBAN</div>
+            <input class="input" type="text" id="rib-iban" placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX" value="${T.ribIban || ''}" oninput="formatIBAN(this)" style="font-size:12px;font-family:monospace"/>
           </div>
-          <div id="pseudo-check-tip" style="font-size:0.8rem;margin-top:4px"></div>
-          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">3-20 caractères · lettres, chiffres, tirets uniquement</div>
+          <div>
+            <div style="${lbl}">BIC / SWIFT</div>
+            <input class="input" type="text" id="rib-bic" placeholder="BNPAFRPPXXX" value="${T.ribBic || ''}" style="font-size:13px;font-family:monospace"/>
+          </div>
+          <div style="padding:8px 10px;background:var(--blue-pale,#e8f0fe);border-radius:var(--radius-sm);font-size:11px;color:var(--text-muted);line-height:1.5">
+            🔒 Coordonnées chiffrées, uniquement utilisées pour vos virements hebdomadaires.
+          </div>
+          <button style="${btnP}" onclick="saveRIB()">Enregistrer</button>
         </div>
-        <button class="btn btn-primary" style="width:100%" onclick="savePseudo()">
-          Mettre à jour le pseudo
-        </button>
       </div>
 
-      <!-- Informations bancaires -->
-      <div class="rib-card">
-        <div class="rib-card__header">
-          <div style="font-size:1.6rem;">🏦</div>
+      <!-- BLOC 4 : Mot de passe -->
+      <div style="${card}">
+        <div style="${head}">
+          <div style="${icon};background:var(--bg-soft)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <span style="${title}">Mot de passe</span>
+        </div>
+        <div style="${body}">
           <div>
-            <h3>Informations bancaires</h3>
-            <p>Vos coordonnées pour recevoir vos virements chaque lundi</p>
+            <div style="${lbl}">Nouveau mot de passe</div>
+            <div style="position:relative">
+              <input class="input" type="password" id="new-password" placeholder="Minimum 8 caractères" style="font-size:13px;padding-right:36px"/>
+              <button onclick="togglePwTip('new-password',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:14px;color:var(--text-muted)">👁</button>
+            </div>
           </div>
-        </div>
-
-        ${MOCK_TIPSTER.ribSaved ? `
-          <div class="rib-saved">
-            ✓ RIB enregistré — vos virements seront effectués sur ce compte
+          <div>
+            <div style="${lbl}">Confirmer</div>
+            <div style="position:relative">
+              <input class="input" type="password" id="confirm-password" placeholder="Répétez le mot de passe" style="font-size:13px;padding-right:36px"/>
+              <button onclick="togglePwTip('confirm-password',this)" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:14px;color:var(--text-muted)">👁</button>
+            </div>
           </div>
-        ` : ''}
-
-        <div class="form-group">
-          <label>👤 Titulaire du compte</label>
-          <div class="input-wrap rib-input-wrap">
-            <input class="input" type="text" id="rib-name"
-              placeholder="Prénom NOM"
-              value="${MOCK_TIPSTER.ribName || ''}"
-            />
-          </div>
+          <button style="${btnP}" onclick="savePassword()">Mettre à jour</button>
         </div>
-
-        <div class="form-group">
-          <label>🏦 IBAN</label>
-          <div class="input-wrap rib-input-wrap">
-            <input class="input" type="text" id="rib-iban"
-              placeholder="FR76 XXXX XXXX XXXX XXXX XXXX XXX"
-              value="${MOCK_TIPSTER.ribIban || ''}"
-              oninput="formatIBAN(this)"
-            />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>🔢 BIC / SWIFT</label>
-          <div class="input-wrap rib-input-wrap">
-            <input class="input" type="text" id="rib-bic"
-              placeholder="BNPAFRPPXXX"
-              value="${MOCK_TIPSTER.ribBic || ''}"
-            />
-          </div>
-        </div>
-
-        <div style="background:var(--blue-xpale);border:1px solid rgba(26,86,255,0.15);border-radius:var(--radius-md);padding:var(--space-md);font-size:0.8rem;color:var(--text-muted);line-height:1.6;margin-bottom:var(--space-lg);">
-          🔒 Vos coordonnées bancaires sont chiffrées et sécurisées. Elles ne sont jamais partagées et uniquement utilisées pour vos virements hebdomadaires.
-        </div>
-
-        <button class="btn btn-primary" style="width:100%" onclick="saveRIB()">
-          Enregistrer mes coordonnées bancaires
-        </button>
       </div>
 
-      <!-- Modifier l'email -->
-      <div class="rib-card">
-        <div class="rib-card__header">
-          <div style="font-size:1.6rem">✉️</div>
-          <div>
-            <h3>Adresse email</h3>
-            <p>Email actuel : <strong>${MOCK_TIPSTER.email || '—'}</strong></p>
-          </div>
+      <!-- BLOC 5 : Zone de danger -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-md);margin-top:4px">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--text-dark)">Supprimer mon compte</div>
+          <div style="font-size:11px;color:var(--text-muted)">Action irréversible</div>
         </div>
-        <div class="form-group">
-          <label>Nouvel email</label>
-          <div class="input-wrap">
-            <span class="input-icon">✉️</span>
-            <input class="input" type="email" id="new-email" placeholder="nouveau@email.com" />
-          </div>
-        </div>
-        <button class="btn btn-primary" style="width:100%" onclick="saveEmail()">
-          Mettre à jour l'email
-        </button>
-      </div>
-
-      <!-- Modifier le mot de passe -->
-      <div class="rib-card">
-        <div class="rib-card__header">
-          <div style="font-size:1.6rem">🔒</div>
-          <div>
-            <h3>Mot de passe</h3>
-            <p>Choisissez un mot de passe sécurisé</p>
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Nouveau mot de passe</label>
-          <div class="input-wrap">
-            <span class="input-icon">🔒</span>
-            <input class="input" type="password" id="new-password" placeholder="Minimum 8 caractères" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Confirmer le mot de passe</label>
-          <div class="input-wrap">
-            <span class="input-icon">🔒</span>
-            <input class="input" type="password" id="confirm-password" placeholder="Répétez le mot de passe" />
-          </div>
-        </div>
-        <button class="btn btn-primary" style="width:100%" onclick="savePassword()">
-          Mettre à jour le mot de passe
+        <button style="background:transparent;color:var(--error);border:1px solid var(--error);border-radius:var(--radius-sm);padding:5px 12px;font-size:11px;cursor:pointer"
+          onclick="if(confirm('Supprimer votre compte ? Cette action est irréversible.')) showToast('Fonctionnalité disponible bientôt.','info')">
+          Supprimer
         </button>
       </div>
 
     </div>
   `;
+}
+
+function togglePwTip(id, btn) {
+  const input = document.getElementById(id);
+  if (!input) return;
+  input.type = input.type === 'password' ? 'text' : 'password';
+  btn.textContent = input.type === 'password' ? '👁' : '🙈';
 }
 
 function previewAvatar(input) {
