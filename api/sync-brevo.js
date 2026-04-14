@@ -1,8 +1,11 @@
 module.exports = async (req, res) => {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { email, prenom, listId } = req.body;
+  const { email, prenom, listId, sms } = req.body;
   if (!email || !listId) return res.status(400).json({ error: 'Paramètres manquants' });
+
+  const attributes = { PRENOM: prenom || '' };
+  if (sms) attributes.SMS = sms;
 
   try {
     const response = await fetch('https://api.brevo.com/v3/contacts', {
@@ -14,7 +17,7 @@ module.exports = async (req, res) => {
       },
       body: JSON.stringify({
         email,
-        attributes: { PRENOM: prenom || '' },
+        attributes,
         listIds: [listId],
         updateEnabled: true,
       }),
