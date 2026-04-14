@@ -240,6 +240,226 @@ function navigateTo(page) {
 // ══════════════════════════════════════════════════════════════
 //  PAGE — VUE D'ENSEMBLE
 // ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════
+//  BLOCS CROISSANCE — chargement données
+// ══════════════════════════════════════════════════════════════
+async function loadGrowthBlocs(period) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+
+  const now = new Date();
+  let dateFrom, dateTo, groupBy, labels;
+
+  if (period === '7j') {
+    dateFrom = new Date(now); dateFrom.setDate(now.getDate() - 6); dateFrom.setHours(0,0,0,0);
+    dateTo = new Date(now); dateTo.setHours(23,59,59,999);
+    groupBy = 'day';
+    labels = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now); d.setDate(now.getDate() - i);
+      labels.push({ key: d.toISOString().slice(0,10), label: d.toLocaleDateString('fr-FR',{weekday:'short'}).slice(0,1).toUpperCase() });
+    }
+  } else if (period === '30j') {
+    dateFrom = new Date(now); dateFrom.setDate(now.getDate() - 29); dateFrom.setHours(0,0,0,0);
+    dateTo = new Date(now); dateTo.setHours(23,59,59,999);
+    groupBy = 'week';
+    labels = ['S1','S2','S3','S4','S5'];
+  } else {
+    // Mois spécifique ex: "2026-03"
+    const [year, month] = period.split('-').map(Number);
+    dateFrom = new Date(year, month-1, 1);
+    dateTo   = new Date(year, month, 0, 23, 59, 59);
+    groupBy = 'day';
+    const daysInMonth = new Date(year, month, 0).getDate();
+    labels = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dd = String(d).padStart(2,'0');
+      const mm = String(month).padStart(2,'0');
+      labels.push({ key: `${year}-${mm}-${dd}`, label: String(d) });
+    }
+  }
+
+  const fromStr = dateFrom.toISOString();
+  const toStr   = dateTo.toISOString();
+
+  try {
+    const [rProfiles, rDeposits] = await Promise.all([
+      fetch(`${SUPA}/rest/v1/profiles?select=id,role,created_at&created_at=gte.${fromStr}&and=(created_at.lte.${toStr})&apikey=${ANON}`, { headers: { apikey: ANON, Authorization: 'Bearer ' + ANON } }),
+      fetch(`${SUPA}/rest/v1/deposits?select=amount,created_at&created_at=gte.${fromStr}&and=(created_at.lte.${toStr})&apikey=${ANON}`, { headers: { apikey: ANON, Authorization: 'Bearer ' + ANON } }),
+    ]);
+    const profiles = await rProfiles.json().catch(() => []);
+    const deposits = await rDeposits.json().catch(() => []);
+
+    const tipsters = Array.isArray(profiles) ? profiles.filter(p => p.role === 'tipster') : [];
+    const users    = Array.isArray(profiles) ? profiles.filter(p => p.role === 'user') : [];
+    const depArr   = Array.isArray(deposits) ? deposits : [];
+
+    // Aujourd'hui
+    const todayStr = now.toISOString().slice(0,10);
+    const tipsterToday = tipsters.filter(p => p.created_at && p.created_at.slice(0,10) === todayStr).length;
+    const userToday    = users.filter(p => p.created_at && p.created_at.slice(0,10) === todayStr).length;
+    const depToday     = depArr.filter(d => d.created_at && d.created_at.slice(0,10) === todayStr).reduce((s,d) => s + parseFloat(d.amount||0), 0);
+
+    const totalDep     = depArr.reduce((s,d) => s + parseFloat(d.amount||0), 0);
+
+    // Grouper par jour ou semaine
+    function groupData(items, getValue, getDate) {
+      if (groupBy === 'day') {
+        return labels.map(l => {
+          const filtered = items.filter(i => getDate(i) === l.key);
+          return { label: l.label, val: getValue(filtered), isToday: l.key === todayStr };
+        });
+      } else {
+        // Semaines
+        const weeks = [];
+        const start = new Date(dateFrom);
+        for (let w = 0; w < 5; w++) {
+          const wStart = new Date(start); wStart.setDate(start.getDate() + w*7);
+          const wEnd   = new Date(wStart); wEnd.setDate(wStart.getDate() + 6);
+          const filtered = items.filter(i => {
+            const d = new Date(getDate(i));
+            return d >= wStart && d <= wEnd;
+          });
+          const isCurrentWeek = now >= wStart && now <= wEnd;
+          if (filtered.length > 0 || isCurrentWeek) weeks.push({ label: 'S'+(w+1), val: getValue(filtered), isToday: isCurrentWeek });
+        }
+        return weeks;
+      }
+    }
+
+    const depGroups  = groupData(depArr,  arr => arr.reduce((s,d) => s + parseFloat(d.amount||0), 0), d => d.created_at?.slice(0,10));
+    const tipGroups  = groupData(tipsters, arr => arr.length, p => p.created_at?.slice(0,10));
+    const userGroups = groupData(users,    arr => arr.length, p => p.created_at?.slice(0,10));
+
+    renderGrowthBlocs({
+      totalDep, tipsterToday, userToday, depToday,
+      totalTip: tipsters.length, totalUser: users.length,
+      depGroups, tipGroups, userGroups,
+      period, groupBy
+    });
+
+  } catch(e) {
+    const el = document.getElementById('growth-blocs');
+    if (el) el.innerHTML = `<div style="color:var(--error);font-size:0.85rem">Erreur croissance : ${e.message}</div>`;
+  }
+}
+
+function renderGrowthBlocs(d) {
+  const el = document.getElementById('growth-blocs');
+  if (!el) return;
+  const { totalDep, tipsterToday, userToday, depToday, totalTip, totalUser, depGroups, tipGroups, userGroups, period } = d;
+
+  function miniBar(groups, colorClass, todayColorClass) {
+    const max = Math.max(...groups.map(g => g.val), 1);
+    return `<div style="display:flex;align-items:flex-end;gap:3px;height:40px;margin:10px 0 6px">
+      ${groups.map(g => `
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+          <div style="width:100%;border-radius:2px 2px 0 0;min-height:2px;height:${Math.max(4, Math.round((g.val/max)*40))}px;background:${g.isToday ? todayColorClass : colorClass};${g.isToday ? 'outline:1.5px solid '+todayColorClass+';outline-offset:1px;opacity:0.7' : ''}"></div>
+          <div style="font-size:9px;color:var(--text-muted)">${g.label}</div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  function detailRows(groups, colorClass, isEuro) {
+    const max = Math.max(...groups.map(g => g.val), 1);
+    return groups.map(g => `
+      <div style="display:flex;align-items:center;gap:8px;font-size:11px;margin-bottom:4px">
+        <span style="color:var(--text-muted);width:28px;flex-shrink:0">${g.label}</span>
+        <div style="flex:1;background:var(--bg-soft,var(--border));border-radius:3px;height:5px;overflow:hidden">
+          <div style="height:100%;border-radius:3px;width:${Math.round((g.val/max)*100)}%;background:${colorClass}"></div>
+        </div>
+        <span style="font-weight:600;color:var(--text-dark);width:${isEuro?'48px':'24px'};text-align:right">${isEuro ? g.val.toFixed(2)+'€' : g.val}</span>
+      </div>`).join('');
+  }
+
+  const periodLabel = period === '7j' ? '7 derniers jours' : period === '30j' ? '30 derniers jours' : (() => {
+    const [y,m] = period.split('-');
+    return new Date(y, m-1).toLocaleDateString('fr-FR',{month:'long',year:'numeric'});
+  })();
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(${isMobile()?'1':'3'},1fr);gap:12px">
+
+      <!-- DÉPÔTS -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">
+        <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:13px;font-weight:700;color:var(--text-dark)">💳 Dépôts Stripe</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:20px;background:var(--blue-pale,#e8f0fe);color:var(--blue)">Auj : ${depToday.toFixed(2)}€</span>
+        </div>
+        <div style="padding:14px">
+          <div style="font-size:26px;font-weight:800;color:var(--blue)">${totalDep.toFixed(2)}€</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px;margin-bottom:2px">${periodLabel}</div>
+          ${miniBar(depGroups, 'var(--blue)', 'var(--blue)')}
+          <div style="border-top:1px solid var(--border);margin:8px 0 10px"></div>
+          ${detailRows(depGroups, 'var(--blue)', true)}
+        </div>
+      </div>
+
+      <!-- NOUVEAUX TIPSTERS -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">
+        <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:13px;font-weight:700;color:var(--text-dark)">📈 Nouveaux tipsters</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:20px;background:#EEEDFE;color:#534AB7">Auj : ${tipsterToday}</span>
+        </div>
+        <div style="padding:14px">
+          <div style="font-size:26px;font-weight:800;color:#534AB7">${totalTip}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px;margin-bottom:2px">${periodLabel}</div>
+          ${miniBar(tipGroups, '#AFA9EC', '#534AB7')}
+          <div style="border-top:1px solid var(--border);margin:8px 0 10px"></div>
+          ${detailRows(tipGroups, '#AFA9EC', false)}
+        </div>
+      </div>
+
+      <!-- NOUVEAUX PARIEURS -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">
+        <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:13px;font-weight:700;color:var(--text-dark)">👥 Nouveaux parieurs</span>
+          <span style="font-size:11px;padding:2px 8px;border-radius:20px;background:var(--success-pale,#e6f7ee);color:var(--success)">Auj : ${userToday}</span>
+        </div>
+        <div style="padding:14px">
+          <div style="font-size:26px;font-weight:800;color:var(--success)">${totalUser}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px;margin-bottom:2px">${periodLabel}</div>
+          ${miniBar(userGroups, 'var(--success)', 'var(--success)')}
+          <div style="border-top:1px solid var(--border);margin:8px 0 10px"></div>
+          ${detailRows(userGroups, 'var(--success)', false)}
+        </div>
+      </div>
+
+    </div>`;
+}
+
+function renderGrowthPeriodBar() {
+  const now = new Date();
+  const months = [];
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = d.toISOString().slice(0,7);
+    const label = d.toLocaleDateString('fr-FR',{month:'short',year:'2-digit'});
+    months.push({ key, label });
+  }
+  return `<div style="display:flex;align-items:center;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:14px;scrollbar-width:none" id="growth-period-bar">
+    ${['7j','30j'].concat(months.map(m=>m.key)).map((p,i) => {
+      const label = p === '7j' ? '7 jours' : p === '30j' ? '30 jours' : months.find(m=>m.key===p)?.label || p;
+      const isDefault = p === '30j';
+      return `<button onclick="selectGrowthPeriod('${p}')" id="gp-${p}"
+        style="flex-shrink:0;font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:${isDefault?'var(--blue)':'transparent'};color:${isDefault?'white':'var(--text-muted)'};cursor:pointer;transition:all .15s">
+        ${label}
+      </button>`;
+    }).join('')}
+  </div>`;
+}
+
+function selectGrowthPeriod(period) {
+  document.querySelectorAll('#growth-period-bar button').forEach(btn => {
+    btn.style.background = 'transparent';
+    btn.style.color = 'var(--text-muted)';
+    btn.style.borderColor = 'var(--border)';
+  });
+  const active = document.getElementById('gp-' + period);
+  if (active) { active.style.background = 'var(--blue)'; active.style.color = 'white'; }
+  loadGrowthBlocs(period);
+}
+
 function renderOverview(c) {
   const pendingPronos  = adminState.pronos.filter(p => p.status === 'pending').length;
   const pendingVirTipsters = adminState.tipsters.filter(t => parseFloat(t.balance) >= 30);
@@ -252,6 +472,13 @@ function renderOverview(c) {
     .reduce((s, p) => s + (parseFloat(p.price) * (p.buyers || 0) * CONFIG.finance.commissionRate), 0);
 
   c.innerHTML = `
+    <!-- ══ BLOCS CROISSANCE ══ -->
+    <div style="margin-bottom:var(--space-xl)">
+      <div style="font-size:0.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:var(--space-sm)">📊 Croissance</div>
+      ${renderGrowthPeriodBar()}
+      <div id="growth-blocs"><div style="text-align:center;padding:var(--space-xl);color:var(--text-muted)">⏳ Chargement...</div></div>
+    </div>
+
     <div class="stats-grid">
       <div class="stat-card stat-card--blue">
         <div class="stat-card__label">⏳ Pronos à valider</div>
@@ -320,6 +547,8 @@ function renderOverview(c) {
     </div>
     ${renderPronosTable(adminState.pronos.slice(0,4), true)}
   `;
+  // Charger les blocs croissance après render
+  loadGrowthBlocs('30j');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1244,10 +1473,17 @@ async function loadFinances() {
     const urlP = new URL(SUPA + '/rest/v1/pronos');
     urlP.searchParams.set('select', 'id,game,sport,match_date,status,tipster_id,buyers');
     urlP.searchParams.set('status', 'in.(won,lost,cancelled)');
-    if (dateFrom) urlP.searchParams.set('match_date', 'gte.' + dateFrom);
-    if (dateTo)   urlP.searchParams.append('match_date', 'lte.' + dateTo);
+    if (dateFrom && dateTo) {
+      urlP.searchParams.set('match_date', 'gte.' + dateFrom);
+      urlP.searchParams.set('and', '(match_date.lte.' + dateTo + ')');
+    } else if (dateFrom) {
+      urlP.searchParams.set('match_date', 'gte.' + dateFrom);
+    } else if (dateTo) {
+      urlP.searchParams.set('match_date', 'lte.' + dateTo);
+    }
     urlP.searchParams.set('apikey', ANON);
     const rP = await fetch(urlP.toString(), { headers: { 'apikey': ANON, 'Authorization': 'Bearer ' + ANON } });
+    if (!rP.ok) throw new Error(await rP.text());
     const pronos = await rP.json();
     if (!Array.isArray(pronos) || pronos.length === 0) {
       table.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun prono terminé sur cette période.</div>`;
