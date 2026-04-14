@@ -1263,8 +1263,8 @@ async function renderPageFreebet(container) {
       </div>
 
       ${total === 0 ? `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun utilisateur n'a encore partagé son numéro WhatsApp.</div>` : `
-      <div class="pronos-table" style="display:block">
-        ${!mob ? `<div class="table-header" style="grid-template-columns:2.5fr 1.5fr 2fr 1fr;display:grid">
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">
+        ${!mob ? `<div style="display:grid;grid-template-columns:2.5fr 1.5fr 2fr 1fr;padding:10px 16px;background:var(--bg-soft);border-bottom:1px solid var(--border);font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">
           <span>Utilisateur</span><span>Pseudo</span><span>WhatsApp</span><span>Freebet</span>
         </div>` : ''}
         ${users.map(u => {
@@ -1273,7 +1273,7 @@ async function renderPageFreebet(container) {
           const initials = ((u.first_name||'?')[0] + (u.last_name||'?')[0]).toUpperCase();
           const given = u.whatsapp_freebet_given;
           return mob ? `
-            <div class="table-row" style="display:flex;flex-direction:column;gap:6px;padding:var(--space-md) var(--space-lg)">
+            <div style="display:flex;flex-direction:column;gap:6px;padding:12px 16px;border-bottom:1px solid var(--border)">
               <div style="display:flex;justify-content:space-between;align-items:center">
                 <div style="font-weight:600">${name}</div>
                 <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
@@ -1283,7 +1283,7 @@ async function renderPageFreebet(container) {
               </div>
               <div style="font-size:0.82rem;color:var(--text-muted)">@${pseudo} · ${u.whatsapp}</div>
             </div>` : `
-            <div class="table-row" style="grid-template-columns:2.5fr 1.5fr 2fr 1fr;align-items:center;display:grid">
+            <div style="display:grid;grid-template-columns:2.5fr 1.5fr 2fr 1fr;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)">
               <div style="display:flex;align-items:center;gap:10px">
                 <div style="width:30px;height:30px;border-radius:50%;background:var(--blue-pale);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${initials}</div>
                 <div>
