@@ -1033,7 +1033,7 @@ async function saveAvatar() {
     });
 
     MOCK_TIPSTER.avatarUrl = avatarUrlCacheBust;
-    showToast('✓ Photo de profil mise à jour !', 'success');
+    showToast('✓ Photo enregistrée — visible dans 1 à 2 minutes', 'success');
     navigateTo('compte');
   } catch(e) {
     showToast('Erreur upload : ' + e.message, 'error');
