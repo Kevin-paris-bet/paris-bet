@@ -63,6 +63,11 @@ module.exports = async (req, res) => {
         .update({ balance: newBalance, total_deposits: newTotalDeposits })
         .eq('id', userId);
 
+      // Enregistrer le dépôt dans l'historique
+      await supabase
+        .from('deposits')
+        .insert({ user_id: userId, amount: amount, method: 'stripe' });
+
       console.log(`✓ Solde crédité : ${amount}€ pour ${userId} (total dépôts: ${newTotalDeposits}€)`);
     }
   }
