@@ -235,6 +235,7 @@ function navigateTo(page) {
   if (page === 'sondage')   renderPageSondage(content);
   if (page === 'dashsettings') renderPageDashSettings(content);
   if (page === 'sponsors')     renderPageSponsors(content);
+  if (page === 'freebet')      renderPageFreebet(content);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1228,6 +1229,104 @@ async function markVirementDone(tipsterId, tipsterName, amount) {
 }
 
 // ── Sidebar / Topbar ──────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+//  PAGE — FREEBET WHATSAPP
+// ══════════════════════════════════════════════════════════════
+async function renderPageFreebet(container) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  container.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>';
+
+  try {
+    const r = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,pseudo,whatsapp,whatsapp_freebet_given,created_at&whatsapp=not.is.null&order=created_at.desc&apikey=${ANON}`, {
+      headers: { apikey: ANON, Authorization: 'Bearer ' + ANON }
+    });
+    const users = await r.json();
+    if (!Array.isArray(users)) throw new Error('Erreur chargement');
+
+    const total    = users.length;
+    const credited = users.filter(u => u.whatsapp_freebet_given).length;
+    const pending  = total - credited;
+    const mob = isMobile();
+
+    container.innerHTML = `
+      <div class="section-header">
+        <div><h2>Freebet WhatsApp</h2><p>Users ayant partagé leur numéro</p></div>
+      </div>
+
+      <div class="stats-grid" style="margin-bottom:var(--space-xl)">
+        <div class="stat-card"><div class="stat-card__label">📱 Numéros reçus</div><div class="stat-card__value">${total}</div><div class="stat-card__sub">total inscrits</div></div>
+        <div class="stat-card" style="border-left:3px solid var(--success)"><div class="stat-card__label">✅ Crédités</div><div class="stat-card__value" style="color:var(--success)">${credited}</div><div class="stat-card__sub">${formatEuros(credited * 2)} distribués</div></div>
+        <div class="stat-card" style="border-left:3px solid var(--warning)"><div class="stat-card__label">⏳ À créditer</div><div class="stat-card__value" style="color:var(--warning)">${pending}</div><div class="stat-card__sub">à contacter</div></div>
+      </div>
+
+      ${total === 0 ? `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun utilisateur n'a encore partagé son numéro WhatsApp.</div>` : `
+      <div class="pronos-table">
+        ${!mob ? `<div class="table-header" style="grid-template-columns:2.5fr 1.5fr 2fr 1fr">
+          <span>Utilisateur</span><span>Pseudo</span><span>WhatsApp</span><span>Freebet</span>
+        </div>` : ''}
+        ${users.map(u => {
+          const name = (u.first_name || '') + ' ' + (u.last_name || '');
+          const pseudo = u.pseudo || '—';
+          const initials = ((u.first_name||'?')[0] + (u.last_name||'?')[0]).toUpperCase();
+          const given = u.whatsapp_freebet_given;
+          return mob ? `
+            <div class="table-row" style="display:flex;flex-direction:column;gap:6px;padding:var(--space-md) var(--space-lg)">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <div style="font-weight:600">${name}</div>
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+                  <input type="checkbox" ${given ? 'checked' : ''} style="width:16px;height:16px;accent-color:var(--success)" onchange="toggleFreebet('${u.id}', this)">
+                  <span style="font-size:0.82rem;color:${given ? 'var(--success)' : 'var(--warning)'}" id="fb-label-${u.id}">${given ? 'Crédité' : 'À créditer'}</span>
+                </label>
+              </div>
+              <div style="font-size:0.82rem;color:var(--text-muted)">@${pseudo} · ${u.whatsapp}</div>
+            </div>` : `
+            <div class="table-row" style="grid-template-columns:2.5fr 1.5fr 2fr 1fr;align-items:center">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="width:30px;height:30px;border-radius:50%;background:var(--blue-pale);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${initials}</div>
+                <div>
+                  <div style="font-weight:600;font-size:0.9rem">${name}</div>
+                  <div style="font-size:0.75rem;color:var(--text-muted)">${formatDate(u.created_at)}</div>
+                </div>
+              </div>
+              <div style="font-size:0.88rem;color:var(--text-muted)">@${pseudo}</div>
+              <div style="font-size:0.88rem;font-family:monospace">${u.whatsapp}</div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <input type="checkbox" ${given ? 'checked' : ''} style="width:16px;height:16px;accent-color:var(--success);cursor:pointer" onchange="toggleFreebet('${u.id}', this)">
+                <span style="font-size:0.82rem;color:${given ? 'var(--success)' : 'var(--warning)'}" id="fb-label-${u.id}">${given ? 'Crédité' : 'À créditer'}</span>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>`}
+    `;
+  } catch(e) {
+    container.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur : ${e.message}</div>`;
+  }
+}
+
+async function toggleFreebet(userId, checkbox) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  const given = checkbox.checked;
+  const label = document.getElementById('fb-label-' + userId);
+  try {
+    const r = await fetch(`${SUPA}/rest/v1/profiles?id=eq.${userId}&apikey=${ANON}`, {
+      method: 'PATCH',
+      headers: { apikey: ANON, Authorization: 'Bearer ' + ANON, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ whatsapp_freebet_given: given })
+    });
+    if (!r.ok) throw new Error();
+    if (label) {
+      label.textContent = given ? 'Crédité' : 'À créditer';
+      label.style.color = given ? 'var(--success)' : 'var(--warning)';
+    }
+    showToast(given ? '✅ Freebet marqué comme crédité' : 'Freebet retiré', given ? 'success' : 'info');
+  } catch {
+    checkbox.checked = !given;
+    showToast('Erreur lors de la mise à jour', 'error');
+  }
+}
+
 function renderSidebar() {
   document.querySelectorAll('.sidebar__link').forEach(l =>
     l.classList.toggle('active', l.dataset.page === adminState.activePage)
