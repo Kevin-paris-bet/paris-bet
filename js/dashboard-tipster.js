@@ -765,6 +765,7 @@ function renderPageCompte(container) {
               </label>
               <div style="font-size:10px;color:var(--text-muted)">JPG, PNG · max 5MB</div>
             </div>
+            <button style="background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer" onclick="saveAvatar()">Enregistrer la photo</button>
           </div>
           <div>
             <div style="${lbl}">Pseudo</div>
@@ -778,7 +779,7 @@ function renderPageCompte(container) {
               placeholder="Ex: Spécialiste Ligue 1 depuis 5 ans, 68% de win rate…"
               style="min-height:80px;font-size:13px">${T.description || ''}</textarea>
           </div>
-          <button style="${btnP}" onclick="saveAvatar();savePseudo();saveDescription()">Enregistrer</button>
+          <button style="${btnP}" onclick="savePseudo();saveDescription()">Enregistrer pseudo & description</button>
         </div>
       </div>
 
