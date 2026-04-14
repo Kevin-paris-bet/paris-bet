@@ -1263,8 +1263,8 @@ async function renderPageFreebet(container) {
       </div>
 
       ${total === 0 ? `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun utilisateur n'a encore partagé son numéro WhatsApp.</div>` : `
-      <div class="pronos-table">
-        ${!mob ? `<div class="table-header" style="grid-template-columns:2.5fr 1.5fr 2fr 1fr">
+      <div class="pronos-table" style="display:block">
+        ${!mob ? `<div class="table-header" style="grid-template-columns:2.5fr 1.5fr 2fr 1fr;display:grid">
           <span>Utilisateur</span><span>Pseudo</span><span>WhatsApp</span><span>Freebet</span>
         </div>` : ''}
         ${users.map(u => {
@@ -1283,7 +1283,7 @@ async function renderPageFreebet(container) {
               </div>
               <div style="font-size:0.82rem;color:var(--text-muted)">@${pseudo} · ${u.whatsapp}</div>
             </div>` : `
-            <div class="table-row" style="grid-template-columns:2.5fr 1.5fr 2fr 1fr;align-items:center">
+            <div class="table-row" style="grid-template-columns:2.5fr 1.5fr 2fr 1fr;align-items:center;display:grid">
               <div style="display:flex;align-items:center;gap:10px">
                 <div style="width:30px;height:30px;border-radius:50%;background:var(--blue-pale);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${initials}</div>
                 <div>
