@@ -353,14 +353,20 @@ function renderGrowthBlocs(d) {
   if (!el) return;
   const { totalDep, tipsterToday, userToday, depToday, totalTip, totalUser, depGroups, tipGroups, userGroups, period } = d;
 
-  function miniBar(groups, colorClass, todayColorClass) {
+  function miniBar(groups, colorClass, todayColorClass, isEuro) {
     const max = Math.max(...groups.map(g => g.val), 1);
-    return `<div style="display:flex;align-items:flex-end;gap:3px;height:40px;margin:10px 0 6px">
-      ${groups.map(g => `
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+    return `<div style="position:relative;display:flex;align-items:flex-end;gap:3px;height:40px;margin:10px 0 6px" id="bar-wrap-${Math.random().toString(36).slice(2)}">
+      ${groups.map((g,i) => {
+        const displayVal = isEuro ? g.val.toFixed(2)+'€' : g.val;
+        return `
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative;cursor:pointer"
+          onmouseenter="this.querySelector('.bar-tip').style.display='block'"
+          onmouseleave="this.querySelector('.bar-tip').style.display='none'">
+          <div class="bar-tip" style="display:none;position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--text-dark);color:var(--bg);font-size:10px;font-weight:700;padding:3px 7px;border-radius:5px;white-space:nowrap;z-index:10">${displayVal}</div>
           <div style="width:100%;border-radius:2px 2px 0 0;min-height:2px;height:${Math.max(4, Math.round((g.val/max)*40))}px;background:${g.isToday ? todayColorClass : colorClass};${g.isToday ? 'outline:1.5px solid '+todayColorClass+';outline-offset:1px;opacity:0.7' : ''}"></div>
           <div style="font-size:9px;color:var(--text-muted)">${g.label}</div>
-        </div>`).join('')}
+        </div>`;
+      }).join('')}
     </div>`;
   }
 
@@ -393,7 +399,7 @@ function renderGrowthBlocs(d) {
         <div style="padding:14px">
           <div style="font-size:26px;font-weight:800;color:var(--blue)">${totalDep.toFixed(2)}€</div>
 
-          ${miniBar(depGroups, 'var(--blue)', 'var(--blue)')}
+          ${miniBar(depGroups, 'var(--blue)', 'var(--blue)', true)}
           <div style="border-top:1px solid var(--border);margin:8px 0 10px"></div>
           ${detailRows(depGroups, 'var(--blue)', true)}
         </div>
@@ -408,7 +414,7 @@ function renderGrowthBlocs(d) {
         <div style="padding:14px">
           <div style="font-size:26px;font-weight:800;color:#534AB7">${totalTip}</div>
 
-          ${miniBar(tipGroups, '#AFA9EC', '#534AB7')}
+          ${miniBar(tipGroups, '#AFA9EC', '#534AB7', false)}
           <div style="border-top:1px solid var(--border);margin:8px 0 10px"></div>
           ${detailRows(tipGroups, '#AFA9EC', false)}
         </div>
@@ -423,7 +429,7 @@ function renderGrowthBlocs(d) {
         <div style="padding:14px">
           <div style="font-size:26px;font-weight:800;color:var(--success)">${totalUser}</div>
 
-          ${miniBar(userGroups, 'var(--success)', 'var(--success)')}
+          ${miniBar(userGroups, 'var(--success)', 'var(--success)', false)}
           <div style="border-top:1px solid var(--border);margin:8px 0 10px"></div>
           ${detailRows(userGroups, 'var(--success)', false)}
         </div>
