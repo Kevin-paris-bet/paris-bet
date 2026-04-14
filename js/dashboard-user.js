@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   MOCK_USER.pending  = parseFloat(user.profile.pending) || 0;
   MOCK_USER.freebet             = parseFloat(user.profile.freebet_balance) || 0;
   MOCK_USER.whatsapp            = user.profile.whatsapp || '';
-  MOCK_USER.whatsappSent        = user.profile.whatsapp_freebet_given || false;
+  MOCK_USER.whatsappSent        = !!(user.profile.whatsapp && user.profile.whatsapp.trim() !== '');
 
   // Mettre à jour la sidebar avec le vrai nom
   const fullName = MOCK_USER.firstName + ' ' + MOCK_USER.lastName;
@@ -594,7 +594,7 @@ async function saveWhatsapp() {
     const r = await fetch(`${SUPA}/rest/v1/profiles?id=eq.${userId}&apikey=${ANON}`, {
       method: 'PATCH',
       headers: { apikey: ANON, Authorization: 'Bearer ' + ANON, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-      body: JSON.stringify({ whatsapp: fullNum, whatsapp_freebet_given: true })
+      body: JSON.stringify({ whatsapp: fullNum })
     });
     if (!r.ok) throw new Error('Erreur');
     MOCK_USER.whatsapp = fullNum;
