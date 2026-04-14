@@ -782,7 +782,41 @@ function renderPageCompte(container) {
         </div>
       </div>
 
-      <!-- BLOC 2 : Infos personnelles -->
+      <!-- BLOC 2 : WhatsApp -->
+      <div style="${card}">
+        <div style="${head}">
+          <div style="${icon};background:#E1F5EE">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="#085041"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.115.554 4.1 1.523 5.824L.057 23.885a.5.5 0 00.606.609l6.202-1.426A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.886 0-3.655-.523-5.166-1.432l-.369-.22-3.826.879.918-3.701-.243-.381A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+          </div>
+          <span style="${title}">Numéro WhatsApp</span>
+        </div>
+        <div style="${body}">
+          <div style="font-size:12px;color:var(--text-muted);line-height:1.5">
+            Partagez votre numéro pour être contacté rapidement pour vos virements et les nouveautés de la plateforme.
+          </div>
+          <div>
+            <div style="${lbl}">Votre numéro WhatsApp</div>
+            <div style="display:flex;gap:6px">
+              <select id="t-wa-indicatif" class="input" style="width:100px;flex-shrink:0;font-size:12px">
+                <option value="+33" ${T.whatsapp.startsWith('+33')?'selected':''}>🇫🇷 +33</option>
+                <option value="+32" ${T.whatsapp.startsWith('+32')?'selected':''}>🇧🇪 +32</option>
+                <option value="+41" ${T.whatsapp.startsWith('+41')?'selected':''}>🇨🇭 +41</option>
+                <option value="+352" ${T.whatsapp.startsWith('+352')?'selected':''}>🇱🇺 +352</option>
+                <option value="+1" ${T.whatsapp.startsWith('+1')?'selected':''}>🇺🇸 +1</option>
+                <option value="+44" ${T.whatsapp.startsWith('+44')?'selected':''}>🇬🇧 +44</option>
+                <option value="+212" ${T.whatsapp.startsWith('+212')?'selected':''}>🇲🇦 +212</option>
+                <option value="+213" ${T.whatsapp.startsWith('+213')?'selected':''}>🇩🇿 +213</option>
+                <option value="+216" ${T.whatsapp.startsWith('+216')?'selected':''}>🇹🇳 +216</option>
+              </select>
+              <input class="input" type="tel" id="t-wa-num" placeholder="6 12 34 56 78"
+                value="${T.whatsapp.replace(/^\+\d+/, '')}" style="flex:1;font-size:13px"/>
+            </div>
+          </div>
+          <button style="${btnP}" onclick="saveTipsterWhatsapp()">Enregistrer</button>
+        </div>
+      </div>
+
+      <!-- BLOC 3 : Infos personnelles -->
       <div style="${card}">
         <div style="${head}">
           <div style="${icon};background:var(--bg-soft)">
@@ -839,40 +873,6 @@ function renderPageCompte(container) {
             🔒 Coordonnées chiffrées, uniquement utilisées pour vos virements hebdomadaires.
           </div>
           <button style="${btnP}" onclick="saveRIB()">Enregistrer</button>
-        </div>
-      </div>
-
-      <!-- BLOC 4 : WhatsApp -->
-      <div style="${card}">
-        <div style="${head}">
-          <div style="${icon};background:#E1F5EE">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="#085041"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.115.554 4.1 1.523 5.824L.057 23.885a.5.5 0 00.606.609l6.202-1.426A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.886 0-3.655-.523-5.166-1.432l-.369-.22-3.826.879.918-3.701-.243-.381A9.944 9.944 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-          </div>
-          <span style="${title}">Numéro WhatsApp</span>
-        </div>
-        <div style="${body}">
-          <div style="font-size:12px;color:var(--text-muted);line-height:1.5">
-            Partagez votre numéro pour être contacté rapidement pour vos virements et les nouveautés de la plateforme.
-          </div>
-          <div>
-            <div style="${lbl}">Votre numéro WhatsApp</div>
-            <div style="display:flex;gap:6px">
-              <select id="t-wa-indicatif" class="input" style="width:100px;flex-shrink:0;font-size:12px">
-                <option value="+33" ${T.whatsapp.startsWith('+33')?'selected':''}>🇫🇷 +33</option>
-                <option value="+32" ${T.whatsapp.startsWith('+32')?'selected':''}>🇧🇪 +32</option>
-                <option value="+41" ${T.whatsapp.startsWith('+41')?'selected':''}>🇨🇭 +41</option>
-                <option value="+352" ${T.whatsapp.startsWith('+352')?'selected':''}>🇱🇺 +352</option>
-                <option value="+1" ${T.whatsapp.startsWith('+1')?'selected':''}>🇺🇸 +1</option>
-                <option value="+44" ${T.whatsapp.startsWith('+44')?'selected':''}>🇬🇧 +44</option>
-                <option value="+212" ${T.whatsapp.startsWith('+212')?'selected':''}>🇲🇦 +212</option>
-                <option value="+213" ${T.whatsapp.startsWith('+213')?'selected':''}>🇩🇿 +213</option>
-                <option value="+216" ${T.whatsapp.startsWith('+216')?'selected':''}>🇹🇳 +216</option>
-              </select>
-              <input class="input" type="tel" id="t-wa-num" placeholder="6 12 34 56 78"
-                value="${T.whatsapp.replace(/^\+\d+/, '')}" style="flex:1;font-size:13px"/>
-            </div>
-          </div>
-          <button style="${btnP}" onclick="saveTipsterWhatsapp()">Enregistrer</button>
         </div>
       </div>
 
