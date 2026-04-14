@@ -198,20 +198,6 @@ async function handleRegister() {
       else fbq('trackCustom', 'InscriptionUser');
     }
 
-    // Email de bienvenue
-    fetch('/api/send-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'bienvenue',
-        data: {
-          email,
-          prenom: isTipster ? pseudo : firstName,
-          role: authState.selectedRole
-        }
-      })
-    }).catch(() => {});
-
     // Ajout contact dans Brevo (liste tipsters=4, users=3)
     fetch('/api/sync-brevo', {
       method: 'POST',
