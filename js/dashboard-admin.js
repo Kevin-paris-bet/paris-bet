@@ -2097,6 +2097,7 @@ async function openFicheUser(id){
     const totalDeposits=parseFloat(p.total_deposits||0);
     const totalRembourse=(purchases||[]).filter(a=>a.status==='lost'||a.status==='cancelled').reduce((s,a)=>s+parseFloat(a.amount||0),0);
     const totalWon=(purchases||[]).filter(a=>a.status==='won').length;
+    const totalPending=(purchases||[]).filter(a=>a.status==='pending').reduce((s,a)=>s+parseFloat(a.amount||0),0);
     const badge={won:'<span class="badge badge-won">✓ Gagné</span>',lost:'<span class="badge badge-lost">✕ Perdu</span>',cancelled:'<span class="badge badge-cancelled">⊘ Annulé</span>',pending:'<span class="badge badge-pending">⏳ En attente</span>'};
 
     // Méthode de paiement — label et icône
@@ -2156,7 +2157,7 @@ async function openFicheUser(id){
       </div>
 
       <div style="background:var(--bg-soft);border-radius:var(--radius-md);padding:var(--space-md);margin-bottom:var(--space-lg);font-size:0.85rem">
-        ⏳ En attente : <strong>${formatEuros(p.pending||0)}</strong> · 🏆 Pronos gagnés : <strong style="color:var(--blue)">${totalWon}</strong>
+        ⏳ En attente : <strong>${formatEuros(totalPending)}</strong> · 🏆 Pronos gagnés : <strong style="color:var(--blue)">${totalWon}</strong>
       </div>
       <h3 style="margin-bottom:var(--space-md)">Historique des achats</h3>
       ${(purchases||[]).length===0?'<p style="color:var(--text-muted)">Aucun achat.</p>':`
