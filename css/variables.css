@@ -283,38 +283,45 @@ input, textarea, select { font-family: var(--font-body); }
    Appliqué sur <html> via JS, persisté dans localStorage
 ══════════════════════════════════════════════════════════════ */
 [data-theme="dark"] {
-  --blue:           #4d7fff;
-  --blue-dark:      #6b93ff;
-  --blue-light:     #7aaaff;
-  --blue-pale:      #1a2a4a;
-  --blue-xpale:     #111d35;
-  --white:          #1e2535;
+  /* Accent violet/rose */
+  --blue:           #a855f7;
+  --blue-dark:      #9333ea;
+  --blue-light:     #c084fc;
+  --blue-pale:      #2e2045;
+  --blue-xpale:     #231835;
 
-  --text-dark:      #e8eeff;
-  --text-body:      #b0bcda;
-  --text-muted:     #6b7fa3;
-  --text-light:     #4a5a7a;
+  --white:          #231d35;
 
-  --bg:             #0f1623;
-  --bg-soft:        #161e2e;
-  --bg-card:        #1e2535;
+  /* Texte */
+  --text-dark:      #ede8f5;
+  --text-body:      #b8a8d4;
+  --text-muted:     #7c6fa0;
+  --text-light:     #4a3d6b;
 
-  --border:         #2a3550;
-  --border-focus:   rgba(77, 127, 255, 0.5);
+  /* Fonds */
+  --bg:             #1a1528;
+  --bg-soft:        #231d35;
+  --bg-card:        #231d35;
 
-  --success:        #00e676;
-  --success-pale:   #0a2a1a;
-  --error:          #ff6b6b;
-  --error-pale:     #2a1010;
-  --warning:        #ffca28;
-  --warning-pale:   #2a2010;
-  --pending:        #8090b0;
-  --pending-pale:   #1a2030;
+  /* Bordures */
+  --border:         #2e2545;
+  --border-focus:   rgba(168, 85, 247, 0.5);
 
-  --shadow-sm:      0 1px 3px rgba(0,0,0,0.3);
-  --shadow-md:      0 4px 16px rgba(0,0,0,0.4);
-  --shadow-lg:      0 8px 32px rgba(0,0,0,0.5);
-  --shadow-blue:    0 8px 32px rgba(77,127,255,0.25);
+  /* États */
+  --success:        #4ade80;
+  --success-pale:   #0d2a1a;
+  --error:          #f87171;
+  --error-pale:     #2a1020;
+  --warning:        #fbbf24;
+  --warning-pale:   #2a1f0a;
+  --pending:        #9d8ec4;
+  --pending-pale:   #201a30;
+
+  /* Ombres */
+  --shadow-sm:      0 1px 3px rgba(0,0,0,0.35);
+  --shadow-md:      0 4px 16px rgba(0,0,0,0.45);
+  --shadow-lg:      0 8px 32px rgba(0,0,0,0.55);
+  --shadow-blue:    0 8px 32px rgba(168,85,247,0.25);
 }
 
 [data-theme="dark"] body {
