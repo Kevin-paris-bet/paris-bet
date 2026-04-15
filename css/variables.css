@@ -300,8 +300,8 @@ input, textarea, select { font-family: var(--font-body); }
 
   /* Fonds */
   --bg:             #1a1528;
-  --bg-soft:        #231d35;
-  --bg-card:        #231d35;
+  --bg-soft:        #2d2545;
+  --bg-card:        #2d2545;
 
   /* Bordures */
   --border:         #2e2545;
