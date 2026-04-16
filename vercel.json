@@ -15,7 +15,7 @@
       "destination": "/tools/post-generator.html"
     },
     {
-      "source": "/:pseudo([a-z0-9-]{3,20})",
+      "source": "/:pseudo([a-zA-Z0-9-]{3,30})",
       "destination": "/pages/tipster-public.html?pseudo=:pseudo"
     }
   ]
