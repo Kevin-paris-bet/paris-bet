@@ -236,6 +236,8 @@ function navigateTo(page) {
   if (page === 'dashsettings') renderPageDashSettings(content);
   if (page === 'sponsors')     renderPageSponsors(content);
   if (page === 'freebet')      renderPageFreebet(content);
+  if (page === 'emails')       renderPageEmails(content);
+  if (page === 'parrainages')  renderPageParrainages(content);
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -1342,6 +1344,114 @@ async function toggleFreebet(userId, checkbox) {
   } catch {
     checkbox.checked = !given;
     showToast('Erreur lors de la mise à jour', 'error');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+//  PAGE — PARRAINAGES
+// ══════════════════════════════════════════════════════════════
+async function renderPageParrainages(container) {
+  const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+  const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+  container.innerHTML = '<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">⏳ Chargement...</div>';
+
+  try {
+    // Charger tous les parrainages
+    const r = await fetch(`${SUPA}/rest/v1/referrals?select=*&order=created_at.desc&apikey=${ANON}`, {
+      headers: { apikey: ANON, Authorization: 'Bearer ' + ANON }
+    });
+    const referrals = await r.json();
+    if (!Array.isArray(referrals)) throw new Error('Erreur chargement');
+
+    // Charger les profils concernés
+    const allIds = [...new Set([
+      ...referrals.map(r => r.referrer_id),
+      ...referrals.map(r => r.referred_id)
+    ].filter(Boolean))];
+
+    let profileMap = {};
+    if (allIds.length > 0) {
+      const rP = await fetch(`${SUPA}/rest/v1/profiles?select=id,first_name,last_name,pseudo,role&id=in.(${allIds.join(',')})&apikey=${ANON}`, {
+        headers: { apikey: ANON, Authorization: 'Bearer ' + ANON }
+      });
+      const profiles = await rP.json();
+      if (Array.isArray(profiles)) profiles.forEach(p => profileMap[p.id] = p);
+    }
+
+    const totalParrainages = referrals.length;
+    const totalDistribue = referrals.reduce((s, r) => s + parseFloat(r.amount_referrer || 0) + parseFloat(r.amount_referred || 0), 0);
+    const totalParrains = new Set(referrals.map(r => r.referrer_id)).size;
+    const mob = isMobile();
+
+    const getName = (id) => {
+      const p = profileMap[id];
+      if (!p) return '—';
+      return p.pseudo || (p.first_name + ' ' + p.last_name);
+    };
+
+    container.innerHTML = `
+      <div class="section-header">
+        <div><h2>Parrainages</h2><p>Suivi des codes promo et bonus versés</p></div>
+      </div>
+
+      <div class="stats-grid" style="margin-bottom:var(--space-xl)">
+        <div class="stat-card">
+          <div class="stat-card__label">🤝 Total parrainages</div>
+          <div class="stat-card__value">${totalParrainages}</div>
+          <div class="stat-card__sub">depuis le lancement</div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid var(--blue)">
+          <div class="stat-card__label">👥 Parrains actifs</div>
+          <div class="stat-card__value" style="color:var(--blue)">${totalParrains}</div>
+          <div class="stat-card__sub">ont parrainé au moins 1 fois</div>
+        </div>
+        <div class="stat-card" style="border-left:3px solid var(--success)">
+          <div class="stat-card__label">💸 Total distribué</div>
+          <div class="stat-card__value" style="color:var(--success)">${formatEuros(totalDistribue)}</div>
+          <div class="stat-card__sub">en bonus parrainage</div>
+        </div>
+      </div>
+
+      ${referrals.length === 0 ? `
+        <div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted)">Aucun parrainage pour le moment.</div>
+      ` : `
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">
+          ${!mob ? `<div style="display:grid;grid-template-columns:2fr 2fr 1.5fr 1fr 1fr;padding:10px 16px;background:var(--bg-soft);border-bottom:1px solid var(--border);font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">
+            <span>Parrain</span><span>Filleul</span><span>Code utilisé</span><span>Bonus parrain</span><span>Date</span>
+          </div>` : ''}
+          ${referrals.map(ref => {
+            const parrain = getName(ref.referrer_id);
+            const filleul = getName(ref.referred_id);
+            const parrainRole = profileMap[ref.referrer_id]?.role || '';
+            const date = ref.created_at ? new Date(ref.created_at).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'2-digit'}) : '—';
+            return mob ? `
+              <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <div style="font-weight:600;font-size:0.88rem">${parrain} → ${filleul}</div>
+                  <div style="font-size:0.78rem;color:var(--text-muted)">${date}</div>
+                </div>
+                <div style="display:flex;gap:8px;font-size:0.8rem;color:var(--text-muted)">
+                  <span>Code : <strong style="color:var(--blue);font-family:monospace">${ref.referrer_code || '—'}</strong></span>
+                  <span>Bonus parrain : <strong style="color:${parseFloat(ref.amount_referrer)>0?'var(--success)':'var(--text-muted)'}">
+                    ${parseFloat(ref.amount_referrer) > 0 ? '+' + formatEuros(ref.amount_referrer) : parrainRole === 'tipster' ? 'Tipster (0€)' : '—'}
+                  </strong></span>
+                </div>
+              </div>` : `
+              <div style="display:grid;grid-template-columns:2fr 2fr 1.5fr 1fr 1fr;padding:12px 16px;border-bottom:1px solid var(--border);align-items:center;font-size:0.88rem">
+                <div style="font-weight:600">${parrain} ${parrainRole==='tipster'?'<span style="font-size:0.72rem;background:var(--blue-pale);color:var(--blue);padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px">Tipster</span>':''}</div>
+                <div style="color:var(--text-muted)">${filleul}</div>
+                <div style="font-family:monospace;color:var(--blue);font-weight:700">${ref.referrer_code || '—'}</div>
+                <div style="font-weight:700;color:${parseFloat(ref.amount_referrer)>0?'var(--success)':'var(--text-muted)'}">
+                  ${parseFloat(ref.amount_referrer) > 0 ? '+' + formatEuros(ref.amount_referrer) : parrainRole === 'tipster' ? '0€ (tipster)' : '—'}
+                </div>
+                <div style="color:var(--text-muted);font-size:0.8rem">${date}</div>
+              </div>`;
+          }).join('')}
+        </div>
+      `}
+    `;
+  } catch(e) {
+    container.innerHTML = `<div style="text-align:center;padding:var(--space-2xl);color:var(--error)">Erreur : ${e.message}</div>`;
   }
 }
 
