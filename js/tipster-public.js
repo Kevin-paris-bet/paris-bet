@@ -296,6 +296,19 @@ function renderUserBalance() {
   if (card) card.style.display = '';
   document.getElementById('user-balance').textContent  = formatEuros(u.balance || 0);
   document.getElementById('user-pending').textContent  = formatEuros(u.pending || 0);
+  const freebetEl = document.getElementById('user-freebet');
+  const freebetLabel = document.getElementById('freebet-label');
+  if (freebetEl && freebetLabel) {
+    const fb = u.freebet || 0;
+    if (fb > 0) {
+      freebetEl.textContent = formatEuros(fb);
+      freebetEl.style.display = '';
+      freebetLabel.style.display = '';
+    } else {
+      freebetEl.style.display = 'none';
+      freebetLabel.style.display = 'none';
+    }
+  }
 }
 
 // ── Infos tipster (sidebar) ───────────────────────────────────
