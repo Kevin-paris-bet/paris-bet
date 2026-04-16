@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Résoudre l'id depuis le pseudo si nécessaire
   let resolvedId = tipsterId;
   if (!resolvedId && tipsterPseudo) {
-    const rPseudo = await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id&pseudo=eq.${tipsterPseudo}&apikey=${ANON}`);
+    const rPseudo = await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id&pseudo=ilike.${tipsterPseudo}&apikey=${ANON}`);
     const pData = await rPseudo.json();
     if (Array.isArray(pData) && pData.length > 0) resolvedId = pData[0].id;
   }
