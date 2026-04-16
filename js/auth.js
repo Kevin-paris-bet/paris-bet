@@ -50,10 +50,12 @@ function selectRole(role) {
     opt.classList.toggle('selected', opt.dataset.role === role);
   });
   // Afficher/masquer les champs selon le rôle
-  const nameFields   = document.getElementById('name-fields');
-  const pseudoField  = document.getElementById('pseudo-field');
-  if (nameFields)  nameFields.style.display  = role === 'tipster' ? 'none' : '';
-  if (pseudoField) pseudoField.style.display = role === 'tipster' ? '' : 'none';
+  const nameFields    = document.getElementById('name-fields');
+  const pseudoField   = document.getElementById('pseudo-field');
+  const referralField = document.getElementById('referral-field');
+  if (nameFields)    nameFields.style.display    = role === 'tipster' ? 'none' : '';
+  if (pseudoField)   pseudoField.style.display   = role === 'tipster' ? '' : 'none';
+  if (referralField) referralField.style.display = role === 'tipster' ? 'none' : '';
 }
 
 // ── Toggle affichage mot de passe ─────────────────────────────
@@ -166,6 +168,7 @@ async function handleRegister() {
   const email     = document.getElementById('reg-email').value.trim();
   const pw        = document.getElementById('reg-pw').value;
   const terms     = document.getElementById('reg-terms').checked;
+  const referralCode = document.getElementById('reg-referral')?.value.trim().toUpperCase() || '';
   const btn       = document.getElementById('btn-register');
 
   // Validations
@@ -191,6 +194,36 @@ async function handleRegister() {
       }
     });
     if (error) throw new Error(error.message);
+
+    // Générer le referral_code et sauvegarder referred_by
+    const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhZXpiZ2dscGdoanJnZHBtY3JqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMyMjU1MjksImV4cCI6MjA4ODgwMTUyOX0.p98EHvfT6M9vD69dFH5cpESshBoH6qWeSly4fMhGtqI';
+    const SUPA = 'https://haezbgglpghjrgdpmcrj.supabase.co';
+    if (data?.user?.id) {
+      try {
+        const updates = {};
+        // Code parrain utilisé
+        if (referralCode) updates.referred_by = referralCode;
+        // Générer referral_code : pseudo pour tipster, PPW+numéro pour user
+        if (isTipster) {
+          updates.referral_code = pseudo.toUpperCase();
+        } else {
+          // Compter les users existants pour attribuer le bon numéro
+          const rCount = await fetch(`${SUPA}/rest/v1/profiles?select=id&role=eq.user&apikey=${ANON}`, {
+            headers: { apikey: ANON, Authorization: 'Bearer ' + ANON }
+          });
+          const existingUsers = await rCount.json();
+          const userNumber = Array.isArray(existingUsers) ? existingUsers.length : 1;
+          updates.referral_code = 'PPW' + userNumber;
+        }
+        if (Object.keys(updates).length > 0) {
+          await fetch(`${SUPA}/rest/v1/profiles?id=eq.${data.user.id}&apikey=${ANON}`, {
+            method: 'PATCH',
+            headers: { apikey: ANON, Authorization: 'Bearer ' + ANON, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+            body: JSON.stringify(updates)
+          });
+        }
+      } catch(e) { console.error('Referral setup error:', e); }
+    }
 
     // Meta Pixel — événement inscription
     if (typeof fbq === 'function') {

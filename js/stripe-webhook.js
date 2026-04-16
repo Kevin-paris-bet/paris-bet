@@ -63,16 +63,56 @@ module.exports = async (req, res) => {
         .update({ balance: newBalance, total_deposits: newTotalDeposits })
         .eq('id', userId);
 
+      // Enregistrer le dépôt dans l'historique
+      await supabase
+        .from('deposits')
+        .insert({ user_id: userId, amount: amount, method: 'stripe' });
+
       console.log(`✓ Solde crédité : ${amount}€ pour ${userId} (total dépôts: ${newTotalDeposits}€)`);
 
-      // Enregistrer le dépôt dans la table deposits
-      const paymentMethod = session.payment_method_types?.[0] || 'card';
-      const methodMap = { card: 'card', paypal: 'paypal' };
-      await supabase.from('deposits').insert({
-        user_id: userId,
-        amount:  amount,
-        method:  methodMap[paymentMethod] || 'card',
-      });
+      // ── Bonus parrainage au premier dépôt ──────────────────
+      // On vérifie si c'est le premier dépôt (total_deposits avant = 0)
+      const isFirstDeposit = (parseFloat(profile?.total_deposits) || 0) === 0;
+      if (isFirstDeposit) {
+        const { data: newUserProfile } = await supabase
+          .from('profiles')
+          .select('referred_by, referral_bonus_given, role')
+          .eq('id', userId)
+          .single();
+
+        const referredBy = newUserProfile?.referred_by;
+        const bonusAlreadyGiven = newUserProfile?.referral_bonus_given;
+
+        if (referredBy && !bonusAlreadyGiven) {
+          // Trouver le parrain par son referral_code (insensible à la casse)
+          const { data: referrers } = await supabase
+            .from('profiles')
+            .select('id, role, balance')
+            .ilike('referral_code', referredBy);
+
+          const referrer = referrers?.[0];
+
+          if (referrer) {
+            // +2€ au nouveau parieur
+            await supabase
+              .from('profiles')
+              .update({ balance: newBalance + 2, referral_bonus_given: true })
+              .eq('id', userId);
+
+            // +2€ au parrain seulement si c'est un user (pas un tipster)
+            if (referrer.role === 'user') {
+              await supabase
+                .from('profiles')
+                .update({ balance: (parseFloat(referrer.balance) || 0) + 2 })
+                .eq('id', referrer.id);
+              console.log(`✓ Bonus parrainage : +2€ pour ${userId} et +2€ pour parrain ${referrer.id}`);
+            } else {
+              console.log(`✓ Bonus parrainage : +2€ pour ${userId} (parrain tipster, pas de bonus)`);
+            }
+          }
+        }
+      }
+      // ── Fin bonus parrainage ────────────────────────────────
     }
   }
 
