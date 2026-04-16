@@ -632,7 +632,7 @@ function showToast(message, type = 'info') {
     fontSize:'0.87rem', fontFamily:'var(--font-body)',
     color:'var(--text-dark)', zIndex:'9999',
     animation:'fadeUp 0.3s ease both', boxShadow:'var(--shadow-md)',
-    whiteSpace:'nowrap', maxWidth:'90vw',
+    whiteSpace:'normal', maxWidth:'85vw', textAlign:'center',
   });
   document.body.appendChild(toast);
   setTimeout(() => toast?.remove(), 4000);
