@@ -184,7 +184,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // Charger le solde ET le pending de l'utilisateur
             const urlBal = new URL('https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles');
-            urlBal.searchParams.set('select', 'balance,pending,first_name');
+            urlBal.searchParams.set('select', 'balance,pending,first_name,freebet_balance');
             urlBal.searchParams.set('id', 'eq.' + user.id);
             urlBal.searchParams.set('apikey', ANON);
             const rBal = await fetch(urlBal.toString());
@@ -193,6 +193,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               pubState.user.balance = parseFloat(balData[0].balance || 0);
               pubState.user.pending = parseFloat(balData[0].pending || 0);
               pubState.user.firstName = balData[0].first_name;
+              pubState.user.freebet = parseFloat(balData[0].freebet_balance || 0);
             }
           }
         } catch(authErr) { /* utilisateur non connecté */ }
@@ -432,11 +433,16 @@ function openBuyModal(id) {
 
   const price      = parseFloat(prono.price) || 0;
   const balance    = parseFloat(pubState.user.balance) || 0;
-  const hasEnough   = balance >= price;
-  const afterAmount = balance - price;
-  const isMobile    = window.innerWidth <= 900;
+  const freebet    = parseFloat(pubState.user.freebet) || 0;
+  const hasEnough  = balance >= price;
+  const hasFreebet = freebet >= price;
+  const canBuy     = hasEnough || hasFreebet;
+  const isMobile   = window.innerWidth <= 900;
 
-  const alertHtml = !hasEnough ? `
+  // Mode de paiement par défaut
+  window._pubBuyMode = hasEnough ? 'solde' : 'freebet';
+
+  const alertHtml = !canBuy ? `
     <div class="buy-panel__alert">
       ⚠️ Solde insuffisant.
       <a href="/pages/dashboard-user.html?page=solde">Recharger →</a>
@@ -448,27 +454,21 @@ function openBuyModal(id) {
       <button class="buy-panel__close" onclick="closeBuyModal()">✕</button>
     </div>
     <div class="buy-panel__match">${prono.game} · ${formatEuros(price)}</div>
-    <div class="buy-panel__rows">
-      <div class="buy-panel__row">
-        <span class="buy-panel__row-label">Prix</span>
-        <span class="buy-panel__row-value blue">${formatEuros(price)}</span>
-      </div>
-      <div class="buy-panel__row">
-        <span class="buy-panel__row-label">Solde actuel</span>
-        <span class="buy-panel__row-value">${formatEuros(balance)}</span>
-      </div>
-      <div class="buy-panel__row buy-panel__row--total">
-        <span class="buy-panel__row-label">Solde après</span>
-        <span class="buy-panel__row-value ${hasEnough ? '' : 'red'}">
-          ${hasEnough ? formatEuros(afterAmount) : 'Insuffisant'}
-        </span>
-      </div>
-    </div>
+    ${(hasEnough || hasFreebet) ? `<div style="display:flex;flex-direction:column;gap:8px;margin:12px 0">
+      ${hasEnough ? `<label onclick="selectPubMode('solde')" id="pub-opt-solde" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #2563eb;border-radius:8px;cursor:pointer;background:#eff6ff">
+        <div id="pub-radio-solde" style="width:16px;height:16px;border-radius:50%;border:2px solid #2563eb;background:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0"><div style="width:6px;height:6px;border-radius:50%;background:white"></div></div>
+        <div><div style="font-size:0.82rem;font-weight:700;color:#1d4ed8">Solde (${formatEuros(balance)})</div><div style="font-size:0.72rem;color:#718096">Si perdu : remboursé automatiquement</div></div>
+      </label>` : ''}
+      ${hasFreebet ? `<label onclick="selectPubMode('freebet')" id="pub-opt-fb" style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid ${hasEnough?'#e2e8f0':'#EF9F27'};border-radius:8px;cursor:pointer;background:${hasEnough?'white':'#FFF8EE'}">
+        <div id="pub-radio-fb" style="width:16px;height:16px;border-radius:50%;border:2px solid #EF9F27;background:${hasEnough?'white':'#EF9F27'};display:flex;align-items:center;justify-content:center;flex-shrink:0">${!hasEnough?'<div style="width:6px;height:6px;border-radius:50%;background:white"></div>':''}</div>
+        <div><div style="font-size:0.82rem;font-weight:700;color:#633806">Freebet (${formatEuros(freebet)})</div><div style="font-size:0.72rem;color:#854F0B">Si perdu : non remboursé</div></div>
+      </label>` : ''}
+    </div>` : ''}
     ${alertHtml}
     <div class="buy-panel__actions">
       <button class="btn btn-outline" onclick="closeBuyModal()">Annuler</button>
       <button class="btn btn-primary" id="btn-confirm-buy"
-        onclick="confirmBuy()" ${hasEnough ? '' : 'disabled'}>
+        onclick="confirmBuy()" ${canBuy ? '' : 'disabled'}>
         Confirmer
       </button>
     </div>
@@ -484,6 +484,26 @@ function openBuyModal(id) {
     const panel = document.getElementById('buy-panel-desktop');
     document.getElementById('buy-panel-desktop-inner').innerHTML = html;
     panel.style.display = 'block';
+  }
+}
+
+function selectPubMode(mode) {
+  window._pubBuyMode = mode;
+  const soldeOpt = document.getElementById('pub-opt-solde');
+  const fbOpt    = document.getElementById('pub-opt-fb');
+  const soldeRadio = document.getElementById('pub-radio-solde');
+  const fbRadio  = document.getElementById('pub-radio-fb');
+  if (soldeOpt && soldeRadio) {
+    soldeOpt.style.border = mode === 'solde' ? '1.5px solid #2563eb' : '1.5px solid #e2e8f0';
+    soldeOpt.style.background = mode === 'solde' ? '#eff6ff' : 'white';
+    soldeRadio.style.background = mode === 'solde' ? '#2563eb' : 'white';
+    soldeRadio.innerHTML = mode === 'solde' ? '<div style="width:6px;height:6px;border-radius:50%;background:white"></div>' : '';
+  }
+  if (fbOpt && fbRadio) {
+    fbOpt.style.border = mode === 'freebet' ? '1.5px solid #EF9F27' : '1.5px solid #e2e8f0';
+    fbOpt.style.background = mode === 'freebet' ? '#FFF8EE' : 'white';
+    fbRadio.style.background = mode === 'freebet' ? '#EF9F27' : 'white';
+    fbRadio.innerHTML = mode === 'freebet' ? '<div style="width:6px;height:6px;border-radius:50%;background:white"></div>' : '';
   }
 }
 
@@ -510,28 +530,37 @@ async function confirmBuy() {
     const JWT = session?.access_token || ANON;
     if (!user) { showToast('Connectez-vous pour acheter', 'error'); btn.disabled = false; btn.textContent = 'Confirmer'; return; }
 
+    const useFreebet = window._pubBuyMode === 'freebet';
+
     // 1. Créer le purchase
     const r1 = await fetch(SUPA + '/rest/v1/purchases', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + JWT },
-      body: JSON.stringify({ user_id: user.id, prono_id: prono.id, amount: prono.price, status: 'pending' })
+      body: JSON.stringify({ user_id: user.id, prono_id: prono.id, amount: prono.price, status: 'pending', is_freebet: useFreebet })
     });
     if (!r1.ok && r1.status !== 201) throw new Error('Erreur purchase');
 
-    // 2. Débiter le solde et incrémenter pending
-    const price      = parseFloat(prono.price)   || 0;
+    // 2. Débiter le solde ou le freebet
+    const price      = parseFloat(prono.price) || 0;
     const balance    = parseFloat(pubState.user.balance) || 0;
+    const freebet    = parseFloat(pubState.user.freebet) || 0;
     const pending    = parseFloat(pubState.user.pending) || 0;
-    const newBalance = balance - price;
-    const newPending = pending + price;
+    let profileUpdate;
+    if (useFreebet) {
+      profileUpdate = { freebet_balance: Math.round((freebet - price) * 100) / 100 };
+      pubState.user.freebet = Math.round((freebet - price) * 100) / 100;
+    } else {
+      const newBalance = balance - price;
+      const newPending = pending + price;
+      profileUpdate = { balance: newBalance, pending: newPending };
+      pubState.user.balance = newBalance;
+      pubState.user.pending = newPending;
+    }
     await fetch(SUPA + '/rest/v1/profiles?id=eq.' + user.id, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + JWT },
-      body: JSON.stringify({ balance: newBalance, pending: newPending })
+      body: JSON.stringify(profileUpdate)
     });
-
-    pubState.user.balance = newBalance;
-    pubState.user.pending = newPending;
     const idx = pubState.pronos.findIndex(p => p.id === prono.id);
     if (idx !== -1) {
       pubState.pronos[idx].purchased = true;
