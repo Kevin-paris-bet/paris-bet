@@ -71,8 +71,10 @@ module.exports = async (req, res) => {
       console.log(`✓ Solde crédité : ${amount}€ pour ${userId} (total dépôts: ${newTotalDeposits}€)`);
 
       // ── Bonus parrainage au premier dépôt ──────────────────
-      // On vérifie si c'est le premier dépôt (total_deposits avant = 0)
-      const isFirstDeposit = (parseFloat(profile?.total_deposits) || 0) === 0;
+      const rawTotalDeposits = profile?.total_deposits;
+      console.log(`[PARRAINAGE] profile=${JSON.stringify(profile)} rawTotalDeposits=${rawTotalDeposits}`);
+      const isFirstDeposit = !rawTotalDeposits || parseFloat(rawTotalDeposits) === 0;
+      console.log(`[PARRAINAGE] isFirstDeposit=${isFirstDeposit}`);
       if (isFirstDeposit) {
         const { data: newUserProfile } = await supabase
           .from('profiles')
