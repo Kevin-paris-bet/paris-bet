@@ -115,7 +115,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Si le dernier segment n'est pas une page connue, c'est un pseudo
     const knownPages = ['pages', 'index.html', 'tipster-public.html', 'auth.html', 'dashboard-user.html', 'dashboard-tipster.html', 'dashboard-admin.html'];
     const lastSegment = pathParts[pathParts.length - 1];
-    if (lastSegment && !knownPages.includes(lastSegment) && /^[a-z0-9-]{3,20}$/.test(lastSegment)) {
+    if (lastSegment && !knownPages.includes(lastSegment) && /^[a-zA-Z0-9-]{3,30}$/.test(lastSegment)) {
       tipsterPseudo = lastSegment;
     }
   }
@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Résoudre l'id depuis le pseudo si nécessaire
   let resolvedId = tipsterId;
   if (!resolvedId && tipsterPseudo) {
-    const rPseudo = await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id&pseudo=eq.${tipsterPseudo}&apikey=${ANON}`);
+    const rPseudo = await fetch(`https://haezbgglpghjrgdpmcrj.supabase.co/rest/v1/profiles?select=id&pseudo=ilike.${tipsterPseudo}&apikey=${ANON}`);
     const pData = await rPseudo.json();
     if (Array.isArray(pData) && pData.length > 0) resolvedId = pData[0].id;
   }
