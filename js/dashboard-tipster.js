@@ -1698,10 +1698,19 @@ async function renderPageDashboardTipster(container) {
   let cumAchats = 0;
   const achatsData = pronosSorted.map(p => { cumAchats += (parseInt(p.buyers)||0); return cumAchats; });
 
-  // Gains cumulés (90% des achats sur pronos gagnés)
+  // Gains cumulés (90% des achats NON-freebet sur pronos gagnés)
+  const freebetCountByProno = {};
+  freebetAchats.forEach(a => {
+    freebetCountByProno[a.prono_id] = (freebetCountByProno[a.prono_id] || 0) + 1;
+  });
   let cumGains = 0;
   const gainsData = pronosSorted.map(p => {
-    if (p.status === 'won') cumGains += Math.round((parseInt(p.buyers)||0) * parseFloat(p.price||0) * 0.9);
+    if (p.status === 'won') {
+      const totalBuyers = parseInt(p.buyers) || 0;
+      const freebetBuyers = freebetCountByProno[p.id] || 0;
+      const payingBuyers = Math.max(0, totalBuyers - freebetBuyers);
+      cumGains += Math.round(payingBuyers * parseFloat(p.price||0) * 0.9);
+    }
     return cumGains;
   });
 
