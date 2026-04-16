@@ -1768,7 +1768,10 @@ async function renderPageDashboardTipster(container) {
           </div>
           <div style="text-align:right">
             <div style="font-size:1.1rem;font-weight:800;color:#185FA5">${totalAchatsChart}</div>
-            <div style="font-size:0.68rem;color:var(--text-muted)">achats</div>
+            <div style="display:flex;align-items:center;gap:4px;justify-content:flex-end">
+              <span style="font-size:0.68rem;color:var(--text-muted)">achats</span>
+              ${freebetAchats.length > 0 ? `<span style="font-size:0.65rem;color:var(--text-muted)">· dont ${freebetAchats.length} freebet${freebetAchats.length > 1 ? 's' : ''}</span>` : ''}
+            </div>
           </div>
         </div>
         <div style="position:relative;width:100%;height:85px"><canvas id="chartA-${chartUid}" role="img" aria-label="Achats cumulés vs moyenne plateforme">Achats cumulés du tipster.</canvas></div>
