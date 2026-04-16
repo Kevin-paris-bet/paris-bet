@@ -95,17 +95,21 @@ module.exports = async (req, res) => {
           const referrer = referrers?.[0];
 
           if (referrer) {
-            // +2€ au nouveau parieur
+            // +2€ au nouveau parieur (freebet)
+            const { data: newUserCurrent } = await supabase.from('profiles').select('freebet_balance').eq('id', userId).single();
+            const newFreebet = (parseFloat(newUserCurrent?.freebet_balance) || 0) + 2;
             await supabase
               .from('profiles')
-              .update({ balance: newBalance + 2, referral_bonus_given: true })
+              .update({ freebet_balance: newFreebet, referral_bonus_given: true })
               .eq('id', userId);
 
             // +2€ au parrain seulement si c'est un user (pas un tipster)
             if (referrer.role === 'user') {
+              const { data: referrerCurrent } = await supabase.from('profiles').select('freebet_balance').eq('id', referrer.id).single();
+              const referrerFreebet = (parseFloat(referrerCurrent?.freebet_balance) || 0) + 2;
               await supabase
                 .from('profiles')
-                .update({ balance: (parseFloat(referrer.balance) || 0) + 2 })
+                .update({ freebet_balance: referrerFreebet })
                 .eq('id', referrer.id);
               // Tracer le parrainage
               await supabase.from('referrals').insert({
