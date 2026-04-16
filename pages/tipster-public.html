@@ -78,8 +78,14 @@
           <!-- Solde utilisateur (compact) -->
           <div class="user-balance-card">
             <div class="user-balance-card__top">
-              <div class="user-balance-card__label">Mon solde</div>
-              <div class="user-balance-card__amount" id="user-balance">—</div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline">
+                <div class="user-balance-card__label">Mon solde</div>
+                <div class="user-balance-card__label" id="freebet-label" style="display:none">Freebet</div>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:baseline">
+                <div class="user-balance-card__amount" id="user-balance">—</div>
+                <div class="user-balance-card__amount" id="user-freebet" style="display:none;color:#fbbf24">—</div>
+              </div>
               <div class="user-balance-card__pending">
                 ⏳ <span id="user-pending">—</span> en attente
               </div>
