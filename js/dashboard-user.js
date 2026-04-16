@@ -61,6 +61,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   MOCK_USER.freebet             = parseFloat(user.profile.freebet_balance) || 0;
   MOCK_USER.whatsapp            = user.profile.whatsapp || '';
   MOCK_USER.whatsappSent        = !!(user.profile.whatsapp && user.profile.whatsapp.trim() !== '');
+  MOCK_USER.referralCode        = user.profile.referral_code || '';
 
   // Mettre à jour la sidebar avec le vrai nom
   const fullName = MOCK_USER.firstName + ' ' + MOCK_USER.lastName;
@@ -479,6 +480,27 @@ function renderPageParametres(container) {
   container.innerHTML = `
     <div style="max-width:480px;display:flex;flex-direction:column">
 
+      <!-- BLOC 0 : Code parrain -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border)">
+          <div style="width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--blue-pale)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <span style="font-size:13px;font-weight:600;color:var(--text-dark)">Mon code parrain</span>
+        </div>
+        <div style="padding:14px">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;line-height:1.5">Partagez ce code à vos amis. Ils reçoivent <strong>2€</strong> à leur premier dépôt, et vous aussi !</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-size:16px;font-weight:800;font-family:monospace;color:var(--blue);letter-spacing:2px;text-align:center">
+              ${u.referralCode || '—'}
+            </div>
+            <button onclick="copyReferralCode('${u.referralCode}')" style="background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);padding:10px 16px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">
+              📋 Copier
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- BLOC 1 : Infos perso -->
       <div style="${cardStyle}">
         <div style="${headStyle}">
@@ -601,6 +623,15 @@ function savePassword() {
   if (!o || !n) { showToast('Remplissez les deux champs.', 'error'); return; }
   if (n.length < 8) { showToast('Minimum 8 caractères.', 'error'); return; }
   showToast('Mot de passe mis à jour ✓', 'success');
+}
+
+function copyReferralCode(code) {
+  if (!code) return;
+  navigator.clipboard.writeText(code).then(() => {
+    showToast('Code copié : ' + code, 'success');
+  }).catch(() => {
+    showToast('Code : ' + code, 'info');
+  });
 }
 
 async function saveWhatsapp() {
