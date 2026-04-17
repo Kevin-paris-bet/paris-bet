@@ -408,7 +408,7 @@ function renderPageSolde(container) {
             <div><h3>Recharger mon solde</h3><p>Min. ${min} € · Stripe sécurisé</p></div>
           </div>
           <div class="quick-amounts">
-            ${[10,20,50,100].map(v=>`<button class="quick-amount-btn" data-val="${v}" onclick="selectAmount(${v})">${v} €</button>`).join('')}
+            ${[10,15,20,30].map(v=>`<button class="quick-amount-btn" data-val="${v}" onclick="selectAmount(${v})">${v} €</button>`).join('')}
           </div>
           <div class="form-group" style="margin-top:var(--space-md)">
             <label>💶 Ou saisir un montant</label>
@@ -417,7 +417,7 @@ function renderPageSolde(container) {
             </div>
           </div>
           <button class="btn btn-primary" style="width:100%;margin-top:var(--space-sm)" onclick="handleDeposit()">
-            Recharger via Stripe →
+            Recharger par CB →
           </button>
           <p style="text-align:center;font-size:0.73rem;color:var(--text-muted);margin-top:var(--space-sm)">
             🔒 Paiement sécurisé · Remboursement si prono perdu
@@ -447,8 +447,8 @@ function renderPageSolde(container) {
               ⚠️ <strong>Réseau : Arbitrum One uniquement</strong> — Ne pas envoyer sur un autre réseau, les fonds seraient perdus.
             </div>
           </div>
-          <button class="btn" style="width:100%;background:#6366f1;color:white;border:none" onclick="confirmCryptoDeposit()">
-            ✅ J'ai effectué le virement
+          <button class="btn btn-primary" id="btn-crypto-deposit" style="width:100%" onclick="confirmCryptoDeposit()">
+            J'ai effectué le virement ✅
           </button>
           <p style="text-align:center;font-size:0.73rem;color:var(--text-muted);margin-top:var(--space-sm)">
             Votre solde sera crédité après vérification manuelle (sous 24h)
@@ -499,7 +499,7 @@ async function confirmCryptoDeposit() {
     return;
   }
 
-  const btn = document.querySelector('[onclick="confirmCryptoDeposit()"]');
+  const btn = document.getElementById('btn-crypto-deposit');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi en cours…'; }
   try {
     const user = await getCurrentUser();
@@ -512,10 +512,16 @@ async function confirmCryptoDeposit() {
     if (!data.success) throw new Error(data.error || 'Erreur');
     localStorage.setItem('ppw_crypto_last_sent', Date.now().toString());
     showToast('✓ Demande envoyée ! Votre solde sera crédité sous 24h.', 'success');
-    if (btn) { btn.disabled = false; btn.textContent = '✅ J\'ai effectué le virement'; }
+    const cryptoBtn = document.getElementById('btn-crypto-deposit');
+    if (cryptoBtn) {
+      cryptoBtn.disabled = true;
+      cryptoBtn.textContent = 'Virement enregistré — en cours de vérification';
+      cryptoBtn.style.background = 'var(--text-muted)';
+      cryptoBtn.style.cursor = 'not-allowed';
+    }
   } catch(e) {
     showToast('Erreur : ' + e.message, 'error');
-    if (btn) { btn.disabled = false; btn.textContent = '✅ J\'ai effectué le virement'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'J\'ai effectué le virement ✅'; }
   }
 }
 
@@ -543,7 +549,7 @@ async function handleDeposit() {
 
   } catch (err) {
     showToast('Erreur : ' + err.message, 'error');
-    if (btn) { btn.disabled = false; btn.textContent = 'Recharger via Stripe →'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Recharger par CB →'; }
   }
 }
 
