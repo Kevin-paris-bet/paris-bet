@@ -221,7 +221,7 @@ function navigateTo(page) {
   document.querySelectorAll('.sidebar__link').forEach(l =>
     l.classList.toggle('active', l.dataset.page === page)
   );
-  const titles = { dashboard:'Tableau de bord', achats:'Mes achats', solde:'Mon solde & historique', parametres:'Paramètres', explorer:'Explorer les pronos', 'explorer-tipsters':'Explorer les tipsters', feedback:'Feedback & Nouveautés' };
+  const titles = { dashboard:'Tableau de bord', achats:'Mes achats', solde:'Mon solde', parametres:'Paramètres', explorer:'Explorer les pronos', 'explorer-tipsters':'Explorer les tipsters', feedback:'Feedback & Nouveautés' };
   document.getElementById('topbar-title').textContent = titles[page] || '';
   const el = document.getElementById('page-content');
   el.innerHTML = '';
@@ -394,8 +394,8 @@ function renderPageSolde(container) {
         <div style="display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--border)">
           <div style="width:26px;height:26px;border-radius:6px;background:var(--blue-pale);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">💳</div>
           <div style="flex:1">
-            <div style="font-size:13px;font-weight:600;color:var(--text-dark)">Recharger par CB, Apple Pay ou Google Pay</div>
-            <div style="font-size:11px;color:var(--text-muted)">Min. ${min} € · Stripe sécurisé</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-dark)">Recharger par CB</div>
+            <div style="font-size:11px;color:var(--text-muted)">Min. ${min} € · Paiement sécurisé</div>
           </div>
         </div>
         <div style="padding:12px 14px">
@@ -434,7 +434,7 @@ function renderPageSolde(container) {
         </div>
       </div>
       <div style="text-align:center;padding:4px 0 8px">
-        <a href="https://t.me/Kev_PayPerWin" target="_blank" style="font-size:12px;color:var(--text-muted);text-decoration:none">❓ Un problème ? Envoyez-moi un message →</a>
+        <a href="https://t.me/Kev_PayPerWin" target="_blank" style="font-size:12px;color:#92400e;text-decoration:none">❓ Un problème ? Envoyez-moi un message →</a>
       </div>
 
       <!-- Historique -->
