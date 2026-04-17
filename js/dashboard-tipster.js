@@ -397,7 +397,42 @@ async function submitProno() {
 function viewProno(id) {
   const p = state.pronos.find(p => p.id === id);
   if (!p) return;
-  alert(`📋 Contenu du pronostic\n\n${p.game}\n\n"${p.content || '(brouillon — contenu vide)'}"`);
+
+  const existing = document.getElementById('prono-view-overlay');
+  if (existing) existing.remove();
+
+  const statusLabels = { pending: 'En attente', won: 'Gagné', lost: 'Perdu', cancelled: 'Annulé' };
+  const statusColors = { pending: 'var(--text-muted)', won: 'var(--success)', lost: 'var(--error)', cancelled: 'var(--warning)' };
+  const date = p.match_date ? new Date(p.match_date).toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit', year:'2-digit'}) : '—';
+
+  const overlay = document.createElement('div');
+  overlay.id = 'prono-view-overlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box';
+  overlay.innerHTML = `
+    <div style="background:var(--bg);border-radius:var(--radius-lg);width:100%;max-width:420px;overflow:hidden;border:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:26px;height:26px;border-radius:6px;background:var(--blue-pale);display:flex;align-items:center;justify-content:center;flex-shrink:0">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <span style="font-size:13px;font-weight:600;color:var(--text-dark)">Contenu du pronostic</span>
+        </div>
+        <button onclick="document.getElementById('prono-view-overlay').remove()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:18px;line-height:1;padding:4px">✕</button>
+      </div>
+      <div style="padding:16px">
+        <div style="font-size:14px;font-weight:700;color:var(--text-dark);margin-bottom:4px">${p.game}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:14px">${p.sport || ''} · ${date} · <span style="color:${statusColors[p.status]||'var(--text-muted)'};">${statusLabels[p.status]||'—'}</span></div>
+        <div style="background:var(--bg-soft);border-radius:var(--radius-sm);padding:12px 14px;font-size:13px;color:var(--text-dark);line-height:1.6;border-left:3px solid var(--blue)">
+          ${p.content || '<span style="color:var(--text-muted);font-style:italic">Brouillon — contenu vide</span>'}
+        </div>
+      </div>
+      <div style="padding:0 16px 16px;display:flex;justify-content:flex-end">
+        <button onclick="document.getElementById('prono-view-overlay').remove()" style="background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);padding:8px 20px;font-size:13px;font-weight:600;cursor:pointer">Fermer</button>
+      </div>
+    </div>`;
+
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
 }
 
 // ── Supprimer un prono (seulement si 0 acheteur) ───────────────
