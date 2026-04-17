@@ -394,7 +394,7 @@ function renderPageSolde(container) {
         <div style="display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--border)">
           <div style="width:26px;height:26px;border-radius:6px;background:var(--blue-pale);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">💳</div>
           <div style="flex:1">
-            <div style="font-size:13px;font-weight:600;color:var(--text-dark)">Recharger par CB</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text-dark)">Recharger par CB, Apple Pay ou Google Pay</div>
             <div style="font-size:11px;color:var(--text-muted)">Min. ${min} € · Stripe sécurisé</div>
           </div>
         </div>
@@ -402,7 +402,7 @@ function renderPageSolde(container) {
           <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">
             ${[10,15,20,30].map(v=>`<button class="quick-amount-btn" data-val="${v}" onclick="selectAmount(${v})" style="padding:7px 4px;font-size:13px;font-weight:600;border-radius:7px;border:1px solid var(--border);background:var(--bg-soft);cursor:pointer;color:var(--text-dark)">${v}€</button>`).join('')}
           </div>
-          <input class="input" type="number" id="deposit-amount" placeholder="Autre montant…" min="${min}" step="1" style="font-size:13px;margin-bottom:10px"/>
+          <input class="input" type="number" id="deposit-amount" placeholder="Autre montant…" min="${min}" step="1" style="font-size:16px;margin-bottom:10px"/>
           <button class="btn btn-primary" style="width:100%;font-size:13px" onclick="handleDeposit()">Recharger par CB →</button>
           <div style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:6px">🔒 Paiement sécurisé · Remboursement si prono perdu</div>
         </div>
@@ -418,7 +418,10 @@ function renderPageSolde(container) {
           </div>
         </div>
         <div style="padding:12px 14px">
-          <input class="input" type="number" id="crypto-amount" placeholder="Montant en euros…" min="5" step="1" oninput="updateCryptoAmount()" style="font-size:13px;margin-bottom:8px"/>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">
+            ${[10,15,20,30].map(v=>`<button class="quick-amount-btn" data-val="${v}" onclick="selectCryptoAmount(${v})" style="padding:7px 4px;font-size:13px;font-weight:600;border-radius:7px;border:1px solid var(--border);background:var(--bg-soft);cursor:pointer;color:var(--text-dark)">${v}€</button>`).join('')}
+          </div>
+          <input class="input" type="number" id="crypto-amount" placeholder="Montant en euros…"  min="5" step="1" oninput="updateCryptoAmount()" style="font-size:16px;margin-bottom:8px"/>
           <div id="crypto-usdc-preview" style="display:none;background:#eef2ff;border-radius:6px;padding:8px 10px;font-size:12px;color:#3730a3;margin-bottom:8px;line-height:1.5"></div>
           <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Adresse wallet</div>
           <div style="display:flex;gap:6px;margin-bottom:7px">
@@ -427,7 +430,7 @@ function renderPageSolde(container) {
           </div>
           <div style="padding:7px 9px;background:#fef3c7;border-radius:6px;font-size:11px;color:#92400e;margin-bottom:8px">⚠️ <strong>Réseau : Arbitrum One uniquement</strong> — fonds perdus sur un autre réseau</div>
           <button class="btn btn-primary" id="btn-crypto-deposit" style="width:100%;font-size:13px" onclick="confirmCryptoDeposit()">J'ai effectué le virement ✅</button>
-          <div style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:6px">Solde crédité après vérification (sous 24h)</div>
+          <div style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:6px">Solde crédité après vérification (sous quelques heures)</div>
         </div>
       </div>
 
@@ -460,6 +463,14 @@ function selectAmount(v) {
   document.getElementById('deposit-amount').value = v;
   document.querySelectorAll('.quick-amount-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.val == v)
+  );
+}
+
+function selectCryptoAmount(v) {
+  const input = document.getElementById('crypto-amount');
+  if (input) { input.value = v; updateCryptoAmount(); }
+  document.querySelectorAll('[onclick^="selectCryptoAmount"]').forEach(b =>
+    b.style.background = b.getAttribute('onclick').includes('(' + v + ')') ? 'var(--blue-pale)' : 'var(--bg-soft)'
   );
 }
 
