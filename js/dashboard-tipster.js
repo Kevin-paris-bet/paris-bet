@@ -233,12 +233,10 @@ function renderPagePronos(container) {
     </div>
 
     <div class="pronos-table">
-      <div class="table-header">
+      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 40px">
         <span>Match / Événement</span>
         <span>Acheteurs</span>
-        <span>Prix</span>
         <span>Statut</span>
-        <span>Date</span>
         <span></span>
       </div>
       ${state.pronos.map(p => renderPronoRow(p)).join('')}
@@ -272,17 +270,15 @@ function renderPronoRow(p) {
     : '' : '';
 
   return `
-    <div class="table-row prono-row" style="grid-template-columns:2fr 1fr 1fr 1fr 1fr 80px">
+    <div class="table-row prono-row" style="grid-template-columns:2fr 1fr 1fr 40px;align-items:center">
       <div>
         <div class="prono-title">${p.game}</div>
         <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
         ${imageStatusHtml}
       </div>
       <div class="buyers-count">${p.buyers}</div>
-      <div class="prono-price">${formatEuros(p.price)}</div>
       <div>${statusBadge[p.status] || ''}</div>
-      <div style="font-size:0.8rem;color:var(--text-muted)">${formatDate(p.match_date || p.date)}</div>
-      <div class="table-actions">
+      <div class="table-actions" style="display:flex;align-items:center;justify-content:center">
         <button class="btn-icon" title="Voir le pronostic" onclick="viewProno('${p.id}')">👁</button>
       </div>
     </div>
