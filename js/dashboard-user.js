@@ -365,97 +365,93 @@ function renderPageSolde(container) {
   const allTransactions = [...transactions, ...remboursements]
     .sort((a, b) => (b.date > a.date ? 1 : -1));
 
+  // Formater une date lisible
+  const fmtDate = (d) => {
+    if (!d) return '—';
+    const date = new Date(d);
+    if (isNaN(date)) return d;
+    return date.toLocaleDateString('fr-FR', { day:'2-digit', month:'short', year:'numeric' });
+  };
+
   container.innerHTML = `
-    <div class="solde-layout">
+    <div style="max-width:520px;display:flex;flex-direction:column;gap:12px">
+
+      <!-- Bloc solde -->
+      <div style="background:var(--blue);border-radius:var(--radius-lg);padding:16px 18px;color:white">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+          <div style="font-size:11px;font-weight:600;opacity:.7;letter-spacing:.06em">Mon solde</div>
+          ${u.freebet > 0 ? `<div style="font-size:11px;font-weight:600;opacity:.7;letter-spacing:.06em">Freebet</div>` : ''}
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+          <div style="font-size:30px;font-weight:800;line-height:1">${formatEuros(u.balance)}</div>
+          ${u.freebet > 0 ? `<div style="font-size:22px;font-weight:800;color:#fbbf24">${formatEuros(u.freebet)}</div>` : ''}
+        </div>
+        <div style="font-size:11px;opacity:.65">⏳ ${formatEuros(u.pending)} en attente de résultat</div>
+      </div>
+
+      <!-- Recharge CB -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--border)">
+          <div style="width:26px;height:26px;border-radius:6px;background:var(--blue-pale);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">💳</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:var(--text-dark)">Recharger par CB</div>
+            <div style="font-size:11px;color:var(--text-muted)">Min. ${min} € · Stripe sécurisé</div>
+          </div>
+        </div>
+        <div style="padding:12px 14px">
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">
+            ${[10,15,20,30].map(v=>`<button class="quick-amount-btn" data-val="${v}" onclick="selectAmount(${v})" style="padding:7px 4px;font-size:13px;font-weight:600;border-radius:7px;border:1px solid var(--border);background:var(--bg-soft);cursor:pointer;color:var(--text-dark)">${v}€</button>`).join('')}
+          </div>
+          <input class="input" type="number" id="deposit-amount" placeholder="Autre montant…" min="${min}" step="1" style="font-size:13px;margin-bottom:10px"/>
+          <button class="btn btn-primary" style="width:100%;font-size:13px" onclick="handleDeposit()">Recharger par CB →</button>
+          <div style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:6px">🔒 Paiement sécurisé · Remboursement si prono perdu</div>
+        </div>
+      </div>
+
+      <!-- Recharge Crypto -->
+      <div style="background:var(--bg);border:1px solid #a5b4fc;border-radius:var(--radius-md);overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid #a5b4fc">
+          <div style="width:26px;height:26px;border-radius:6px;background:#eef2ff;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0">🔷</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:600;color:#4338ca">Recharger en crypto</div>
+            <div style="font-size:11px;color:var(--text-muted)">USDC · Arbitrum One</div>
+          </div>
+        </div>
+        <div style="padding:12px 14px">
+          <input class="input" type="number" id="crypto-amount" placeholder="Montant en euros…" min="5" step="1" oninput="updateCryptoAmount()" style="font-size:13px;margin-bottom:8px"/>
+          <div id="crypto-usdc-preview" style="display:none;background:#eef2ff;border-radius:6px;padding:8px 10px;font-size:12px;color:#3730a3;margin-bottom:8px;line-height:1.5"></div>
+          <div style="font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Adresse wallet</div>
+          <div style="display:flex;gap:6px;margin-bottom:7px">
+            <div style="flex:1;background:var(--bg-soft);border:1px solid var(--border);border-radius:6px;padding:7px 9px;font-size:10px;font-family:monospace;color:var(--text-dark);word-break:break-all">0xb2b6ff0c9c29c745129489f4a24cdfbc837cf730</div>
+            <button onclick="navigator.clipboard.writeText('0xb2b6ff0c9c29c745129489f4a24cdfbc837cf730').then(()=>showToast('Adresse copiée ✓','success'))" style="background:var(--blue);color:white;border:none;border-radius:6px;padding:7px 11px;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0">📋 Copier</button>
+          </div>
+          <div style="padding:7px 9px;background:#fef3c7;border-radius:6px;font-size:11px;color:#92400e;margin-bottom:8px">⚠️ <strong>Réseau : Arbitrum One uniquement</strong> — fonds perdus sur un autre réseau</div>
+          <button class="btn btn-primary" id="btn-crypto-deposit" style="width:100%;font-size:13px" onclick="confirmCryptoDeposit()">J'ai effectué le virement ✅</button>
+          <div style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:6px">Solde crédité après vérification (sous 24h)</div>
+        </div>
+      </div>
+
       <!-- Historique -->
-      <div>
-        <div class="section-header"><div><h2>Historique des transactions</h2></div></div>
-        <div class="pronos-table">
-          ${allTransactions.length === 0
-            ? `<div style="text-align:center;padding:var(--space-2xl);color:var(--text-muted);font-size:0.88rem">Aucune transaction pour l'instant.</div>`
-            : allTransactions.map(t => {
-                const icons = { depot:'⬇️', achat:'🛒', remboursement:'↩️' };
-                const pos = t.amount > 0;
-                return `
-                  <div class="virement-row">
-                    <div class="virement-info">
-                      <div class="virement-icon ${pos?'sent':'pending'}">${icons[t.type]||'·'}</div>
-                      <div>
-                        <div class="virement-label">${t.label}</div>
-                        <div class="virement-date">${t.date}</div>
-                      </div>
-                    </div>
-                    <div class="virement-amount" style="color:${pos?'var(--success)':'var(--text-dark)'}">
-                      ${pos?'+':''}${formatEuros(Math.abs(t.amount))}
-                    </div>
-                  </div>`;
-              }).join('')
-          }
-        </div>
+      <div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Historique des transactions</div>
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden">
+        ${allTransactions.length === 0
+          ? `<div style="text-align:center;padding:var(--space-xl);color:var(--text-muted);font-size:0.85rem">Aucune transaction pour l'instant.</div>`
+          : allTransactions.map(t => {
+              const pos = t.amount > 0;
+              const icon = t.type === 'remboursement' ? '↩️' : '🛒';
+              const iconBg = t.type === 'remboursement' ? '#E1F5EE' : '#EAF3DE';
+              return `<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)">
+                <div style="width:32px;height:32px;border-radius:50%;background:${iconBg};display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${icon}</div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:12px;font-weight:600;color:var(--text-dark);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.label}</div>
+                  <div style="font-size:11px;color:var(--text-muted)">${fmtDate(t.date)}</div>
+                </div>
+                <div style="font-size:13px;font-weight:700;color:${pos?'var(--success)':'var(--text-dark)'};white-space:nowrap">${pos?'+':''}${formatEuros(Math.abs(t.amount))}</div>
+              </div>`;
+            }).join('')
+        }
       </div>
 
-      <!-- Recharge -->
-      <div style="display:flex;flex-direction:column;gap:var(--space-md)">
-        <div class="balance-card">
-          <div class="balance-card__label">Solde disponible</div>
-          <div class="balance-card__amount">${formatEuros(u.balance)}</div>
-          <div class="balance-card__pending">⏳ ${formatEuros(u.pending)} en attente de résultat</div>
-        </div>
-
-        <div class="rib-card">
-          <div class="rib-card__header">
-            <div style="font-size:1.4rem">💳</div>
-            <div><h3>Recharger mon solde</h3><p>Min. ${min} € · Stripe sécurisé</p></div>
-          </div>
-          <div class="quick-amounts">
-            ${[10,15,20,30].map(v=>`<button class="quick-amount-btn" data-val="${v}" onclick="selectAmount(${v})">${v} €</button>`).join('')}
-          </div>
-          <div class="form-group" style="margin-top:var(--space-md)">
-            <label>💶 Ou saisir un montant</label>
-            <div class="input-wrap">
-              <input class="input" type="number" id="deposit-amount" placeholder="Ex: 25" min="${min}" step="1" style="padding-left:var(--space-md)"/>
-            </div>
-          </div>
-          <button class="btn btn-primary" style="width:100%;margin-top:var(--space-sm)" onclick="handleDeposit()">
-            Recharger par CB →
-          </button>
-          <p style="text-align:center;font-size:0.73rem;color:var(--text-muted);margin-top:var(--space-sm)">
-            🔒 Paiement sécurisé · Remboursement si prono perdu
-          </p>
-        </div>
-
-        <!-- Dépôt Crypto -->
-        <div class="rib-card" style="border:1px solid #6366f1">
-          <div class="rib-card__header">
-            <div style="font-size:1.4rem">🔷</div>
-            <div><h3 style="color:#4338ca">Recharger en crypto</h3><p>USDC sur Arbitrum One</p></div>
-          </div>
-          <div class="form-group">
-            <label>💶 Montant souhaité (en euros)</label>
-            <div class="input-wrap">
-              <input class="input" type="number" id="crypto-amount" placeholder="Ex: 20" min="5" step="1" oninput="updateCryptoAmount()"/>
-            </div>
-          </div>
-          <div id="crypto-usdc-preview" style="display:none;background:#eef2ff;border-radius:var(--radius-sm);padding:10px 12px;font-size:0.85rem;color:#3730a3;margin-bottom:var(--space-md);line-height:1.6"></div>
-          <div style="margin-bottom:var(--space-md)">
-            <label style="font-size:0.78rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Adresse wallet (Arbitrum One)</label>
-            <div style="display:flex;gap:8px;margin-top:6px">
-              <div style="flex:1;background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:0.75rem;font-family:monospace;color:var(--text-dark);word-break:break-all">0xb2b6ff0c9c29c745129489f4a24cdfbc837cf730</div>
-              <button onclick="navigator.clipboard.writeText('0xb2b6ff0c9c29c745129489f4a24cdfbc837cf730').then(()=>showToast('Adresse copiée ✓','success'))" style="background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);padding:8px 12px;font-size:0.8rem;cursor:pointer;white-space:nowrap">📋 Copier</button>
-            </div>
-            <div style="margin-top:8px;padding:8px 10px;background:#fef3c7;border-radius:var(--radius-sm);font-size:0.75rem;color:#92400e">
-              ⚠️ <strong>Réseau : Arbitrum One uniquement</strong> — Ne pas envoyer sur un autre réseau, les fonds seraient perdus.
-            </div>
-          </div>
-          <button class="btn btn-primary" id="btn-crypto-deposit" style="width:100%" onclick="confirmCryptoDeposit()">
-            J'ai effectué le virement ✅
-          </button>
-          <p style="text-align:center;font-size:0.73rem;color:var(--text-muted);margin-top:var(--space-sm)">
-            Votre solde sera crédité après vérification manuelle (sous 24h)
-          </p>
-        </div>
-
-      </div>
     </div>
   `;
 }
