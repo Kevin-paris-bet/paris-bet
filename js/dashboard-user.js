@@ -399,8 +399,15 @@ function renderPageSolde(container) {
           </div>
         </div>
         <div style="padding:12px 14px">
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px">
-            ${[10,15,20,30].map(v=>`<button class="quick-amount-btn" data-val="${v}" onclick="selectAmount(${v})" style="padding:7px 4px;font-size:13px;font-weight:600;border-radius:7px;border:1px solid var(--border);background:var(--bg-soft);cursor:pointer;color:var(--text-dark)">${v}€</button>`).join('')}
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            ${[{v:10,fb:0},{v:15,fb:1},{v:20,fb:2},{v:30,fb:4}].map(({v,fb})=>`
+              <button class="quick-amount-btn" data-val="${v}" onclick="selectAmount(${v})" style="padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--bg-soft);cursor:pointer;text-align:left;display:flex;flex-direction:column;gap:3px">
+                <span style="font-size:15px;font-weight:700;color:var(--text-dark)">${v} €</span>
+                ${fb > 0
+                  ? `<span style="font-size:10px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:20px;font-weight:600;display:inline-block">🎁 +${fb}€ freebet</span>`
+                  : `<span style="font-size:10px;color:var(--text-muted)">Sans bonus</span>`
+                }
+              </button>`).join('')}
           </div>
           <input class="input" type="number" id="deposit-amount" placeholder="Autre montant…" min="${min}" step="1" style="font-size:16px;margin-bottom:10px"/>
           <button class="btn btn-primary" style="width:100%;font-size:13px" onclick="handleDeposit()">Recharger par CB, Apple Pay ou Google Pay →</button>
