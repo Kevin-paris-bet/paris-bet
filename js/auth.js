@@ -242,6 +242,18 @@ async function handleRegister() {
       })
     }).catch(() => {});
 
+    // Notification Slack nouvelle inscription
+    fetch('/api/slack-notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        role: isTipster ? 'tipster' : 'user',
+        email,
+        prenom: isTipster ? pseudo : firstName,
+        nom: isTipster ? '' : lastName,
+      })
+    }).catch(() => {});
+
     // Connecter automatiquement après inscription
     const { error: loginError } = await sb.auth.signInWithPassword({ email, password: pw });
 
