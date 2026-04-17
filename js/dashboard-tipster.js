@@ -233,12 +233,7 @@ function renderPagePronos(container) {
     </div>
 
     <div class="pronos-table">
-      <div class="table-header" style="grid-template-columns:2fr 1fr 1fr 40px">
-        <span>Match / Événement</span>
-        <span>Acheteurs</span>
-        <span>Statut</span>
-        <span></span>
-      </div>
+
       ${state.pronos.map(p => renderPronoRow(p)).join('')}
     </div>
 
@@ -270,16 +265,28 @@ function renderPronoRow(p) {
     : '' : '';
 
   return `
-    <div class="table-row prono-row" style="grid-template-columns:2fr 1fr 1fr 40px;align-items:center">
-      <div>
-        <div class="prono-title">${p.game}</div>
-        <div class="prono-meta">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
+    <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:8px;overflow:hidden">
+      <div style="padding:11px 14px;border-bottom:1px solid var(--border)">
+        <div style="font-weight:700;font-size:0.9rem;color:var(--text-dark)">${p.game}</div>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">${p.sport} · ${formatDate(p.match_date || p.date)}</div>
         ${imageStatusHtml}
       </div>
-      <div class="buyers-count">${p.buyers}</div>
-      <div>${statusBadge[p.status] || ''}</div>
-      <div class="table-actions" style="display:flex;align-items:center;justify-content:center">
-        <button class="btn-icon" title="Voir le pronostic" onclick="viewProno('${p.id}')">👁</button>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1.5fr 40px;padding:10px 14px;align-items:center;gap:6px">
+        <div>
+          <div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Acheteurs</div>
+          <div style="font-size:1rem;font-weight:700;color:var(--text-dark)">${p.buyers}</div>
+        </div>
+        <div>
+          <div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Prix</div>
+          <div style="font-size:1rem;font-weight:700;color:var(--blue)">${formatEuros(p.price)}</div>
+        </div>
+        <div>
+          <div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Statut</div>
+          <div>${statusBadge[p.status] || ''}</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:center">
+          <button style="width:30px;height:30px;border:1px solid var(--border);border-radius:6px;background:none;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center" title="Voir le pronostic" onclick="viewProno('${p.id}')">👁</button>
+        </div>
       </div>
     </div>
   `;
