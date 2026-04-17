@@ -272,15 +272,15 @@ function renderPronoRow(p) {
         ${imageStatusHtml}
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1.5fr 40px;padding:10px 14px;align-items:center;gap:6px">
-        <div>
+        <div style="text-align:center">
           <div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Acheteurs</div>
           <div style="font-size:1rem;font-weight:700;color:var(--text-dark)">${p.buyers}</div>
         </div>
-        <div>
+        <div style="text-align:center">
           <div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Prix</div>
           <div style="font-size:1rem;font-weight:700;color:var(--blue)">${formatEuros(p.price)}</div>
         </div>
-        <div>
+        <div style="text-align:center">
           <div style="font-size:0.68rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Statut</div>
           <div>${statusBadge[p.status] || ''}</div>
         </div>
