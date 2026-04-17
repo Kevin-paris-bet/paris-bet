@@ -488,6 +488,17 @@ async function updateCryptoAmount() {
 async function confirmCryptoDeposit() {
   const val = parseFloat(document.getElementById('crypto-amount')?.value);
   if (!val || val < 5) { showToast('Montant minimum : 5 €', 'error'); return; }
+
+  // Bloquer pendant 2 minutes après un envoi
+  const lastSent = parseInt(localStorage.getItem('ppw_crypto_last_sent') || '0');
+  const now = Date.now();
+  const cooldown = 2 * 60 * 1000; // 2 minutes
+  if (now - lastSent < cooldown) {
+    const remaining = Math.ceil((cooldown - (now - lastSent)) / 1000);
+    showToast(`✓ Virement déjà enregistré — nous allons vérifier sous 24h (patientez encore ${remaining}s avant de renvoyer)`, 'info');
+    return;
+  }
+
   const btn = document.querySelector('[onclick="confirmCryptoDeposit()"]');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi en cours…'; }
   try {
@@ -499,6 +510,7 @@ async function confirmCryptoDeposit() {
     });
     const data = await r.json();
     if (!data.success) throw new Error(data.error || 'Erreur');
+    localStorage.setItem('ppw_crypto_last_sent', Date.now().toString());
     showToast('✓ Demande envoyée ! Votre solde sera crédité sous 24h.', 'success');
     if (btn) { btn.disabled = false; btn.textContent = '✅ J\'ai effectué le virement'; }
   } catch(e) {
