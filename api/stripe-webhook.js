@@ -70,6 +70,22 @@ module.exports = async (req, res) => {
 
       console.log(`✓ Solde crédité : ${amount}€ pour ${userId} (total dépôts: ${newTotalDeposits}€)`);
 
+      // ── Bonus freebet selon montant déposé ─────────────────
+      const freebetBonus = amount >= 30 ? 4 : amount >= 20 ? 2 : amount >= 15 ? 1 : 0;
+      if (freebetBonus > 0) {
+        const { data: fbProfile } = await supabase
+          .from('profiles')
+          .select('freebet_balance')
+          .eq('id', userId)
+          .single();
+        const newFreebetBalance = (parseFloat(fbProfile?.freebet_balance) || 0) + freebetBonus;
+        await supabase
+          .from('profiles')
+          .update({ freebet_balance: newFreebetBalance })
+          .eq('id', userId);
+        console.log(`✓ Bonus freebet : +${freebetBonus}€ pour ${userId} (dépôt ${amount}€)`);
+      }
+
       // ── Bonus parrainage au premier dépôt ──────────────────
       const rawTotalDeposits = profile?.total_deposits;
       console.log(`[PARRAINAGE] profile=${JSON.stringify(profile)} rawTotalDeposits=${rawTotalDeposits}`);
