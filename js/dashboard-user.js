@@ -403,7 +403,7 @@ function renderPageSolde(container) {
             ${[10,15,20,30].map(v=>`<button class="quick-amount-btn" data-val="${v}" onclick="selectAmount(${v})" style="padding:7px 4px;font-size:13px;font-weight:600;border-radius:7px;border:1px solid var(--border);background:var(--bg-soft);cursor:pointer;color:var(--text-dark)">${v}€</button>`).join('')}
           </div>
           <input class="input" type="number" id="deposit-amount" placeholder="Autre montant…" min="${min}" step="1" style="font-size:16px;margin-bottom:10px"/>
-          <button class="btn btn-primary" style="width:100%;font-size:13px" onclick="handleDeposit()">Recharger par CB →</button>
+          <button class="btn btn-primary" style="width:100%;font-size:13px" onclick="handleDeposit()">Recharger par CB, Apple Pay ou Google Pay →</button>
           <div style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:6px">🔒 Paiement sécurisé · Remboursement si prono perdu</div>
         </div>
       </div>
@@ -432,6 +432,9 @@ function renderPageSolde(container) {
           <button class="btn btn-primary" id="btn-crypto-deposit" style="width:100%;font-size:13px" onclick="confirmCryptoDeposit()">J'ai effectué le virement ✅</button>
           <div style="text-align:center;font-size:11px;color:var(--text-muted);margin-top:6px">Solde crédité après vérification (sous quelques heures)</div>
         </div>
+      </div>
+      <div style="text-align:center;padding:4px 0 8px">
+        <a href="https://t.me/Kev_PayPerWin" target="_blank" style="font-size:12px;color:var(--text-muted);text-decoration:none">❓ Un problème ? Envoyez-moi un message →</a>
       </div>
 
       <!-- Historique -->
