@@ -423,6 +423,38 @@ function renderPageSolde(container) {
             🔒 Paiement sécurisé · Remboursement si prono perdu
           </p>
         </div>
+
+        <!-- Dépôt Crypto -->
+        <div class="rib-card" style="border:1px solid #6366f1">
+          <div class="rib-card__header">
+            <div style="font-size:1.4rem">🔷</div>
+            <div><h3 style="color:#4338ca">Recharger en crypto</h3><p>USDC sur Arbitrum One</p></div>
+          </div>
+          <div class="form-group">
+            <label>💶 Montant souhaité (en euros)</label>
+            <div class="input-wrap">
+              <input class="input" type="number" id="crypto-amount" placeholder="Ex: 20" min="5" step="1" oninput="updateCryptoAmount()"/>
+            </div>
+          </div>
+          <div id="crypto-usdc-preview" style="display:none;background:#eef2ff;border-radius:var(--radius-sm);padding:10px 12px;font-size:0.85rem;color:#3730a3;margin-bottom:var(--space-md);line-height:1.6"></div>
+          <div style="margin-bottom:var(--space-md)">
+            <label style="font-size:0.78rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Adresse wallet (Arbitrum One)</label>
+            <div style="display:flex;gap:8px;margin-top:6px">
+              <div style="flex:1;background:var(--bg-soft);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;font-size:0.75rem;font-family:monospace;color:var(--text-dark);word-break:break-all">0xb2b6ff0c9c29c745129489f4a24cdfbc837cf730</div>
+              <button onclick="navigator.clipboard.writeText('0xb2b6ff0c9c29c745129489f4a24cdfbc837cf730').then(()=>showToast('Adresse copiée ✓','success'))" style="background:var(--blue);color:white;border:none;border-radius:var(--radius-sm);padding:8px 12px;font-size:0.8rem;cursor:pointer;white-space:nowrap">📋 Copier</button>
+            </div>
+            <div style="margin-top:8px;padding:8px 10px;background:#fef3c7;border-radius:var(--radius-sm);font-size:0.75rem;color:#92400e">
+              ⚠️ <strong>Réseau : Arbitrum One uniquement</strong> — Ne pas envoyer sur un autre réseau, les fonds seraient perdus.
+            </div>
+          </div>
+          <button class="btn" style="width:100%;background:#6366f1;color:white;border:none" onclick="confirmCryptoDeposit()">
+            ✅ J'ai effectué le virement
+          </button>
+          <p style="text-align:center;font-size:0.73rem;color:var(--text-muted);margin-top:var(--space-sm)">
+            Votre solde sera crédité après vérification manuelle (sous 24h)
+          </p>
+        </div>
+
       </div>
     </div>
   `;
@@ -433,6 +465,46 @@ function selectAmount(v) {
   document.querySelectorAll('.quick-amount-btn').forEach(b =>
     b.classList.toggle('active', b.dataset.val == v)
   );
+}
+
+async function updateCryptoAmount() {
+  const val = parseFloat(document.getElementById('crypto-amount')?.value);
+  const preview = document.getElementById('crypto-usdc-preview');
+  if (!preview) return;
+  if (!val || val < 5) { preview.style.display = 'none'; return; }
+  try {
+    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=usd-coin&vs_currencies=eur');
+    const data = await r.json();
+    const eurPerUsdc = data['usd-coin']?.eur || 1;
+    const usdc = (val / eurPerUsdc).toFixed(2);
+    preview.style.display = 'block';
+    preview.innerHTML = `Vous devez envoyer environ <strong>${usdc} USDC</strong> (1 USDC ≈ ${eurPerUsdc.toFixed(4)} €)`;
+  } catch(e) {
+    preview.style.display = 'block';
+    preview.innerHTML = `Environ <strong>${val} USDC</strong> (taux indisponible)`;
+  }
+}
+
+async function confirmCryptoDeposit() {
+  const val = parseFloat(document.getElementById('crypto-amount')?.value);
+  if (!val || val < 5) { showToast('Montant minimum : 5 €', 'error'); return; }
+  const btn = document.querySelector('[onclick="confirmCryptoDeposit()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Envoi en cours…'; }
+  try {
+    const user = await getCurrentUser();
+    const r = await fetch('/api/crypto-deposit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: user.id, amountEur: val })
+    });
+    const data = await r.json();
+    if (!data.success) throw new Error(data.error || 'Erreur');
+    showToast('✓ Demande envoyée ! Votre solde sera crédité sous 24h.', 'success');
+    if (btn) { btn.disabled = false; btn.textContent = '✅ J\'ai effectué le virement'; }
+  } catch(e) {
+    showToast('Erreur : ' + e.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '✅ J\'ai effectué le virement'; }
+  }
 }
 
 async function handleDeposit() {
