@@ -283,48 +283,82 @@ input, textarea, select { font-family: var(--font-body); }
    Appliqué sur <html> via JS, persisté dans localStorage
 ══════════════════════════════════════════════════════════════ */
 [data-theme="dark"] {
-  /* Accent violet/rose */
-  --blue:           #a855f7;
-  --blue-dark:      #9333ea;
-  --blue-light:     #c084fc;
-  --blue-pale:      #2e2045;
-  --blue-xpale:     #231835;
+  /* Accent orange */
+  --blue:           #f97316;
+  --blue-dark:      #ea6c0a;
+  --blue-light:     #fb923c;
+  --blue-pale:      #1a1200;
+  --blue-xpale:     #140e00;
 
-  --white:          #231d35;
+  --white:          #1a1a1a;
 
   /* Texte */
-  --text-dark:      #ede8f5;
-  --text-body:      #b8a8d4;
-  --text-muted:     #7c6fa0;
-  --text-light:     #4a3d6b;
+  --text-dark:      #f5f5f5;
+  --text-body:      #a0a0a0;
+  --text-muted:     #555555;
+  --text-light:     #333333;
 
   /* Fonds */
-  --bg:             #1a1528;
-  --bg-soft:        #2d2545;
-  --bg-card:        #2d2545;
+  --bg:             #0f0f0f;
+  --bg-soft:        #1a1a1a;
+  --bg-card:        #1a1a1a;
 
   /* Bordures */
-  --border:         #2e2545;
-  --border-focus:   rgba(168, 85, 247, 0.5);
+  --border:         #2a2a2a;
+  --border-focus:   rgba(249, 115, 22, 0.5);
 
   /* États */
   --success:        #4ade80;
   --success-pale:   #0d2a1a;
   --error:          #f87171;
-  --error-pale:     #2a1020;
+  --error-pale:     #2a1010;
   --warning:        #fbbf24;
   --warning-pale:   #2a1f0a;
-  --pending:        #9d8ec4;
-  --pending-pale:   #201a30;
+  --pending:        #888888;
+  --pending-pale:   #1a1a1a;
 
   /* Ombres */
-  --shadow-sm:      0 1px 3px rgba(0,0,0,0.35);
-  --shadow-md:      0 4px 16px rgba(0,0,0,0.45);
-  --shadow-lg:      0 8px 32px rgba(0,0,0,0.55);
-  --shadow-blue:    0 8px 32px rgba(168,85,247,0.25);
+  --shadow-sm:      0 1px 3px rgba(0,0,0,0.5);
+  --shadow-md:      0 4px 16px rgba(0,0,0,0.6);
+  --shadow-lg:      0 8px 32px rgba(0,0,0,0.7);
+  --shadow-blue:    0 8px 32px rgba(249,115,22,0.25);
 }
 
 [data-theme="dark"] body {
   background: var(--bg);
   color: var(--text-body);
+}
+
+/* ── Bordures dégradées dark mode ── */
+[data-theme="dark"] .card,
+[data-theme="dark"] .rib-card,
+[data-theme="dark"] .balance-card,
+[data-theme="dark"] .tipster-info-card,
+[data-theme="dark"] .user-balance-card {
+  position: relative;
+  border: none;
+  background: #1a1a1a;
+}
+
+[data-theme="dark"] .card::before,
+[data-theme="dark"] .rib-card::before,
+[data-theme="dark"] .balance-card::before,
+[data-theme="dark"] .tipster-info-card::before,
+[data-theme="dark"] .user-balance-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, #f97316, #fbbf24, #1a1a1a 70%);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Bloc solde : bordure complète */
+[data-theme="dark"] .balance-card::before,
+[data-theme="dark"] .user-balance-card::before {
+  background: linear-gradient(135deg, #f97316, #fbbf24, #f97316);
 }
